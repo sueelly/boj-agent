@@ -4,6 +4,8 @@
 # 허용할 파일들
 !.gitignore
 !README.md
+!DEVLOG.md
+!commit.sh
 !.cursorrules
 
 # 각 문제 폴더에서 허용할 파일들
