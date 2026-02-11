@@ -168,6 +168,47 @@ private static String parseAndCallSolve(Solution sol, String input) {
 
 ---
 
+### 6단계: 제출 관련 파일 분리 📁
+
+**핵심 아이디어**:
+> "제출/리뷰 관련 파일을 별도 폴더로 분리하여 구조를 명확하게"
+
+**변경 (6단계)**:
+```
+문제폴더/
+├── README.md         # 문제 설명
+├── Solution.java     # 내 풀이 (알고리즘)
+├── Main.java         # 입력 파싱 (로컬용)
+├── Test.java         # 테스트 러너 (로컬용)
+├── test_cases.json   # 테스트 케이스
+├── run.sh, test.sh   # 실행 스크립트
+│
+└── submit/           # 📁 제출 관련 파일 분리!
+    ├── Submit.java   # 백준 제출용 코드
+    └── REVIEW.md     # 코드 리뷰
+```
+
+**장점**:
+- 풀이 파일과 제출 파일의 역할 명확화
+- 폴더 구조만 봐도 어떤 파일이 어디에 있는지 직관적
+- Git 커밋 시 submit 폴더만 따로 관리 가능
+
+---
+
+### 7단계: 스크립트 개선 🧹
+
+**개선 내용**:
+- `run.sh`, `test.sh` 실행 후 항상 `.class` 파일 삭제
+- 컴파일 실패 시에도 삭제되어 폴더가 깔끔하게 유지
+
+```bash
+#!/bin/bash
+javac Main.java Solution.java && java Main
+rm -f *.class  # 항상 삭제
+```
+
+---
+
 ## 📊 최종 워크플로우
 
 ```
@@ -224,16 +265,19 @@ baekjoon/
 ├── commit.sh           # GitHub 커밋 자동화
 ├── README.md           # 사용 가이드
 ├── template/           # 기본 템플릿 (AI 참고용)
+│   └── submit/         # 제출 템플릿
 │
-├── 10808-알파벳-개수/   # 문제별 폴더
+├── 3273-두-수의-합/     # 문제별 폴더
 │   ├── README.md       # ✅ GitHub 업로드
-│   ├── REVIEW.md       # ✅ GitHub 업로드
 │   ├── Solution.java   # ✅ GitHub 업로드
-│   ├── Submit.java     # ✅ GitHub 업로드
 │   ├── test_cases.json # ✅ GitHub 업로드
 │   ├── Main.java       # ❌ 로컬만
 │   ├── Test.java       # ❌ 로컬만
-│   └── *.sh            # ❌ 로컬만
+│   ├── *.sh            # ❌ 로컬만
+│   │
+│   └── submit/         # 📁 제출 관련
+│       ├── Submit.java # ✅ GitHub 업로드
+│       └── REVIEW.md   # ✅ GitHub 업로드
 │
 └── 1475-방-번호/
     └── ...
@@ -274,9 +318,11 @@ baekjoon/
 | Solution 역할 | 파싱 + 알고리즘 | 순수 알고리즘만 |
 | solve() 시그니처 | solve(String input) | solve(int n, int[] arr, int x) |
 | 테스트 케이스 관리 | 코드에 하드코딩 | JSON 파일 |
-| 코드 리뷰 | 없음 | 자동 생성 |
+| 코드 리뷰 | 없음 | submit/REVIEW.md 자동 생성 |
+| 제출 코드 | 수동 병합 | submit/Submit.java 자동 생성 |
 | GitHub 업로드 | 수동 | 스크립트 자동화 |
 | 문제 설명 | AI 기억 의존 | 웹 검색으로 정확히 |
+| 폴더 구조 | 모든 파일 혼재 | submit/ 폴더로 분리 |
 
 ---
 
@@ -298,4 +344,4 @@ baekjoon/
 ---
 
 *작성일: 2026-02-11*  
-*최종 수정: 2026-02-11 (역할 분리 강화, 웹 검색 정확도 개선)*
+*최종 수정: 2026-02-11 (submit 폴더 분리, 스크립트 개선)*

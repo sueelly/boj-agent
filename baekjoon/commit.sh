@@ -57,10 +57,10 @@ echo ""
 # 파일 추가
 echo -e "${BLUE}➕ 파일 추가 중...${NC}"
 git add "$PROBLEM_DIR/README.md" 2>/dev/null
-git add "$PROBLEM_DIR/REVIEW.md" 2>/dev/null
 git add "$PROBLEM_DIR/Solution.java" 2>/dev/null
-git add "$PROBLEM_DIR/Submit.java" 2>/dev/null
 git add "$PROBLEM_DIR/test_cases.json" 2>/dev/null
+git add "$PROBLEM_DIR/submit/REVIEW.md" 2>/dev/null
+git add "$PROBLEM_DIR/submit/Submit.java" 2>/dev/null
 
 # 커밋
 echo -e "${BLUE}📝 커밋 중...${NC}"
