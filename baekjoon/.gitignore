@@ -1,0 +1,27 @@
+# 모든 파일 무시
+*
+
+# 허용할 파일들
+!.gitignore
+!README.md
+!.cursorrules
+
+# 각 문제 폴더에서 허용할 파일들
+!*/
+!*/README.md
+!*/REVIEW.md
+!*/Solution.java
+!*/Submit.java
+!*/test_cases.json
+
+# template 폴더는 전체 허용
+!template/
+!template/**
+
+# 컴파일된 파일 무시
+*.class
+
+# IDE 설정 무시
+.vscode/
+.project
+.classpath

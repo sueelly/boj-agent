@@ -1,0 +1,288 @@
+# 백준 문제 풀이 AI 가이드
+
+이 폴더는 백준(Baekjoon) 알고리즘 문제 풀이를 위한 공간입니다.
+AI가 문제를 분석하여 자동으로 코드를 생성합니다.
+
+## 새 문제 생성 요청 시
+
+사용자가 백준 문제 링크를 제공하면 다음을 수행:
+
+### 1. 폴더 생성
+- 폴더명: `[문제번호]-[문제제목]` (예: `10808-알파벳-개수`)
+- 띄어쓰기는 `-`로 대체, 소문자 사용
+
+### 2. 파일 생성
+
+#### README.md
+백준 페이지에서 문제 내용을 가져와 HTML 형식으로 작성:
+```html
+<h2><a href="URL">문제번호번: 문제제목</a></h2>
+<p><strong>시간 제한:</strong> X초 | <strong>메모리 제한:</strong> XMB</p>
+<hr>
+
+<h3>문제</h3>
+<p>문제 설명...</p>
+
+<h3>입력</h3>
+<p>입력 설명...</p>
+
+<h3>출력</h3>
+<p>출력 설명...</p>
+
+<h3>예제 입력 1</h3>
+<pre>예제 입력</pre>
+
+<h3>예제 출력 1</h3>
+<pre>예제 출력</pre>
+```
+
+#### Solution.java
+문제를 분석하여 적합한 시그니처로 생성 (solve 메서드 내부는 비워둠):
+```java
+public class Solution {
+    /**
+     * [문제 요약]
+     * 
+     * @param input [입력 설명]
+     * @return [출력 설명]
+     */
+    public [ReturnType] solve([InputType] input) {
+        // TODO: 여기에 알고리즘 구현
+    }
+}
+```
+
+**중요: solve() 메서드 내부에는 답안을 작성하지 않음! 사용자가 직접 구현할 수 있도록 비워둠.**
+
+#### Main.java
+문제의 입력 형식에 맞게 파싱 로직 생성:
+```java
+import java.io.*;
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));
+        
+        // 문제에 맞는 입력 파싱
+        // ...
+        
+        Solution sol = new Solution();
+        // Solution 호출 및 결과 출력
+        // ...
+        
+        bw.flush();
+        bw.close();
+        br.close();
+    }
+}
+```
+
+#### test_cases.json
+예제 입출력을 테스트 케이스로 변환:
+```json
+{
+  "problem": {
+    "number": 문제번호,
+    "title": "문제제목",
+    "link": "https://www.acmicpc.net/problem/문제번호"
+  },
+  "solution": {
+    "method": "solve",
+    "inputType": "입력타입 설명",
+    "outputType": "출력타입 설명"
+  },
+  "testCases": [
+    {
+      "id": 1,
+      "description": "예제 1",
+      "input": "예제 입력",
+      "expected": "예제 출력"
+    }
+  ]
+}
+```
+
+#### Test.java
+`template/Test.java`를 그대로 복사 (수정 불필요)
+
+#### run.sh, test.sh
+`template/`에서 그대로 복사 (수정 불필요)
+
+## 중요 규칙
+
+1. **Solution.java의 solve() 메서드**
+   - 입력: 문자열(String)로 받음 (테스트 호환성)
+   - 출력: 문제에 맞는 타입 반환 (int, int[], String 등)
+   - Test.java가 결과를 문자열로 변환하여 비교
+
+2. **Main.java**
+   - BufferedReader/BufferedWriter 사용 (성능)
+   - Solution 클래스 호출하여 결과 출력
+   - 백준 제출 시 Solution 클래스 내용을 Main에 통합
+
+3. **test_cases.json**
+   - input: 문제의 전체 입력을 문자열로
+   - expected: 기대 출력을 문자열로
+   - 여러 줄인 경우 \n으로 구분
+
+## 예시
+
+### 10808번 알파벳 개수
+
+**Solution.java:**
+```java
+public class Solution {
+    /**
+     * 각 알파벳(a-z)의 개수를 계산
+     * 
+     * @param word 알파벳 소문자로 이루어진 단어
+     * @return 각 알파벳의 개수
+     */
+    public String solve(String word) {
+        // TODO: 여기에 알고리즘 구현
+    }
+}
+```
+
+**test_cases.json:**
+```json
+{
+  "testCases": [
+    {
+      "id": 1,
+      "description": "예제 1",
+      "input": "baekjoon",
+      "expected": "1 1 0 0 1 0 0 0 0 1 1 0 0 1 2 0 0 0 0 0 0 0 0 0 0 0"
+    }
+  ]
+}
+```
+
+## 사용자 워크플로우
+
+1. 사용자: "백준 1000번 문제 풀이 환경 만들어줘" 또는 링크 제공
+2. AI: 문제 분석 → 폴더 및 파일 자동 생성
+3. **AI: 해당 문제 폴더에서 `code .` 실행하여 VSCode 열기** ← 중요!
+4. 사용자: VSCode에서 Solution.java 알고리즘 구현 (AI 도움 없이)
+5. 사용자: `./test.sh`로 테스트
+6. 사용자: 통과 시 Main.java + Solution.java 합쳐서 백준 제출
+7. 사용자: Cursor로 돌아와서 "제출 완료" 또는 "코드 리뷰해줘" 요청
+8. AI: 코드 분석 및 리뷰 수행
+
+### 문제 환경 생성 완료 후 필수 작업
+
+파일 생성이 완료되면 반드시 다음 명령을 실행:
+
+```bash
+cd [문제폴더]
+code .
+```
+
+이렇게 하면 사용자가 VSCode에서 AI 도움 없이 직접 문제를 풀 수 있음.
+
+---
+
+## 제출 후 코드 리뷰 요청 시
+
+사용자가 "제출 완료", "코드 리뷰해줘", "분석해줘" 등을 요청하면 다음을 수행:
+
+### 0. Submit.java 생성
+
+Main.java와 Solution.java를 합쳐서 `Submit.java` 파일로 저장 (백준 제출용)
+
+### 1. 내 코드 분석
+
+**Solution.java만 분석** (Main.java, Test.java 등은 제외):
+현재 문제 폴더의 `Solution.java`를 분석하여:
+
+```markdown
+## 📝 내 코드 분석
+
+### 접근 방식
+- 사용한 알고리즘/자료구조
+- 핵심 아이디어
+
+### 시간 복잡도
+- O(?) - 분석 근거
+
+### 공간 복잡도
+- O(?) - 분석 근거
+
+### 장점
+- 잘한 점들
+
+### 개선 가능한 점
+- 더 나아질 수 있는 부분
+```
+
+### 2. 대표적인 풀이 소개
+
+웹에서 해당 문제의 대표적인/효율적인 풀이를 찾아서 소개:
+
+```markdown
+## 🏆 대표 풀이
+
+### 접근 방식
+- 알고리즘 설명
+
+### 코드
+```java
+// 대표 풀이 코드
+```
+
+### 내 코드와의 차이점
+- 어떤 점이 다른지
+- 왜 이 방식이 효율적인지/다른지
+```
+
+### 3. 학습 포인트 및 다음 단계
+
+```markdown
+## 🎯 다음에 시도해볼 것
+
+### 이 문제에서 배울 점
+- 핵심 개념/패턴
+
+### 보완할 점
+- 더 연습이 필요한 부분
+
+### 관련 문제 추천
+- 비슷한 유형의 문제 (있다면)
+
+### 도전 과제
+- 더 어려운 제약 조건으로 풀어보기
+- 다른 방식으로 풀어보기
+```
+
+### 4. REVIEW.md 생성
+
+분석 내용을 `REVIEW.md` 파일로 저장:
+
+```markdown
+# [문제번호] 문제제목 - 코드 리뷰
+
+## 📝 내 코드 분석
+...
+
+## 🏆 대표 풀이
+...
+
+## 🎯 다음에 시도해볼 것
+...
+
+---
+리뷰 일자: YYYY-MM-DD
+```
+
+## 리뷰 트리거 키워드
+
+다음 키워드가 포함되면 코드 리뷰 워크플로우 실행:
+- "제출 완료"
+- "제출했어"
+- "코드 리뷰"
+- "리뷰해줘"
+- "분석해줘"
+- "피드백"
+- "어땠어?"
