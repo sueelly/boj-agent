@@ -40,25 +40,31 @@ AI가 문제를 분석하여 자동으로 코드를 생성합니다.
 ```
 
 #### Solution.java
-문제를 분석하여 적합한 시그니처로 생성 (solve 메서드 내부는 비워둠):
+**Main에서 파싱된 값을 파라미터로 받음** (순수 알고리즘만 담당):
 ```java
 public class Solution {
     /**
      * [문제 요약]
      * 
-     * @param input [입력 설명]
-     * @return [출력 설명]
+     * @param n 수열의 크기
+     * @param arr 수열
+     * @param x 목표 값
+     * @return 결과
      */
-    public [ReturnType] solve([InputType] input) {
+    public int solve(int n, int[] arr, int x) {
         // TODO: 여기에 알고리즘 구현
+        return 0;
     }
 }
 ```
 
-**중요: solve() 메서드 내부에는 답안을 작성하지 않음! 사용자가 직접 구현할 수 있도록 비워둠.**
+**중요:**
+- solve() 내부는 비워둠 (사용자가 직접 구현)
+- 파라미터는 문제에 맞게 설정 (예: `int a, int b` / `String s` / `int n, int[][] edges`)
+- String input 하나로 받지 않고, 파싱된 값들을 개별 파라미터로 받음
 
 #### Main.java
-문제의 입력 형식에 맞게 파싱 로직 생성:
+**입력 파싱 담당** → 파싱된 값을 Solution에 전달:
 ```java
 import java.io.*;
 import java.util.*;
@@ -68,17 +74,38 @@ public class Main {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));
         
-        // 문제에 맞는 입력 파싱
-        // ...
+        // 입력 파싱
+        int n = Integer.parseInt(br.readLine().trim());
+        int[] arr = new int[n];
+        StringTokenizer st = new StringTokenizer(br.readLine());
+        for (int i = 0; i < n; i++) {
+            arr[i] = Integer.parseInt(st.nextToken());
+        }
+        int x = Integer.parseInt(br.readLine().trim());
         
+        // Solution 호출 (파싱된 값 전달)
         Solution sol = new Solution();
-        // Solution 호출 및 결과 출력
-        // ...
+        int result = sol.solve(n, arr, x);
         
+        bw.write(String.valueOf(result));
+        bw.newLine();
         bw.flush();
         bw.close();
         br.close();
     }
+}
+```
+
+#### Test.java
+**JSON input 문자열을 파싱하여 Solution에 전달**:
+```java
+// parseAndCallSolve 메서드를 문제에 맞게 작성
+private static String parseAndCallSolve(Solution sol, String input) {
+    String[] lines = input.split("\n");
+    int n = Integer.parseInt(lines[0].trim());
+    int[] arr = Arrays.stream(lines[1].split(" ")).mapToInt(Integer::parseInt).toArray();
+    int x = Integer.parseInt(lines[2].trim());
+    return String.valueOf(sol.solve(n, arr, x));
 }
 ```
 
@@ -116,36 +143,68 @@ public class Main {
 ## 중요 규칙
 
 1. **Solution.java의 solve() 메서드**
-   - 입력: 문자열(String)로 받음 (테스트 호환성)
+   - 입력: Main/Test에서 파싱된 값을 개별 파라미터로 받음
    - 출력: 문제에 맞는 타입 반환 (int, int[], String 등)
-   - Test.java가 결과를 문자열로 변환하여 비교
+   - 순수 알고리즘만 담당 (파싱 로직 없음)
 
 2. **Main.java**
-   - BufferedReader/BufferedWriter 사용 (성능)
-   - Solution 클래스 호출하여 결과 출력
-   - 백준 제출 시 Solution 클래스 내용을 Main에 통합
+   - 역할: 입력 파싱 담당
+   - BufferedReader로 입력을 읽어 적절한 타입으로 파싱
+   - 파싱된 값을 Solution.solve()에 전달
+   - 백준 제출 시 Solution 내용을 Main에 통합
 
-3. **test_cases.json**
-   - input: 문제의 전체 입력을 문자열로
+3. **Test.java**
+   - parseAndCallSolve() 메서드에서 JSON input 문자열을 파싱
+   - 파싱된 값을 Solution.solve()에 전달
+   - 문제마다 이 메서드를 수정해야 함
+
+4. **test_cases.json**
+   - input: 문제의 전체 입력을 문자열로 (\n으로 줄 구분)
    - expected: 기대 출력을 문자열로
-   - 여러 줄인 경우 \n으로 구분
 
 ## 예시
 
-### 10808번 알파벳 개수
+### 3273번 두 수의 합
 
 **Solution.java:**
 ```java
 public class Solution {
     /**
-     * 각 알파벳(a-z)의 개수를 계산
+     * 두 수의 합이 x가 되는 쌍의 개수
      * 
-     * @param word 알파벳 소문자로 이루어진 단어
-     * @return 각 알파벳의 개수
+     * @param n 수열의 크기
+     * @param arr 수열
+     * @param x 목표 합
+     * @return 조건을 만족하는 쌍의 개수
      */
-    public String solve(String word) {
+    public int solve(int n, int[] arr, int x) {
         // TODO: 여기에 알고리즘 구현
+        return 0;
     }
+}
+```
+
+**Main.java (파싱 부분):**
+```java
+int n = Integer.parseInt(br.readLine().trim());
+int[] arr = new int[n];
+StringTokenizer st = new StringTokenizer(br.readLine());
+for (int i = 0; i < n; i++) {
+    arr[i] = Integer.parseInt(st.nextToken());
+}
+int x = Integer.parseInt(br.readLine().trim());
+
+int result = sol.solve(n, arr, x);
+```
+
+**Test.java (parseAndCallSolve 부분):**
+```java
+private static String parseAndCallSolve(Solution sol, String input) {
+    String[] lines = input.split("\n");
+    int n = Integer.parseInt(lines[0].trim());
+    int[] arr = Arrays.stream(lines[1].split(" ")).mapToInt(Integer::parseInt).toArray();
+    int x = Integer.parseInt(lines[2].trim());
+    return String.valueOf(sol.solve(n, arr, x));
 }
 ```
 
@@ -156,8 +215,8 @@ public class Solution {
     {
       "id": 1,
       "description": "예제 1",
-      "input": "baekjoon",
-      "expected": "1 1 0 0 1 0 0 0 0 1 1 0 0 1 2 0 0 0 0 0 0 0 0 0 0 0"
+      "input": "9\n5 12 7 10 9 1 2 3 11\n13",
+      "expected": "3"
     }
   ]
 }

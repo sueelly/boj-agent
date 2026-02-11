@@ -99,6 +99,75 @@ template/
 
 ---
 
+### 4단계: 역할 분리 강화 🎯
+
+**핵심 아이디어**:
+> "Solution은 순수 알고리즘만 담당하고, 파싱은 Main과 Test가 담당해야 한다"
+
+**문제점 (3단계)**:
+```java
+// Solution.java - 파싱 + 알고리즘이 섞여있음
+public String solve(String input) {
+    String[] lines = input.split("\n");
+    int n = Integer.parseInt(lines[0]);
+    // ... 파싱 로직
+    // ... 알고리즘 로직
+}
+```
+
+**개선 (4단계)**:
+```java
+// Main.java - 파싱 담당
+int n = Integer.parseInt(br.readLine().trim());
+int[] arr = parseArray(br.readLine());
+int x = Integer.parseInt(br.readLine().trim());
+int result = sol.solve(n, arr, x);  // 파싱된 값 전달
+
+// Solution.java - 순수 알고리즘만
+public int solve(int n, int[] arr, int x) {
+    // 파싱 로직 없이 알고리즘만 구현
+    return 0;
+}
+
+// Test.java - parseAndCallSolve()로 JSON 파싱
+private static String parseAndCallSolve(Solution sol, String input) {
+    String[] lines = input.split("\n");
+    int n = Integer.parseInt(lines[0].trim());
+    int[] arr = Arrays.stream(lines[1].split(" ")).mapToInt(Integer::parseInt).toArray();
+    int x = Integer.parseInt(lines[2].trim());
+    return String.valueOf(sol.solve(n, arr, x));
+}
+```
+
+**장점**:
+
+| 항목 | Before (String input) | After (개별 파라미터) |
+|------|----------------------|---------------------|
+| 역할 분리 | 파싱+알고리즘 혼재 | 명확한 분리 |
+| 가독성 | solve(String) → 뭐가 들어오는지 모름 | solve(int n, int[] arr, int x) → 바로 파악 |
+| 테스트 | 문자열로 조합해서 전달 | 값을 직접 전달 |
+| 재사용성 | 파싱 로직이 Solution에 종속 | Solution은 어디서든 호출 가능 |
+
+---
+
+### 5단계: 정확한 문제 내용 가져오기 🔍
+
+**문제점**:
+- AI가 문제 내용을 기억에 의존해서 작성
+- 부정확한 문제 설명이 README에 들어가는 경우 발생
+
+**개선**:
+- `.cursorrules`에 명시: **"반드시 웹 검색(web_search)을 통해 실제 백준 문제 내용을 확인한 후 작성"**
+- 기억에 의존하지 않고 정확한 문제 설명 보장
+
+```markdown
+#### README.md
+**중요: 반드시 웹 검색(web_search)을 통해 실제 백준 문제 내용을 확인한 후 작성할 것!**
+**기억에 의존하지 말고 정확한 문제 설명을 가져와야 함.**
+```
+
+---
+
 ## 📊 최종 워크플로우
 
 ```
@@ -110,10 +179,10 @@ template/
 ┌─────────────────────────────────────────────────────────────┐
 │  2. AI가 자동 생성                                           │
 │     📁 1475-방-번호/                                         │
-│     ├── README.md        (문제 설명)                         │
-│     ├── Solution.java    (빈 solve 메서드)                   │
-│     ├── Main.java        (입력 파싱 완료)                     │
-│     ├── Test.java        (범용 테스트 러너)                   │
+│     ├── README.md        (문제 설명 - 웹 검색으로 정확히)      │
+│     ├── Solution.java    (빈 solve 메서드, 파라미터 정의)      │
+│     ├── Main.java        (입력 파싱 → Solution에 전달)        │
+│     ├── Test.java        (JSON 파싱 → Solution에 전달)        │
 │     ├── test_cases.json  (예제 테스트 케이스)                 │
 │     └── *.sh             (실행 스크립트)                      │
 └─────────────────────────────────────────────────────────────┘
@@ -187,6 +256,13 @@ baekjoon/
 ### 4. 피드백 루프 구축
 풀이 → 제출 → 리뷰 → 학습 포인트 도출 → 다음 문제 추천
 
+### 5. 관심사의 분리 (Separation of Concerns)
+- **Main.java**: 입력 파싱 (I/O 담당)
+- **Solution.java**: 순수 알고리즘 (비즈니스 로직)
+- **Test.java**: 테스트 실행 (검증 담당)
+
+이 원칙은 클린 아키텍처의 핵심이며, 코드의 테스트 용이성과 재사용성을 높임
+
 ---
 
 ## 📈 효과
@@ -195,9 +271,12 @@ baekjoon/
 |------|--------|-------|
 | 환경 세팅 시간 | 5-10분 | 10초 |
 | 수정 필요 파일 | 3-4개 | 1개 (Solution.java) |
+| Solution 역할 | 파싱 + 알고리즘 | 순수 알고리즘만 |
+| solve() 시그니처 | solve(String input) | solve(int n, int[] arr, int x) |
 | 테스트 케이스 관리 | 코드에 하드코딩 | JSON 파일 |
 | 코드 리뷰 | 없음 | 자동 생성 |
 | GitHub 업로드 | 수동 | 스크립트 자동화 |
+| 문제 설명 | AI 기억 의존 | 웹 검색으로 정확히 |
 
 ---
 
@@ -218,4 +297,5 @@ baekjoon/
 
 ---
 
-*작성일: 2026-02-11*
+*작성일: 2026-02-11*  
+*최종 수정: 2026-02-11 (역할 분리 강화, 웹 검색 정확도 개선)*
