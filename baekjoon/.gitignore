@@ -6,13 +6,18 @@
 !README.md
 !DEVLOG.md
 !commit.sh
+!run.sh
 !.cursorrules
 
 # 각 문제 폴더에서 허용할 파일들
 !*/
 !*/README.md
 !*/Solution.java
-!*/test_cases.json
+
+# test 폴더 (Parse + test_cases — 커밋하여 테스트 재현 가능)
+!*/test/
+!*/test/Parse.java
+!*/test/test_cases.json
 
 # submit 폴더 허용
 !*/submit/

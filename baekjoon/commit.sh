@@ -58,7 +58,8 @@ echo ""
 echo -e "${BLUE}➕ 파일 추가 중...${NC}"
 git add "$PROBLEM_DIR/README.md" 2>/dev/null
 git add "$PROBLEM_DIR/Solution.java" 2>/dev/null
-git add "$PROBLEM_DIR/test_cases.json" 2>/dev/null
+git add "$PROBLEM_DIR/test/Parse.java" 2>/dev/null
+git add "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null
 git add "$PROBLEM_DIR/submit/REVIEW.md" 2>/dev/null
 git add "$PROBLEM_DIR/submit/Submit.java" 2>/dev/null
 

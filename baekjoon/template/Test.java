@@ -15,11 +15,11 @@ public class Test {
 
     public static void main(String[] args) {
         try {
-            String jsonContent = new String(Files.readAllBytes(Paths.get("test_cases.json")));
+            String jsonContent = new String(Files.readAllBytes(Paths.get("test/test_cases.json")));
             runTests(jsonContent);
             printSummary();
         } catch (IOException e) {
-            System.err.println("❌ Error: test_cases.json 파일을 읽을 수 없습니다.");
+            System.err.println("❌ Error: test/test_cases.json 파일을 읽을 수 없습니다.");
             System.exit(1);
         }
     }

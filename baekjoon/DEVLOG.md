@@ -234,6 +234,25 @@ rm -f *.class  # 항상 삭제
 
 ---
 
+### 9단계: test/ 폴더 분리 · 테스트도 커밋 📂
+
+**핵심 아이디어**:
+> "중심은 Solution.java. 테스트(Parse, test_cases)는 test/로 모아 두고 둘 다 커밋해서, 필요하면 테스트까지 재현 가능하게. submit/을 둔 것처럼(백준에 그대로 붙여넣기용), test/는 '로컬 검증 재현용'."
+
+**변경 사항**:
+- 문제 폴더 루트의 `Parse.java`, `test_cases.json` → **test/Parse.java**, **test/test_cases.json** 으로 이동
+- **test/** 폴더만 보면 "이 문제의 테스트 설정"이 한눈에 들어옴
+- .gitignore·commit.sh에서 **test/** 도 추적·커밋 대상으로 포함 (예: `!*/test/`, `!*/test/Parse.java`, `!*/test/test_cases.json`, commit 시 test/ 추가)
+- template/Test.java는 `test/test_cases.json` 경로로 읽도록 수정, run.sh는 `test/Parse.java` 기준으로 컴파일·실행
+
+**정책 (저장소에서 무엇을 추적할지)**:
+- **Solution.java** — 풀이의 중심, 반드시 커밋
+- **submit/** — 백준에 그대로 붙여넣기용(Submit.java, REVIEW.md), 커밋
+- **test/** — 필요 시 테스트까지 재현 가능하도록 Parse.java, test_cases.json 커밋
+- **정책·설계 결정** — 별도 POLICY.md 없이, **DEVLOG에 단계별로 기록** (이렇게 하면 "왜 이렇게 바꿨는지"가 이력과 함께 남음)
+
+---
+
 ## 📊 최종 워크플로우
 
 ```
@@ -247,8 +266,7 @@ rm -f *.class  # 항상 삭제
 │     📁 1475-방-번호/                                         │
 │     ├── README.md        (문제 설명 - 웹 검색으로 정확히)      │
 │     ├── Solution.java    (빈 solve 메서드, 파라미터 정의)      │
-│     ├── Parse.java       (JSON 파싱 → Solution에 전달)        │
-│     └── test_cases.json  (예제 테스트 케이스)                 │
+│     └── test/            (Parse.java, test_cases.json — 커밋하여 재현) │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -292,14 +310,15 @@ baekjoon/
 │   └── submit/         # 제출 템플릿
 │
 ├── 3273-두-수의-합/     # 문제별 폴더
-│   ├── README.md       # ✅ GitHub 업로드
-│   ├── Solution.java   # ✅ GitHub 업로드
-│   ├── Parse.java      # ❌ 로컬만 (테스트용)
-│   ├── test_cases.json # ✅ GitHub 업로드
+│   ├── README.md       # ✅ 업로드
+│   ├── Solution.java   # ✅ 업로드 (중심)
+│   ├── test/           # ✅ 업로드 (테스트 재현용)
+│   │   ├── Parse.java
+│   │   └── test_cases.json
 │   │
-│   └── submit/         # 📁 제출 관련
-│       ├── Submit.java # ✅ GitHub 업로드
-│       └── REVIEW.md   # ✅ GitHub 업로드
+│   └── submit/         # ✅ 업로드 (백준 붙여넣기용)
+│       ├── Submit.java
+│       └── REVIEW.md
 │
 └── 1475-방-번호/
     └── ...
@@ -323,7 +342,7 @@ baekjoon/
 풀이 → 제출 → 리뷰 → 학습 포인트 도출 → 다음 문제 추천
 
 ### 5. 관심사의 분리 (Separation of Concerns)
-- **Parse.java**: JSON 입력 파싱 (테스트용)
+- **test/Parse.java**: JSON 입력 파싱 (테스트용)
 - **Solution.java**: 순수 알고리즘 (비즈니스 로직)
 - **template/Test.java**: 테스트 실행 (검증 담당, 공통)
 
@@ -366,4 +385,4 @@ baekjoon/
 ---
 
 *작성일: 2026-02-11*  
-*최종 수정: 2026-02-19 (템플릿 간소화, run.sh 통합, Parse 분리)*
+*최종 수정: 2026-02-19 (test/ 폴더 분리, 테스트 커밋·정책 기록 방식)*

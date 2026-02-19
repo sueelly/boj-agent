@@ -63,8 +63,10 @@ public class Solution {
 - 파라미터는 문제에 맞게 설정 (예: `int a, int b` / `String s` / `int n, int[][] edges`)
 - String input 하나로 받지 않고, 파싱된 값들을 개별 파라미터로 받음
 
-#### Parse.java
-**template의 ParseAndCallSolve 인터페이스를 구현.** JSON input 문자열을 파싱하여 Solution.solve()에 전달하고 결과 문자열 반환:
+#### test/ 폴더
+테스트 관련 파일만 모아 두어 **중심은 Solution.java**, 필요 시 테스트까지 재현 가능하도록 함. 둘 다 커밋 대상.
+
+**test/Parse.java** — template의 ParseAndCallSolve 인터페이스 구현. JSON input을 파싱해 Solution.solve()에 전달:
 ```java
 public class Parse implements ParseAndCallSolve {
     @Override
@@ -77,10 +79,9 @@ public class Parse implements ParseAndCallSolve {
     }
 }
 ```
-- 문제마다 입력 형식에 맞게 위 메서드만 작성. 테스트 러너는 `template/Test.java`를 루트의 `./run.sh [문제번호]`로 실행 시 자동 사용.
+- 문제마다 입력 형식에 맞게 위 메서드만 작성. 테스트는 루트에서 `./run.sh [문제번호]` 로 실행.
 
-#### test_cases.json
-예제 입출력을 테스트 케이스로 변환:
+**test/test_cases.json** — 예제 입출력:
 ```json
 {
   "problem": {
@@ -114,15 +115,16 @@ public class Parse implements ParseAndCallSolve {
    - 출력: 문제에 맞는 타입 반환 (int, int[], String 등)
    - 순수 알고리즘만 담당 (파싱 로직 없음)
 
-2. **Parse.java**
+2. **test/Parse.java**
    - template의 ParseAndCallSolve 인터페이스 구현
    - parseAndCallSolve(Solution sol, String input)에서 JSON input 문자열을 파싱
    - 파싱된 값을 Solution.solve()에 전달하고 반환값을 문자열로 반환
-   - 문제마다 이 클래스만 작성 (테스트 러너는 template 공통 사용)
+   - 테스트 러너는 template 공통 사용
 
-3. **test_cases.json**
+3. **test/test_cases.json**
    - input: 문제의 전체 입력을 문자열로 (\n으로 줄 구분)
    - expected: 기대 출력을 문자열로
+   - test/ 폴더에 두어 테스트도 커밋·공유 가능
 
 ## 예시
 
@@ -146,7 +148,7 @@ public class Solution {
 }
 ```
 
-**Parse.java:**
+**test/Parse.java:**
 ```java
 public class Parse implements ParseAndCallSolve {
     @Override
