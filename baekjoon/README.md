@@ -52,19 +52,22 @@ cd <algorithm>/baekjoon
 | `boj run 4949` | 테스트 실행 |
 | `boj commit 4949 ["메시지"]` | 해당 문제 폴더 커밋 |
 | `boj make 4949` | **Cursor Agent CLI**로 환경 생성 요청 (또는 에디터 열기+클립보드 안내) |
+| `boj open 4949` | 해당 문제 폴더를 **에디터 루트**로 열기 (없으면 make 실행 후 다시 open) |
 | `boj review 4949` | **Cursor Agent CLI**로 리뷰 요청 (또는 에디터 열기+클립보드 안내) |
 
 - **make**: Agent CLI 있으면 `agent chat "..."`로 환경 생성. 없으면 baekjoon 폴더를 Cursor로 열고, 채팅에 붙여넣기 안내 → AI가 폴더 생성 후 **해당 폴더에서 `code .`** 로 VS Code만 연다 (풀 때 AI 없음).
+- **open**: 문제 풀기 시작할 때 **해당 문제 폴더만** 루트로 VS Code/Cursor를 열 때 사용. 폴더가 없으면 `make`를 먼저 실행한다.
 - **review**: Agent CLI 있으면 `agent chat "리뷰해줘"`. 없으면 문제 폴더를 **VS Code**로 열고 채팅 안내.
 - **레포 찾기**: 현재 디렉터리에서 위로 올라가며 `baekjoon/template/Test.java`가 있는지 보고, 없으면 설치 시 저장한 **BOJ_ROOT** 사용.
 
 ### 1. 새 문제 시작하기
 
 **방법 A — boj CLI (권장)**  
-Cursor Agent CLI가 있으면 한 줄로 환경 생성:
+Cursor Agent CLI가 있으면 한 줄로 환경 생성. 이미 폴더가 있으면 **해당 폴더만** 루트로 열려면 `boj open 4949`:
 
 ```bash
-boj make 4949
+boj make 4949   # 환경 없을 때
+boj open 4949   # 해당 문제 폴더만 에디터 루트로 열기 (없으면 make 후 다시 open)
 ```
 
 **방법 B — Cursor 채팅**  

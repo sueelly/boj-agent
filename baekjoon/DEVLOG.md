@@ -270,7 +270,7 @@ rm -f *.class  # 항상 삭제
 - **boj** 단일 스크립트: 위 방식으로 baekjoon 루트 확정 후, run/commit 로직을 **인라인**으로 수행. (run.sh, commit.sh 제거)
 - **setup-boj-cli.sh**: 한 번 실행 시 `~/bin/boj` 설치, **레포 경로(BOJ_ROOT)** 및 PATH를 .zshrc에 저장 → 어디서든 `boj`만 사용.
 - repo 탐지: `run.sh` 대신 `baekjoon/template/Test.java` 존재 여부로 판별.
-- 서브커맨드: `boj run`, `boj commit`, `boj make`, `boj review`.
+- 서브커맨드: `boj run`, `boj commit`, `boj make`, `boj open`, `boj review`.
 
 **run.sh / commit.sh 제거 및 boj 통합**  
 - 처음에는 boj가 `run.sh`, `commit.sh`를 호출하는 래퍼였으나, 사용처가 boj 하나로 통일되므로 **run/commit 로직을 boj 안으로 인라인**하고 run.sh, commit.sh는 삭제함.
@@ -283,6 +283,14 @@ rm -f *.class  # 항상 삭제
 
 **문제 폴더는 무조건 code .**  
 - 풀 때 AI 없이 풀어야 하므로, 생성된 문제 폴더를 여는 에디터는 **항상 `code .`(VS Code)**. Cursor가 아닌 VS Code로 열어서 AI 도움 없이 구현하도록 함.
+
+**전역 사용 보장 (~/.config/boj/root)**  
+- Cursor 터미널 등에서 .zshrc가 로드되지 않으면 BOJ_ROOT가 비어 있을 수 있음.  
+- 설치 시 레포 경로를 `~/.config/boj/root`에 저장하고, boj 실행 시 BOJ_ROOT가 없으면 이 파일에서 읽어서 사용 → 어디서든 `boj` 동작 보장.
+
+**boj open**  
+- 문제 풀기를 시작할 때 **해당 문제 폴더만** 에디터 루트로 열기: `boj open 4949`.  
+- 폴더가 없으면 `boj make`를 먼저 실행한 뒤, "생성 후 다시 boj open 4949" 안내.
 
 ---
 
@@ -299,11 +307,11 @@ rm -f *.class  # 항상 삭제
 │     📁 4949-균형잡힌-세상/                                    │
 │     ├── README.md, Solution.java                             │
 │     └── test/ (Parse.java, test_cases.json)                 │
-│     → 생성된 폴더에서 code . 실행 (VS Code만, 풀 때 AI 없음)   │
+│     → boj open 4949 로 해당 폴더만 루트로 열기 (cursor/code)  │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  3. VS Code에서 알고리즘만 구현 (AI 도움 없이)                  │
+│  3. 에디터에서 알고리즘만 구현 (AI 도움 없이)                    │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -326,7 +334,7 @@ rm -f *.class  # 항상 삭제
 baekjoon/
 ├── .cursorrules        # AI 가이드라인
 ├── .gitignore          # 필요한 파일만 업로드
-├── boj                 # CLI 통합 (run/commit/make/review, 설치 시 레포 경로 저장)
+├── boj                 # CLI 통합 (run/commit/make/open/review, 설치 시 레포 경로 저장)
 ├── setup-boj-cli.sh    # boj 한 번 설치 — BOJ_ROOT·PATH 설정
 ├── README.md           # 사용 가이드
 ├── template/           # 공통 템플릿 (ParseAndCallSolve, Test 등)
@@ -408,4 +416,4 @@ baekjoon/
 ---
 
 *작성일: 2026-02-11*  
-*최종 수정: 2026-02-19 (boj CLI 추가, make/review는 컨텍스트·안내만)*
+*최종 수정: 2026-02-19 (boj open 추가, ~/.config/boj/root로 전역 사용 보장)*

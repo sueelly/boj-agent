@@ -2,7 +2,7 @@
 # ======================================
 # boj — 백준 문제 풀이 CLI (어디서든 실행)
 # ======================================
-# 사용: boj run 4949 | boj commit 4949 | boj make 4949 | boj review 4949
+# 사용: boj run 4949 | boj commit 4949 | boj make 4949 | boj open 4949 | boj review 4949
 # 설치: baekjoon/setup-boj-cli.sh 한 번 실행 (레포 경로 저장)
 # ======================================
 
@@ -36,11 +36,12 @@ find_baekjoon_root() {
 }
 
 print_usage() {
-  echo "사용법: boj <run|commit|make|review> [문제번호] [커밋메시지]"
+  echo "사용법: boj <run|commit|make|open|review> [문제번호] [커밋메시지]"
   echo ""
   echo "  boj run 4949          — 테스트 실행"
   echo "  boj commit 4949 [msg] — 해당 문제 폴더 커밋"
   echo "  boj make 4949         — Cursor Agent CLI로 환경 생성 (또는 에디터+클립보드 안내)"
+  echo "  boj open 4949         — 해당 문제 폴더를 에디터 루트로 열기 (없으면 make 후 안내)"
   echo "  boj review 4949       — Cursor Agent CLI로 리뷰 요청 (또는 에디터+클립보드 안내)"
   echo ""
   echo "설치: cd <algorithm>/baekjoon && ./setup-boj-cli.sh  (한 번만 실행, 레포 경로 저장)"
@@ -158,6 +159,28 @@ case "$SUBCOMMAND" in
       echo "   Cursor Agent CLI 설치 시 채팅 없이 자동 실행: curl https://cursor.com/install -fsSL | bash"
       echo "   $PROMPT"
     fi
+    ;;
+  open)
+    if [[ -z "$PROBLEM_NUM" ]]; then
+      echo "사용법: boj open [문제번호]"
+      echo "  해당 문제 폴더를 VS Code/Cursor 루트로 엽니다. 없으면 먼저 make를 실행합니다."
+      exit 1
+    fi
+    PROBLEM_DIR=$(find "$ROOT" -maxdepth 1 -type d -name "${PROBLEM_NUM}*" | head -1)
+    if [[ -z "$PROBLEM_DIR" || ! -d "$PROBLEM_DIR" ]]; then
+      echo "📁 '${PROBLEM_NUM}' 문제 폴더가 없습니다. 먼저 환경을 생성합니다."
+      echo "   생성이 끝나면 다시 'boj open $PROBLEM_NUM' 으로 해당 폴더만 열 수 있습니다."
+      exec "$0" make "$PROBLEM_NUM"
+    fi
+    if command -v cursor &>/dev/null; then
+      cursor "$PROBLEM_DIR"
+    elif command -v code &>/dev/null; then
+      code "$PROBLEM_DIR"
+    else
+      echo "Error: cursor 또는 code CLI가 PATH에 없습니다. 수동으로 열어주세요: $PROBLEM_DIR"
+      exit 1
+    fi
+    echo "✅ 해당 문제 폴더를 에디터로 열었습니다: $PROBLEM_DIR"
     ;;
   review)
     if [[ -z "$PROBLEM_NUM" ]]; then
