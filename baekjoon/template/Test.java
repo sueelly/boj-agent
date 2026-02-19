@@ -4,11 +4,9 @@ import java.util.*;
 import java.util.regex.*;
 
 /**
- * JSON 기반 테스트 러너
- * 
- * test_cases.json의 input 문자열을 파싱하여 Solution에 전달
- * 
- * ⚠️ 문제마다 parseAndCallSolve() 메서드를 수정해야 함!
+ * JSON 기반 테스트 러너 (공통)
+ * test_cases.json을 읽어 문제 폴더의 Parse 구현체로 파싱 후 Solution에 전달.
+ * 사용: 루트에서 ./run.sh [문제번호]
  */
 public class Test {
 
@@ -26,47 +24,31 @@ public class Test {
         }
     }
 
-    /**
-     * ⚠️ 문제마다 이 메서드를 수정해야 함!
-     * 
-     * input 문자열을 파싱하여 Solution.solve()에 전달하고 결과 반환
-     */
-    private static String parseAndCallSolve(Solution sol, String input) {
-        // 예시: 3273번 두 수의 합
-        // String[] lines = input.split("\n");
-        // int n = Integer.parseInt(lines[0].trim());
-        // int[] arr = Arrays.stream(lines[1].split(" ")).mapToInt(Integer::parseInt).toArray();
-        // int x = Integer.parseInt(lines[2].trim());
-        // return String.valueOf(sol.solve(n, arr, x));
-        
-        // TODO: 문제에 맞게 파싱 로직 작성
-        return "";
-    }
-
-    // ========== 아래는 수정 불필요 ==========
-
     private static void runTests(String jsonContent) {
         Solution sol = new Solution();
-        
+        ParseAndCallSolve parser = new Parse();
+
         System.out.println("🧪 테스트 시작");
         System.out.println("==========================================");
-        
+
         List<TestCase> testCases = parseTestCases(jsonContent);
-        
+
         for (TestCase tc : testCases) {
-            runSingleTest(sol, tc);
+            runSingleTest(sol, parser, tc);
         }
     }
 
-    private static void runSingleTest(Solution sol, TestCase tc) {
+    private static void runSingleTest(Solution sol, ParseAndCallSolve parser, TestCase tc) {
         try {
-            String result = parseAndCallSolve(sol, tc.input);
-            
+            String result = parser.parseAndCallSolve(sol, tc.input);
+            System.out.flush();
+            System.err.flush();
+
             String normalizedResult = normalizeOutput(result);
             String normalizedExpected = normalizeOutput(tc.expected);
-            
+
             boolean isPassed = normalizedResult.equals(normalizedExpected);
-            
+
             if (isPassed) {
                 passed++;
                 System.out.printf("✅ 테스트 %d: 통과", tc.id);
@@ -77,12 +59,12 @@ public class Test {
                 System.out.printf("   기대값: %s%n", tc.expected);
                 System.out.printf("   결과값: %s%n", result);
             }
-            
+
             if (tc.description != null && !tc.description.isEmpty()) {
                 System.out.printf(" (%s)", tc.description);
             }
             System.out.println();
-            
+
         } catch (Exception e) {
             failed++;
             System.out.printf("❌ 테스트 %d: 에러 - %s%n", tc.id, e.getMessage());
@@ -95,48 +77,48 @@ public class Test {
 
     private static List<TestCase> parseTestCases(String json) {
         List<TestCase> testCases = new ArrayList<>();
-        
+
         Pattern arrayPattern = Pattern.compile("\"testCases\"\\s*:\\s*\\[([\\s\\S]*?)\\]\\s*\\}", Pattern.MULTILINE);
         Matcher arrayMatcher = arrayPattern.matcher(json);
-        
+
         if (!arrayMatcher.find()) {
             System.err.println("⚠️ Warning: testCases 배열을 찾을 수 없습니다.");
             return testCases;
         }
-        
+
         String arrayContent = arrayMatcher.group(1);
         Pattern objPattern = Pattern.compile("\\{([^{}]*)\\}");
         Matcher objMatcher = objPattern.matcher(arrayContent);
-        
+
         while (objMatcher.find()) {
             String objContent = objMatcher.group(1);
             TestCase tc = new TestCase();
-            
+
             Pattern idPattern = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
             Matcher idMatcher = idPattern.matcher(objContent);
             if (idMatcher.find()) tc.id = Integer.parseInt(idMatcher.group(1));
-            
+
             Pattern descPattern = Pattern.compile("\"description\"\\s*:\\s*\"([^\"]*)\"");
             Matcher descMatcher = descPattern.matcher(objContent);
             if (descMatcher.find()) tc.description = descMatcher.group(1);
-            
+
             Pattern inputPattern = Pattern.compile("\"input\"\\s*:\\s*\"([^\"]*)\"");
             Matcher inputMatcher = inputPattern.matcher(objContent);
             if (inputMatcher.find()) tc.input = unescapeJson(inputMatcher.group(1));
-            
+
             Pattern expectedPattern = Pattern.compile("\"expected\"\\s*:\\s*\"([^\"]*)\"");
             Matcher expectedMatcher = expectedPattern.matcher(objContent);
             if (expectedMatcher.find()) tc.expected = unescapeJson(expectedMatcher.group(1));
-            
+
             if (tc.input != null && tc.expected != null) testCases.add(tc);
         }
-        
+
         return testCases;
     }
 
     private static String unescapeJson(String str) {
         return str.replace("\\n", "\n").replace("\\t", "\t")
-                  .replace("\\\"", "\"").replace("\\\\", "\\");
+                .replace("\\\"", "\"").replace("\\\\", "\\");
     }
 
     private static void printSummary() {

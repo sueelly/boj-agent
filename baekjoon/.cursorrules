@@ -40,7 +40,7 @@ AI가 문제를 분석하여 자동으로 코드를 생성합니다.
 ```
 
 #### Solution.java
-**Main에서 파싱된 값을 파라미터로 받음** (순수 알고리즘만 담당):
+**파싱된 값을 파라미터로 받음** (순수 알고리즘만 담당):
 ```java
 public class Solution {
     /**
@@ -63,51 +63,21 @@ public class Solution {
 - 파라미터는 문제에 맞게 설정 (예: `int a, int b` / `String s` / `int n, int[][] edges`)
 - String input 하나로 받지 않고, 파싱된 값들을 개별 파라미터로 받음
 
-#### Main.java
-**입력 파싱 담당** → 파싱된 값을 Solution에 전달:
+#### Parse.java
+**template의 ParseAndCallSolve 인터페이스를 구현.** JSON input 문자열을 파싱하여 Solution.solve()에 전달하고 결과 문자열 반환:
 ```java
-import java.io.*;
-import java.util.*;
-
-public class Main {
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));
-        
-        // 입력 파싱
-        int n = Integer.parseInt(br.readLine().trim());
-        int[] arr = new int[n];
-        StringTokenizer st = new StringTokenizer(br.readLine());
-        for (int i = 0; i < n; i++) {
-            arr[i] = Integer.parseInt(st.nextToken());
-        }
-        int x = Integer.parseInt(br.readLine().trim());
-        
-        // Solution 호출 (파싱된 값 전달)
-        Solution sol = new Solution();
-        int result = sol.solve(n, arr, x);
-        
-        bw.write(String.valueOf(result));
-        bw.newLine();
-        bw.flush();
-        bw.close();
-        br.close();
+public class Parse implements ParseAndCallSolve {
+    @Override
+    public String parseAndCallSolve(Solution sol, String input) {
+        String[] lines = input.split("\n");
+        int n = Integer.parseInt(lines[0].trim());
+        int[] arr = Arrays.stream(lines[1].split("\\s+")).mapToInt(Integer::parseInt).toArray();
+        int x = Integer.parseInt(lines[2].trim());
+        return String.valueOf(sol.solve(n, arr, x));
     }
 }
 ```
-
-#### Test.java
-**JSON input 문자열을 파싱하여 Solution에 전달**:
-```java
-// parseAndCallSolve 메서드를 문제에 맞게 작성
-private static String parseAndCallSolve(Solution sol, String input) {
-    String[] lines = input.split("\n");
-    int n = Integer.parseInt(lines[0].trim());
-    int[] arr = Arrays.stream(lines[1].split(" ")).mapToInt(Integer::parseInt).toArray();
-    int x = Integer.parseInt(lines[2].trim());
-    return String.valueOf(sol.solve(n, arr, x));
-}
-```
+- 문제마다 입력 형식에 맞게 위 메서드만 작성. 테스트 러너는 `template/Test.java`를 루트의 `./run.sh [문제번호]`로 실행 시 자동 사용.
 
 #### test_cases.json
 예제 입출력을 테스트 케이스로 변환:
@@ -134,31 +104,23 @@ private static String parseAndCallSolve(Solution sol, String input) {
 }
 ```
 
-#### Test.java
-`template/Test.java`를 그대로 복사 (수정 불필요)
-
-#### run.sh, test.sh
-`template/`에서 그대로 복사 (수정 불필요)
+#### 생성하지 않는 파일
+- Main.java, Test.java, run.sh, test.sh — 생성하지 않음. 테스트는 **백준 루트에서** `./run.sh [문제번호]` 로 실행.
 
 ## 중요 규칙
 
 1. **Solution.java의 solve() 메서드**
-   - 입력: Main/Test에서 파싱된 값을 개별 파라미터로 받음
+   - 입력: Parse에서 파싱된 값을 개별 파라미터로 받음
    - 출력: 문제에 맞는 타입 반환 (int, int[], String 등)
    - 순수 알고리즘만 담당 (파싱 로직 없음)
 
-2. **Main.java**
-   - 역할: 입력 파싱 담당
-   - BufferedReader로 입력을 읽어 적절한 타입으로 파싱
-   - 파싱된 값을 Solution.solve()에 전달
-   - 백준 제출 시 Solution 내용을 Main에 통합
+2. **Parse.java**
+   - template의 ParseAndCallSolve 인터페이스 구현
+   - parseAndCallSolve(Solution sol, String input)에서 JSON input 문자열을 파싱
+   - 파싱된 값을 Solution.solve()에 전달하고 반환값을 문자열로 반환
+   - 문제마다 이 클래스만 작성 (테스트 러너는 template 공통 사용)
 
-3. **Test.java**
-   - parseAndCallSolve() 메서드에서 JSON input 문자열을 파싱
-   - 파싱된 값을 Solution.solve()에 전달
-   - 문제마다 이 메서드를 수정해야 함
-
-4. **test_cases.json**
+3. **test_cases.json**
    - input: 문제의 전체 입력을 문자열로 (\n으로 줄 구분)
    - expected: 기대 출력을 문자열로
 
@@ -184,27 +146,17 @@ public class Solution {
 }
 ```
 
-**Main.java (파싱 부분):**
+**Parse.java:**
 ```java
-int n = Integer.parseInt(br.readLine().trim());
-int[] arr = new int[n];
-StringTokenizer st = new StringTokenizer(br.readLine());
-for (int i = 0; i < n; i++) {
-    arr[i] = Integer.parseInt(st.nextToken());
-}
-int x = Integer.parseInt(br.readLine().trim());
-
-int result = sol.solve(n, arr, x);
-```
-
-**Test.java (parseAndCallSolve 부분):**
-```java
-private static String parseAndCallSolve(Solution sol, String input) {
-    String[] lines = input.split("\n");
-    int n = Integer.parseInt(lines[0].trim());
-    int[] arr = Arrays.stream(lines[1].split(" ")).mapToInt(Integer::parseInt).toArray();
-    int x = Integer.parseInt(lines[2].trim());
-    return String.valueOf(sol.solve(n, arr, x));
+public class Parse implements ParseAndCallSolve {
+    @Override
+    public String parseAndCallSolve(Solution sol, String input) {
+        String[] lines = input.split("\n");
+        int n = Integer.parseInt(lines[0].trim());
+        int[] arr = Arrays.stream(lines[1].split("\\s+")).mapToInt(Integer::parseInt).toArray();
+        int x = Integer.parseInt(lines[2].trim());
+        return String.valueOf(sol.solve(n, arr, x));
+    }
 }
 ```
 
@@ -225,11 +177,11 @@ private static String parseAndCallSolve(Solution sol, String input) {
 ## 사용자 워크플로우
 
 1. 사용자: "백준 1000번 문제 풀이 환경 만들어줘" 또는 링크 제공
-2. AI: 문제 분석 → 폴더 및 파일 자동 생성
+2. AI: 문제 분석 → 폴더 및 **README.md, Solution.java, Parse.java, test_cases.json** 자동 생성
 3. **AI: 해당 문제 폴더에서 `code .` 실행하여 VSCode 열기** ← 중요!
 4. 사용자: VSCode에서 Solution.java 알고리즘 구현 (AI 도움 없이)
-5. 사용자: `./test.sh`로 테스트
-6. 사용자: 통과 시 Main.java + Solution.java 합쳐서 백준 제출
+5. 사용자: **백준 루트에서** `./run.sh [문제번호]` 로 테스트
+6. 사용자: 통과 시 "제출해줘" 요청 → AI가 submit/Submit.java 생성 (Solution을 Main 클래스·입출력 포함 형태로)
 7. 사용자: Cursor로 돌아와서 "제출 완료" 또는 "코드 리뷰해줘" 요청
 8. AI: 코드 분석 및 리뷰 수행
 
@@ -252,7 +204,7 @@ code .
 
 ### 0. submit 폴더에 Submit.java 생성
 
-Main.java와 Solution.java를 합쳐서 `submit/Submit.java` 파일로 저장 (백준 제출용)
+Solution.java의 로직을 백준 제출 형식(클래스명 Main, 표준 입출력 포함)으로 `submit/Submit.java` 파일로 저장 (백준 제출용)
 
 ### 1. 내 코드 분석
 

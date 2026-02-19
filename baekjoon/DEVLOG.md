@@ -209,6 +209,31 @@ rm -f *.class  # 항상 삭제
 
 ---
 
+### 8단계: 템플릿 간소화 · run.sh 통합 · Parse 분리 🧩
+
+**핵심 아이디어**:
+> "Main/run/test는 제거하고, 테스트는 루트 하나의 run.sh로. 테스트 공통 로직은 template에 두고, 문제별로 Parse만 구현"
+
+**변경 사항**:
+
+| 구분 | Before | After |
+|------|--------|--------|
+| 문제 폴더 | Main.java, Test.java, run.sh, test.sh 포함 | **Parse.java** + Solution, README, test_cases.json 만 |
+| 테스트 실행 | `cd [폴더]` 후 `./test.sh` | **루트에서** `./run.sh [문제번호]` |
+| 테스트 로직 | 문제마다 Test.java 전체 복사, parseAndCallSolve만 수정 | **template/Test.java** 공통 사용, **Parse.java**가 ParseAndCallSolve 구현 |
+
+**구조**:
+- **template/**: `ParseAndCallSolve.java`(인터페이스), `Test.java`(공통 러너), Solution·test_cases 예시. Main·run·test 제거.
+- **루트 run.sh**: `./run.sh 4949` → 해당 문제 폴더로 이동 후 template + Solution + Parse 컴파일·실행.
+- **문제 폴더**: `Parse.java`에서 `parseAndCallSolve(Solution sol, String input)` 만 구현.
+
+**장점**:
+- 보일러플레이트 감소 (Main·Test·스크립트 복사 없음)
+- 테스트 실행 방식 통일 (commit.sh와 같은 문제번호 인자)
+- Parse 한 파일만 수정하면 되어 유지보수 용이
+
+---
+
 ## 📊 최종 워크플로우
 
 ```
@@ -222,10 +247,8 @@ rm -f *.class  # 항상 삭제
 │     📁 1475-방-번호/                                         │
 │     ├── README.md        (문제 설명 - 웹 검색으로 정확히)      │
 │     ├── Solution.java    (빈 solve 메서드, 파라미터 정의)      │
-│     ├── Main.java        (입력 파싱 → Solution에 전달)        │
-│     ├── Test.java        (JSON 파싱 → Solution에 전달)        │
-│     ├── test_cases.json  (예제 테스트 케이스)                 │
-│     └── *.sh             (실행 스크립트)                      │
+│     ├── Parse.java       (JSON 파싱 → Solution에 전달)        │
+│     └── test_cases.json  (예제 테스트 케이스)                 │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -235,7 +258,7 @@ rm -f *.class  # 항상 삭제
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  4. 테스트 & 제출                                            │
-│     ./test.sh → 로컬 검증                                    │
+│     ./run.sh [문제번호] → 로컬 검증 (백준 루트에서)            │
 │     백준 제출 → "제출 완료" 요청                               │
 └─────────────────────────────────────────────────────────────┘
                               ↓
@@ -264,16 +287,15 @@ baekjoon/
 ├── .gitignore          # 필요한 파일만 업로드
 ├── commit.sh           # GitHub 커밋 자동화
 ├── README.md           # 사용 가이드
-├── template/           # 기본 템플릿 (AI 참고용)
+├── run.sh              # 테스트 실행 (./run.sh [문제번호])
+├── template/           # 공통 템플릿 (ParseAndCallSolve, Test 등)
 │   └── submit/         # 제출 템플릿
 │
 ├── 3273-두-수의-합/     # 문제별 폴더
 │   ├── README.md       # ✅ GitHub 업로드
 │   ├── Solution.java   # ✅ GitHub 업로드
+│   ├── Parse.java      # ❌ 로컬만 (테스트용)
 │   ├── test_cases.json # ✅ GitHub 업로드
-│   ├── Main.java       # ❌ 로컬만
-│   ├── Test.java       # ❌ 로컬만
-│   ├── *.sh            # ❌ 로컬만
 │   │
 │   └── submit/         # 📁 제출 관련
 │       ├── Submit.java # ✅ GitHub 업로드
@@ -301,9 +323,9 @@ baekjoon/
 풀이 → 제출 → 리뷰 → 학습 포인트 도출 → 다음 문제 추천
 
 ### 5. 관심사의 분리 (Separation of Concerns)
-- **Main.java**: 입력 파싱 (I/O 담당)
+- **Parse.java**: JSON 입력 파싱 (테스트용)
 - **Solution.java**: 순수 알고리즘 (비즈니스 로직)
-- **Test.java**: 테스트 실행 (검증 담당)
+- **template/Test.java**: 테스트 실행 (검증 담당, 공통)
 
 이 원칙은 클린 아키텍처의 핵심이며, 코드의 테스트 용이성과 재사용성을 높임
 
@@ -344,4 +366,4 @@ baekjoon/
 ---
 
 *작성일: 2026-02-11*  
-*최종 수정: 2026-02-11 (submit 폴더 분리, 스크립트 개선)*
+*최종 수정: 2026-02-19 (템플릿 간소화, run.sh 통합, Parse 분리)*

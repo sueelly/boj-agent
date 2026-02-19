@@ -14,20 +14,19 @@ baekjoon/
 ├── .cursorrules        # AI 가이드 (Cursor가 참조)
 ├── .gitignore          # GitHub 업로드 파일 설정
 ├── commit.sh           # GitHub 커밋 자동화
-├── template/           # 기본 템플릿 (AI 참고용)
-│   ├── Solution.java
-│   ├── Main.java
-│   ├── Test.java
-│   ├── run.sh, test.sh
-│   └── submit/         # 제출 템플릿
+├── run.sh              # 테스트 실행 (./run.sh [문제번호])
+├── template/           # 공통 템플릿 (수정 불필요)
+│   ├── ParseAndCallSolve.java   # 인터페이스
+│   ├── Test.java                # 테스트 러너
+│   ├── Solution.java            # 예시
+│   ├── test_cases.json          # 예시
+│   └── submit/                  # 제출 템플릿
 │
 └── [문제번호]-[문제제목]/  # 각 문제별 폴더
     ├── README.md         # 문제 설명
     ├── Solution.java     # 알고리즘 (내가 구현)
-    ├── Main.java         # 입력 파싱 (AI 생성)
-    ├── Test.java         # 테스트 러너 (AI 생성)
+    ├── Parse.java        # JSON → Solution 파싱 (AI 생성)
     ├── test_cases.json   # 테스트 케이스
-    ├── run.sh, test.sh   # 실행 스크립트
     │
     └── submit/           # 📁 제출 관련
         ├── Submit.java   # 백준 제출용 코드
@@ -49,7 +48,7 @@ https://www.acmicpc.net/problem/1000 이 문제 풀이 환경 만들어줘
 ```
 
 **AI가 자동으로 수행:**
-- 📁 폴더 생성 + 모든 파일 자동 생성
+- 📁 폴더 생성 + README.md, Solution.java, Parse.java, test_cases.json 생성
 - 🔍 웹 검색으로 정확한 문제 내용 가져오기
 - 💻 VSCode 자동 실행 (`code .`)
 
@@ -88,17 +87,17 @@ public int solve(int n, int[] arr, int x) {
 
 ### 4. 테스트 실행
 
+**백준 폴더 루트에서** 문제 번호만 입력해 테스트:
+
 ```bash
-cd [문제폴더]
-./test.sh    # 테스트 케이스 검증
-./run.sh     # 직접 입력 테스트
+./run.sh 4949    # 4949번 문제 테스트
+./run.sh 3273    # 3273번 문제 테스트
 ```
-> 스크립트 실행 후 `.class` 파일은 자동 삭제됩니다.
+> 실행 후 `.class` 파일은 자동 삭제됩니다.
 
 ### 5. 백준 제출
 
-`Main.java`와 `Solution.java`를 합쳐서 제출하거나,
-AI에게 "백준 제출용 코드 만들어줘"라고 요청하세요.
+AI에게 "제출해줘" 또는 "백준 제출용 코드 만들어줘"라고 요청하면 `submit/Submit.java` 생성.
 
 ```
 제출할 수 있게 만들어줘
@@ -110,7 +109,7 @@ AI에게 "백준 제출용 코드 만들어줘"라고 요청하세요.
 ```
 → AI가 `submit/REVIEW.md` 생성 (코드 분석 + 대표 풀이 비교)
 
-### 5. GitHub 커밋
+### 6. GitHub 커밋
 
 ```bash
 ./commit.sh 3273                    # 문제 번호만 입력
@@ -122,10 +121,9 @@ AI에게 "백준 제출용 코드 만들어줘"라고 요청하세요.
 | 파일 | 역할 | 수정 필요 |
 |------|------|----------|
 | `Solution.java` | **순수 알고리즘** (파싱 없음) | ✅ 직접 구현 |
-| `Main.java` | 입력 파싱 → Solution 호출 | ❌ AI 생성 |
-| `Test.java` | JSON 파싱 → Solution 호출 | ❌ AI 생성 |
+| `Parse.java` | JSON input 파싱 → Solution 호출 | ❌ AI 생성 |
 | `test_cases.json` | 테스트 입출력 데이터 | ✅ 케이스 추가 가능 |
-| `submit/Submit.java` | 백준 제출용 (Main+Solution) | ❌ AI 생성 |
+| `submit/Submit.java` | 백준 제출용 (Solution 로직 + 입출력) | ❌ AI 생성 |
 | `submit/REVIEW.md` | 코드 리뷰 | ❌ AI 생성 |
 
 ## 💡 워크플로우 요약
@@ -133,19 +131,19 @@ AI에게 "백준 제출용 코드 만들어줘"라고 요청하세요.
 ```
 1. "백준 XXXX번 문제 환경 만들어줘"
        ↓
-2. AI가 폴더 + 파일 자동 생성 → VSCode 실행
+2. AI가 폴더 + README, Solution, Parse, test_cases.json 생성 → VSCode 실행
        ↓
 3. Solution.java에서 알고리즘만 구현 (AI 도움 없이)
        ↓
-4. ./test.sh로 테스트
+4. ./run.sh [문제번호] 로 테스트 (백준 루트에서)
        ↓
-5. "제출할 수 있게 만들어줘" → submit/Submit.java 생성
+5. "제출해줘" → submit/Submit.java 생성
        ↓
 6. 백준에 제출
        ↓
-7. "제출 완료" → submit/REVIEW.md 생성 (코드 리뷰)
+7. "제출 완료" / "리뷰해줘" → submit/REVIEW.md 생성
        ↓
-8. ./commit.sh 3273 → GitHub 업로드
+8. ./commit.sh [문제번호] → GitHub 업로드
 ```
 
 ## 📊 GitHub 업로드 파일
@@ -157,7 +155,7 @@ AI에게 "백준 제출용 코드 만들어줘"라고 요청하세요.
 | `test_cases.json` | ✅ |
 | `submit/Submit.java` | ✅ |
 | `submit/REVIEW.md` | ✅ |
-| `Main.java`, `Test.java`, `*.sh` | ❌ 로컬만 |
+| `Parse.java` | ❌ 로컬만 (테스트용) |
 
 ## ⚠️ 주의사항
 
