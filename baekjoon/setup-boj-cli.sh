@@ -19,7 +19,10 @@ mkdir -p "$BIN_DIR"
 cp "$BOJ_SCRIPT" "$BIN_DIR/boj"
 chmod +x "$BIN_DIR/boj"
 
-echo "✅ $BIN_DIR/boj 에 설치했습니다."
+# 레포 경로를 파일로 저장 — BOJ_ROOT가 로드되지 않는 터미널(Cursor 등)에서도 boj 동작
+mkdir -p "$HOME/.config/boj"
+echo "$REPO_ROOT" > "$HOME/.config/boj/root"
+echo "✅ $BIN_DIR/boj 에 설치했습니다. (레포 경로: $HOME/.config/boj/root)"
 echo ""
 
 # Cursor Agent CLI (boj make / boj review용)

@@ -267,9 +267,14 @@ rm -f *.class  # 항상 삭제
 우선 현재 디렉터리에서 위로 올라가며 `baekjoon/run.sh`가 있는 디렉터리를 찾고, 없으면 환경변수 `BOJ_ROOT`(algorithm 루트 또는 baekjoon 경로)를 사용. 전체 탐색은 하지 않음.
 
 **구현**:
-- **boj** 래퍼 스크립트: 위 방식으로 baekjoon 루트 확정 후, `run.sh` / `commit.sh` 호출.
-- **setup-boj-cli.sh**: 한 번 실행 시 `~/bin/boj`에 래퍼 설치, 필요 시 PATH·BOJ_ROOT를 .zshrc에 추가.
-- 서브커맨드: `boj run 4949`, `boj commit 4949 [메시지]`, `boj make 4949`, `boj review 4949`.
+- **boj** 단일 스크립트: 위 방식으로 baekjoon 루트 확정 후, run/commit 로직을 **인라인**으로 수행. (run.sh, commit.sh 제거)
+- **setup-boj-cli.sh**: 한 번 실행 시 `~/bin/boj` 설치, **레포 경로(BOJ_ROOT)** 및 PATH를 .zshrc에 저장 → 어디서든 `boj`만 사용.
+- repo 탐지: `run.sh` 대신 `baekjoon/template/Test.java` 존재 여부로 판별.
+- 서브커맨드: `boj run`, `boj commit`, `boj make`, `boj review`.
+
+**run.sh / commit.sh 제거 및 boj 통합**  
+- 처음에는 boj가 `run.sh`, `commit.sh`를 호출하는 래퍼였으나, 사용처가 boj 하나로 통일되므로 **run/commit 로직을 boj 안으로 인라인**하고 run.sh, commit.sh는 삭제함.
+- 설치 시 **레포 주소(경로)** 만 저장해 두면 되므로, setup-boj-cli.sh에서 BOJ_ROOT를 한 번 설정하면 어디서든 `boj`만 쓰면 됨.
 
 **boj make / boj review — Cursor Agent CLI 사용**  
 - **make**: `agent`가 있으면 `agent chat -f -p "..."` 로 환경 생성. 없으면 baekjoon을 Cursor로 열고 클립보드 안내 → 사용자가 채팅에 붙여넣으면 AI가 폴더 생성 후 **해당 폴더에서 `code .`만 실행** (문제 풀 때 AI 없어야 하므로 VS Code만 사용).  
@@ -303,23 +308,13 @@ rm -f *.class  # 항상 삭제
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  4. 테스트 & 제출                                             │
-│     boj run 4949  (또는 ./run.sh 4949)                       │
-│     "제출해줘" → submit/Submit.java → 백준 제출                 │
+│     boj run 4949  / "제출해줘" → submit/Submit.java → 백준 제출 │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  5. AI 코드 리뷰                                             │
-|     boj review 4949  또는 "리뷰해줘" → submit/REVIEW.md       │
-│     📝 내 코드 분석 (시간/공간 복잡도, 장단점)                  │
-│     🏆 대표 풀이 비교                                         │
-│     🎯 학습 포인트 & 다음 문제 추천                            │
-│     📄 REVIEW.md 자동 생성                                   │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  6. GitHub 커밋                                              │
-│     boj commit 4949  → GitHub                               |
-|        필요한 파일만 자동 커밋 (.gitignore 설정)                   │
+│  5. 리뷰 & 커밋                                               │
+│     boj review 4949  또는 "리뷰해줘" → submit/REVIEW.md        │
+│     boj commit 4949  → GitHub (필요한 파일만 자동 커밋)        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -331,10 +326,8 @@ rm -f *.class  # 항상 삭제
 baekjoon/
 ├── .cursorrules        # AI 가이드라인
 ├── .gitignore          # 필요한 파일만 업로드
-├── commit.sh           # GitHub 커밋 자동화
-├── run.sh              # 테스트 실행 (./run.sh [문제번호])
-├── boj                 # CLI 래퍼 (설치 후 어디서든 boj run/make/review)
-├── setup-boj-cli.sh    # boj CLI 한 번 설치용
+├── boj                 # CLI 통합 (run/commit/make/review, 설치 시 레포 경로 저장)
+├── setup-boj-cli.sh    # boj 한 번 설치 — BOJ_ROOT·PATH 설정
 ├── README.md           # 사용 가이드
 ├── template/           # 공통 템플릿 (ParseAndCallSolve, Test 등)
 │   └── submit/         # 제출 템플릿

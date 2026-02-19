@@ -13,10 +13,8 @@ baekjoon/
 ├── DEVLOG.md           # 자동화 개발 과정 기록
 ├── .cursorrules        # AI 가이드 (Cursor가 참조)
 ├── .gitignore          # GitHub 업로드 파일 설정
-├── commit.sh           # GitHub 커밋 자동화
-├── run.sh              # 테스트 실행 (./run.sh [문제번호])
-├── boj                 # CLI 래퍼 (설치 시 어디서든 사용)
-├── setup-boj-cli.sh    # boj 한 번 설치용
+├── boj                 # CLI (run/commit/make/review 통합, 설치 시 어디서든 사용)
+├── setup-boj-cli.sh    # boj 한 번 설치 — 레포 경로(BOJ_ROOT) 저장
 ├── template/           # 공통 템플릿 (수정 불필요)
 │   ├── ParseAndCallSolve.java   # 인터페이스
 │   ├── Test.java                # 테스트 러너
@@ -38,16 +36,16 @@ baekjoon/
 
 ## 🚀 사용 방법
 
-### 0. (선택) boj CLI — 어디서든 실행
+### 0. boj CLI 설치 (한 번만 — 레포 경로 저장)
 
-한 번만 설치하면 터미널 어디서든 `boj run 4949`처럼 사용할 수 있습니다.
+한 번만 **이 폴더(baekjoon)**에서 설치하면, 이후에는 **어느 디렉터리에서든** `boj run 4949`처럼 사용하면 됩니다. 매번 `cd baekjoon` 할 필요 없고, 설치 시 저장한 **BOJ_ROOT**로 레포를 찾습니다.
 
 ```bash
 cd <algorithm>/baekjoon
 ./setup-boj-cli.sh
 ```
 
-설치 후 (새 터미널 또는 `source ~/.zshrc`):
+설치 시 PATH·BOJ_ROOT를 .zshrc에 넣을지, Cursor Agent CLI 설치할지 묻습니다. 설치 후 (새 터미널 또는 `source ~/.zshrc`):
 
 | 명령 | 설명 |
 |------|------|
@@ -58,7 +56,7 @@ cd <algorithm>/baekjoon
 
 - **make**: Agent CLI 있으면 `agent chat "..."`로 환경 생성. 없으면 baekjoon 폴더를 Cursor로 열고, 채팅에 붙여넣기 안내 → AI가 폴더 생성 후 **해당 폴더에서 `code .`** 로 VS Code만 연다 (풀 때 AI 없음).
 - **review**: Agent CLI 있으면 `agent chat "리뷰해줘"`. 없으면 문제 폴더를 **VS Code**로 열고 채팅 안내.
-- **repo 찾기**: 현재 디렉터리에서 위로 올라가며 `baekjoon/run.sh`를 찾고, 없으면 `BOJ_ROOT` 사용. `setup-boj-cli.sh` 실행 시 BOJ_ROOT·PATH 추가 여부를 물어봄.
+- **레포 찾기**: 현재 디렉터리에서 위로 올라가며 `baekjoon/template/Test.java`가 있는지 보고, 없으면 설치 시 저장한 **BOJ_ROOT** 사용.
 
 ### 1. 새 문제 시작하기
 
@@ -118,18 +116,11 @@ public int solve(int n, int[] arr, int x) {
 
 ### 4. 테스트 실행
 
-**boj 설치 후** 어디서든:
+**boj**로 어디서든:
 
 ```bash
 boj run 4949
 boj run 3273
-```
-
-또는 백준 폴더에서 직접:
-
-```bash
-cd <algorithm>/baekjoon
-./run.sh 4949
 ```
 > 실행 후 `.class` 파일은 자동 삭제됩니다.
 
@@ -145,7 +136,6 @@ cd <algorithm>/baekjoon
 boj commit 4949
 boj commit 4949 "투 포인터 풀이"
 ```
-또는 `./commit.sh 4949 ["메시지"]` (백준 폴더에서).
 
 ## 📄 파일 역할
 
@@ -166,7 +156,7 @@ boj commit 4949 "투 포인터 풀이"
        ↓
 3. VS Code에서 Solution.java만 구현 (AI 없이)
        ↓
-4. boj run 4949  (또는 ./run.sh 4949) 로 테스트
+4. boj run 4949  로 테스트
        ↓
 5. "제출해줘" → submit/Submit.java → 백준 제출
        ↓

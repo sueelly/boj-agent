@@ -5,8 +5,6 @@
 !.gitignore
 !README.md
 !DEVLOG.md
-!commit.sh
-!run.sh
 !boj
 !setup-boj-cli.sh
 !.cursorrules
