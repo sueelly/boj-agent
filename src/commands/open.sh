@@ -32,10 +32,16 @@ EDITOR_CMD="${OPT_EDITOR:-$boj_editor}"
 PROBLEM_DIR=$(boj_find_problem_dir "$ROOT" "$PROBLEM_NUM")
 if [[ -z "$PROBLEM_DIR" || ! -d "$PROBLEM_DIR" ]]; then
   echo -e "${YELLOW}📁 '${PROBLEM_NUM}' 문제 폴더가 없습니다. 먼저 환경을 생성합니다.${NC}"
-  echo "   생성 후: boj open $PROBLEM_NUM"
   if [[ -x "$ROOT/src/boj" ]]; then
-    exec "$ROOT/src/boj" make "$PROBLEM_NUM"
+    "$ROOT/src/boj" make "$PROBLEM_NUM" || exit $?
+    PROBLEM_DIR=$(boj_find_problem_dir "$ROOT" "$PROBLEM_NUM")
+    if [[ -n "$PROBLEM_DIR" && -d "$PROBLEM_DIR" ]]; then
+      boj_open_editor "$PROBLEM_DIR" "$EDITOR_CMD" || exit 1
+      echo -e "${GREEN}✅ 해당 문제 폴더를 에디터로 열었습니다: $(basename "$PROBLEM_DIR")${NC}"
+      exit 0
+    fi
   fi
+  echo "   생성 후: boj open $PROBLEM_NUM"
   exit 1
 fi
 
