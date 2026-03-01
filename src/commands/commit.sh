@@ -132,20 +132,23 @@ echo ""
 # ======= git add (문제 폴더 파일) =======
 echo -e "${BLUE}➕ 파일 추가 중...${NC}"
 
-# 언어 감지
+# 언어 감지 (Python은 템플릿 convention solution.py 또는 Solution.py)
 lang_ext=""
-if [[ -f "$PROBLEM_DIR/Solution.java" ]]; then lang_ext="java"
-elif [[ -f "$PROBLEM_DIR/Solution.py" ]]; then lang_ext="py"
-elif [[ -f "$PROBLEM_DIR/Solution.cpp" ]]; then lang_ext="cpp"
-elif [[ -f "$PROBLEM_DIR/Solution.c" ]]; then lang_ext="c"
-elif [[ -f "$PROBLEM_DIR/Solution.kt" ]]; then lang_ext="kt"
-elif [[ -f "$PROBLEM_DIR/Solution.go" ]]; then lang_ext="go"
+solution_basename=""
+if [[ -f "$PROBLEM_DIR/Solution.java" ]]; then lang_ext="java"; solution_basename="Solution.java"
+elif [[ -f "$PROBLEM_DIR/solution.py" || -f "$PROBLEM_DIR/Solution.py" ]]; then
+  lang_ext="py"
+  if [[ -f "$PROBLEM_DIR/solution.py" ]]; then solution_basename="solution.py"; else solution_basename="Solution.py"; fi
+elif [[ -f "$PROBLEM_DIR/Solution.cpp" ]]; then lang_ext="cpp"; solution_basename="Solution.cpp"
+elif [[ -f "$PROBLEM_DIR/Solution.c" ]]; then lang_ext="c"; solution_basename="Solution.c"
+elif [[ -f "$PROBLEM_DIR/Solution.kt" ]]; then lang_ext="kt"; solution_basename="Solution.kt"
+elif [[ -f "$PROBLEM_DIR/Solution.go" ]]; then lang_ext="go"; solution_basename="Solution.go"
 fi
 
 # 핵심 파일들만 명시적으로 add
 files_to_add=()
 [[ -f "$PROBLEM_DIR/README.md" ]] && files_to_add+=("$PROBLEM_NAME/README.md")
-[[ -n "$lang_ext" && -f "$PROBLEM_DIR/Solution.$lang_ext" ]] && files_to_add+=("$PROBLEM_NAME/Solution.$lang_ext")
+[[ -n "$lang_ext" && -n "$solution_basename" && -f "$PROBLEM_DIR/$solution_basename" ]] && files_to_add+=("$PROBLEM_NAME/$solution_basename")
 [[ -f "$PROBLEM_DIR/test/test_cases.json" ]] && files_to_add+=("$PROBLEM_NAME/test/test_cases.json")
 [[ -n "$lang_ext" && -f "$PROBLEM_DIR/test/Parse.$lang_ext" ]] && files_to_add+=("$PROBLEM_NAME/test/Parse.$lang_ext")
 [[ -f "$PROBLEM_DIR/submit/REVIEW.md" ]] && files_to_add+=("$PROBLEM_NAME/submit/REVIEW.md")

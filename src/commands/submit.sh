@@ -53,13 +53,19 @@ case "$LANG" in
     exit 1 ;;
 esac
 
+# Python은 템플릿 convention solution.py 우선 (run.sh와 동일)
 SOLUTION_FILE="$PROBLEM_DIR/Solution.$EXT"
+if [[ "$LANG" == "python" ]]; then
+  if [[ -f "$PROBLEM_DIR/solution.py" ]]; then SOLUTION_FILE="$PROBLEM_DIR/solution.py"
+  elif [[ -f "$PROBLEM_DIR/Solution.py" ]]; then SOLUTION_FILE="$PROBLEM_DIR/Solution.py"
+  fi
+fi
 PARSE_FILE="$PROBLEM_DIR/test/Parse.$EXT"
 SUBMIT_PATH="$PROBLEM_DIR/$SUBMIT_FILE"
 
 # Solution 파일 확인
 if [[ ! -f "$SOLUTION_FILE" ]]; then
-  echo -e "${RED}Error: $SOLUTION_FILE 이 없습니다. 먼저 풀이를 작성하세요.${NC}" >&2
+  echo -e "${RED}Error: Solution 파일이 없습니다 (solution.py 또는 Solution.$EXT). 먼저 풀이를 작성하세요.${NC}" >&2
   exit 1
 fi
 
