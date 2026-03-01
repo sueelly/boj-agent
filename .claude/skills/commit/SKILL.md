@@ -96,4 +96,27 @@ git diff --staged | grep -E "(password|secret|api_key)\s*=\s*['\"][^$\{\(]"
 git commit -m "feat(auth): add JWT token generation [#42]"
 ```
 
-성공 시: "커밋 완료. /done 으로 PR을 생성하거나 계속 개발하세요."
+## 7. DEVLOG 업데이트
+
+커밋 성공 후 `docs/DEVLOG.md` 상단(구조화 섹션)에 항목을 추가한다.
+
+```bash
+# DEVLOG 존재 여부 확인
+ls docs/DEVLOG.md 2>/dev/null || echo "DEVLOG 없음 — 건너뜀"
+```
+
+DEVLOG가 있으면 다음 형식으로 **파일 상단 (첫 번째 `---` 구분선 바로 아래)** 에 삽입:
+
+```markdown
+## [YYYY-MM-DD] <커밋 메시지 제목> [#N]
+**변경 요약:** <한 줄 설명 — diff에서 자동 추론>
+**의사결정:** <선택한 방법과 이유, 이슈 본문 참고>
+**검증 방법:** <테스트/명령 — 이슈 Acceptance Criteria에서 추론>
+---
+```
+
+- 날짜: `date +%Y-%m-%d`
+- 이슈번호·제목: 위 단계에서 파악한 값 재사용
+- 변경 요약·의사결정·검증 방법: diff와 이슈 본문에서 자동 추론 (간결하게 1~2줄)
+
+성공 시: "커밋 완료 + DEVLOG 업데이트. /done 으로 PR을 생성하거나 계속 개발하세요."
