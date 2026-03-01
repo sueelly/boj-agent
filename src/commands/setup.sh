@@ -146,21 +146,21 @@ if [[ "${skip_session:-false}" != "true" ]]; then
   else
     echo "  스킵 (나중에 boj setup 으로 추가 가능)"
   fi
+fi
 
-  # BOJ 사용자 ID
-  current_user="$(boj_config_get user "")"
-  if [[ -z "$current_user" ]]; then
-    read -p "  BOJ 사용자 ID (통계 조회용, 없으면 Enter 스킵): " new_user
-    if [[ -n "$new_user" ]]; then
-      if ! boj_config_set user "$new_user"; then
-        echo -e "  ${RED}설정 저장 실패.${NC}" >&2
-        exit 1
-      fi
-      echo -e "  ${GREEN}✓ 저장됨${NC}"
+# BOJ 사용자 ID (세션과 독립 — commit 통계용)
+current_user="$(boj_config_get user "")"
+if [[ -z "$current_user" ]]; then
+  read -p "  BOJ 사용자 ID (통계 조회용, 없으면 Enter 스킵): " new_user
+  if [[ -n "$new_user" ]]; then
+    if ! boj_config_set user "$new_user"; then
+      echo -e "  ${RED}설정 저장 실패.${NC}" >&2
+      exit 1
     fi
-  else
-    echo "  사용자 ID: $current_user"
+    echo -e "  ${GREEN}✓ 저장됨${NC}"
   fi
+else
+  echo "  사용자 ID: $current_user"
 fi
 
 echo ""

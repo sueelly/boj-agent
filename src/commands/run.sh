@@ -94,13 +94,11 @@ case "$LANG" in
     normalized="$(normalize_test_cases "$PROBLEM_DIR/test/test_cases.json")"
     # -s: 파일이 존재하고 내용이 있는 경우에만 교체 (빈 파일로 원본 덮어쓰기 방지)
     if [[ -s "$normalized" ]]; then
-      # trap 먼저 설정 — 중간 실패 시에도 정규화/백업 파일 정리 (첫 trap만 $normalized 참조)
-      trap 'rm -f "$PROBLEM_DIR/test/test_cases_normalized.json" "$normalized" 2>/dev/null' EXIT
+      # 단일 trap: 복원 + 정리 (중간 exit 시에도 원본 복구 보장)
+      trap 'cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" "$normalized" 2>/dev/null' EXIT
       cp "$normalized" "$PROBLEM_DIR/test/test_cases_normalized.json" || { echo -e "${RED}Error: 정규화 파일 복사 실패${NC}" >&2; exit 1; }
       rm -f "$normalized"
       cp "$PROBLEM_DIR/test/test_cases.json" "$PROBLEM_DIR/test/test_cases_orig.json" || { echo -e "${RED}Error: 원본 백업 실패${NC}" >&2; exit 1; }
-      # 복원용 trap으로 교체 — 아래 trap에는 $normalized 넣지 말 것 (이미 삭제됨, 8eff7aa)
-      trap 'cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" 2>/dev/null' EXIT
       cp "$PROBLEM_DIR/test/test_cases_normalized.json" "$PROBLEM_DIR/test/test_cases.json" || { echo -e "${RED}Error: 정규화 파일 적용 실패${NC}" >&2; exit 1; }
     else
       rm -f "$normalized"
@@ -128,13 +126,11 @@ case "$LANG" in
     # test_cases.json 정규화 (원본 비파괴)
     normalized="$(normalize_test_cases "$PROBLEM_DIR/test/test_cases.json")"
     if [[ -s "$normalized" ]]; then
-      # trap 먼저 설정 — 중간 실패 시에도 정규화/백업 파일 정리 (첫 trap만 $normalized 참조)
-      trap 'rm -f "$PROBLEM_DIR/test/test_cases_normalized.json" "$normalized" 2>/dev/null' EXIT
+      # 단일 trap: 복원 + 정리 (중간 exit 시에도 원본 복구 보장)
+      trap 'cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" "$normalized" 2>/dev/null' EXIT
       cp "$normalized" "$PROBLEM_DIR/test/test_cases_normalized.json" || { echo -e "${RED}Error: 정규화 파일 복사 실패${NC}" >&2; exit 1; }
       rm -f "$normalized"
       cp "$PROBLEM_DIR/test/test_cases.json" "$PROBLEM_DIR/test/test_cases_orig.json" || { echo -e "${RED}Error: 원본 백업 실패${NC}" >&2; exit 1; }
-      # 복원용 trap으로 교체 — 아래 trap에는 $normalized 넣지 말 것 (이미 삭제됨, 8eff7aa)
-      trap 'cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" 2>/dev/null' EXIT
       cp "$PROBLEM_DIR/test/test_cases_normalized.json" "$PROBLEM_DIR/test/test_cases.json" || { echo -e "${RED}Error: 정규화 파일 적용 실패${NC}" >&2; exit 1; }
     else
       rm -f "$normalized"
