@@ -107,7 +107,8 @@ if [[ -n "$AGENT_CMD" ]]; then
   echo -e "  문제: ${PROBLEM_NUM} | 언어: ${LANG} | 이미지: ${IMAGE_MODE}"
   echo ""
   PROMPT="$(build_prompt)"
-  (cd "$OUTPUT_DIR" && eval "$AGENT_CMD" "$PROMPT")
+  read -ra CMD <<< "$AGENT_CMD"
+  (cd "$OUTPUT_DIR" && "${CMD[@]}" "$PROMPT")
   exit_code=$?
 
   if [[ $exit_code -ne 0 ]]; then

@@ -35,7 +35,8 @@ fi
 
 if [[ -n "$AGENT_CMD" ]]; then
   echo -e "${BLUE}🔄 에이전트로 리뷰 요청 중... (작업 디렉터리: $PROBLEM_DIR)${NC}"
-  if ! (cd "$PROBLEM_DIR" && eval "$AGENT_CMD" "$REVIEW_PROMPT"); then
+  read -ra CMD <<< "$AGENT_CMD"
+  if ! (cd "$PROBLEM_DIR" && "${CMD[@]}" "$REVIEW_PROMPT"); then
     echo -e "${RED}Error: 에이전트 실행 실패. 수동으로 리뷰를 요청하세요.${NC}" >&2
     exit 1
   fi
