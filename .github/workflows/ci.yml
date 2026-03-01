@@ -8,142 +8,39 @@ on:
 
 jobs:
   # ============================================================
-  # Java / Kotlin (Gradle) — 프로젝트에 맞게 조정
+  # BOJ CLI Bash 테스트
   # ============================================================
-  build-and-test-java:
-    if: |
-      hashFiles('gradlew') != '' ||
-      hashFiles('mvnw') != ''
+  boj-tests:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up Java 21 (Java 템플릿 컴파일 확인용)
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: gradle  # 또는 maven
 
-      # --- Gradle 빌드 ---
-      - name: Grant execute permission for gradlew
-        if: hashFiles('gradlew') != ''
-        run: chmod +x gradlew
-
-      - name: Build with Gradle
-        if: hashFiles('gradlew') != ''
-        run: ./gradlew build
-        env:
-          SPRING_PROFILES_ACTIVE: test
-
-      # --- Maven 빌드 ---
-      - name: Build with Maven
-        if: hashFiles('mvnw') != ''
-        run: ./mvnw verify
-        env:
-          SPRING_PROFILES_ACTIVE: test
-
-      # --- 테스트 결과 PR 코멘트 ---
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: |
-            **/build/test-results/**/*.xml
-            **/target/surefire-reports/**/*.xml
-
-      # --- 아키텍처 테스트: 파일이 있을 때만 실행, 실패 시 job 실패 ---
-      - name: Architecture Test (Java/Kotlin)
+      - name: Run all tests
         run: |
-          if [ -f "gradlew" ] && find . -path "*/test/*" -name "*ArchitectureTest*" 2>/dev/null | grep -q .; then
-            echo "=== Architecture Test ==="
-            ./gradlew test --tests "*ArchitectureTest"
+          chmod +x tests/run_tests.sh
+          ./tests/run_tests.sh
+
+      - name: Check Java template compilation
+        run: |
+          echo "=== Java 템플릿 컴파일 확인 ==="
+          if find templates/java -name "*.java" 2>/dev/null | grep -q .; then
+            javac templates/java/*.java \
+              && echo "✅ Java 템플릿 컴파일 성공" \
+              || { echo "❌ Java 템플릿 컴파일 실패"; exit 1; }
+          else
+            echo "⚠️ templates/java/*.java 없음 — 스킵"
           fi
 
   # ============================================================
-  # Node.js (프론트/풀스택) — package.json 있을 때만 실행
-  # ============================================================
-  build-and-test-node:
-    if: hashFiles('package.json') != ''
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-        # build 스크립트가 없는 프로젝트는 package.json에 "build": "echo 'no-op'" 추가 권장
-
-      - name: Run tests
-        run: npm test
-
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: |
-            **/junit.xml
-            **/test-results/**/*.xml
-
-  # ============================================================
-  # Python — 프로젝트에 맞게 조정
-  # ============================================================
-  build-and-test-python:
-    if: |
-      hashFiles('pyproject.toml') != '' ||
-      hashFiles('setup.py') != '' ||
-      hashFiles('requirements.txt') != ''
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: pip
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f "pyproject.toml" ]; then pip install -e ".[dev]"; fi
-          if [ -f "requirements-dev.txt" ]; then pip install -r requirements-dev.txt; fi
-          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
-
-      - name: Run tests
-        run: |
-          pytest --tb=short --junitxml=junit.xml -v
-
-      # 아키텍처 테스트 파일이 있을 때만 실행, 실패 시 job 실패
-      - name: Architecture Tests (Python)
-        run: |
-          if [ -f "tests/test_architecture.py" ]; then
-            echo "=== Architecture Tests ==="
-            pytest tests/test_architecture.py -v
-          fi
-
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: junit.xml
-
-  # ============================================================
-  # 보안 스캔 — 모든 프로젝트 공통
+  # 보안 스캔 — 하드코딩 시크릿 + 위험 패턴
   # ============================================================
   security-scan:
     runs-on: ubuntu-latest
@@ -157,17 +54,12 @@ jobs:
           echo "=== 하드코딩된 시크릿 스캔 ==="
           FOUND=false
 
-          # 공통 시크릿 패턴 스캔
           SECRETS=$(grep -rn \
             -E "(password|secret|api_key|apikey|token|passwd)\s*=\s*['\"][^$\{(\s][^'\"]{3,}" \
-            --include="*.java" \
-            --include="*.kt" \
-            --include="*.py" \
-            --include="*.ts" \
-            --include="*.js" \
+            --include="*.sh" \
             --include="*.yml" \
             --include="*.yaml" \
-            --include="*.properties" \
+            --include="*.json" \
             . 2>/dev/null \
             | grep -v "test\|Test\|example\|placeholder\|TODO\|#\|//" \
             || true)
@@ -184,25 +76,20 @@ jobs:
             exit 1
           fi
 
-      - name: Scan for dangerous patterns
+      - name: Scan for dangerous shell patterns
         run: |
-          echo "=== 위험 패턴 스캔 ==="
+          echo "=== 위험 패턴 스캔 (Bash) ==="
 
-          # printStackTrace 스캔 (경고만)
-          STACK=$(grep -rn "printStackTrace()" --include="*.java" --include="*.kt" src/ 2>/dev/null || true)
-          if [ -n "$STACK" ]; then
-            echo "⚠️ WARNING: printStackTrace() 발견 (Logger 사용 권장):"
-            echo "$STACK"
+          # rm -rf / 또는 ~ 패턴
+          DANGEROUS=$(grep -rn \
+            -E "rm\s+-rf\s+(/|~|\$HOME)" \
+            --include="*.sh" \
+            . 2>/dev/null | grep -v "test\|#" || true)
+
+          if [ -n "$DANGEROUS" ]; then
+            echo "❌ 위험한 rm -rf 패턴 발견:"
+            echo "$DANGEROUS"
+            exit 1
           fi
 
-          # Python print() in src (경고만)
-          if [ -d "src" ] || [ -d "app" ]; then
-            PRINT_DIR="${SRC_DIR:-src}"
-            PRINTS=$(grep -rn "^\s*print(" --include="*.py" "$PRINT_DIR/" 2>/dev/null | grep -v "test\|#" || true)
-            if [ -n "$PRINTS" ]; then
-              echo "⚠️ WARNING: print() 발견 (logger 사용 권장):"
-              echo "$PRINTS" | head -10
-            fi
-          fi
-
-          echo "✅ 위험 패턴 스캔 완료"
+          echo "✅ 위험 패턴 없음"
