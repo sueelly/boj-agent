@@ -16,16 +16,17 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # 설정 파일에서 값 읽기 (환경변수 > 파일 > 기본값)
+# 반환: 값만 출력 (후행 개행 없음 — 비교/검증 일관성)
 boj_config_get() {
   local key="$1"
   local default="${2:-}"
   local env_var="BOJ_$(echo "$key" | tr '[:lower:]' '[:upper:]')"
   # 환경변수 확인
   if [[ -n "${!env_var:-}" ]]; then
-    echo "${!env_var}"
+    echo -n "${!env_var}"
     return 0
   fi
-  # 파일 확인 (한 줄만 읽어 후행 개행/공백 제거 — case/validate 매칭 보장)
+  # 파일 확인 (한 줄만 읽어 후행 개행 제거)
   local file="$BOJ_CONFIG_DIR/$key"
   if [[ -f "$file" ]]; then
     local val
@@ -34,7 +35,7 @@ boj_config_get() {
     return 0
   fi
   # 기본값
-  echo "$default"
+  echo -n "$default"
 }
 
 # 설정 파일에 값 저장
