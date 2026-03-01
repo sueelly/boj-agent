@@ -1,0 +1,30 @@
+# SonarCloud: PR 시 코드 품질·보안 검사 (무료, 공개 저장소)
+# 사용 전: https://sonarcloud.io 에서 저장소 연결 후 SONAR_TOKEN 시크릿 추가
+# 프로젝트별로 sonar-project.properties 또는 빌드 도구에 projectKey/organization 설정
+# 상세: https://docs.sonarcloud.io/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/
+name: SonarCloud
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Java/Kotlin: ci.yml에서 빌드 후 실행하려면 별도 job으로 나누거나, 여기서 빌드 후 스캔
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # 프로젝트 루트에 sonar-project.properties 있으면 자동 사용.
+        # 없으면 아래처럼 인자로 전달:
+        # with:
+        #   args: >
+        #     -Dsonar.organization=YOUR_ORG
+        #     -Dsonar.projectKey=YOUR_PROJECT_KEY

@@ -1,0 +1,52 @@
+# Dependabot: 의존성 자동 업데이트
+# - 하는 일: Gradle/Maven/npm/pip/GitHub Actions 의존성 버전을 주기적으로 검사해서,
+#   업데이트 가능하면 "Bump xxx from 1.0 to 1.1" 형태의 PR을 자동 생성.
+# - 보안 패치·마이너 업데이트를 놓치지 않게 함. (security.md "의존성 보안" 규칙과 맞춤)
+# - 복사 후 .github/dependabot.yml 로 두거나, 기존 파일에 병합
+# - 사용하지 않는 ecosystem은 해당 블록 삭제하면 됨.
+
+version: 2
+updates:
+  # Gradle (Java/Kotlin)
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+
+  # Maven
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+
+  # npm (Node/프론트)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+
+  # pip (Python)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
