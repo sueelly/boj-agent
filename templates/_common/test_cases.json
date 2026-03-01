@@ -1,0 +1,20 @@
+{
+  "problem": {
+    "number": 0,
+    "title": "문제 제목",
+    "link": "https://www.acmicpc.net/problem/0"
+  },
+  "solution": {
+    "method": "solve",
+    "inputType": "String",
+    "outputType": "int"
+  },
+  "testCases": [
+    {
+      "id": 1,
+      "description": "예제 1",
+      "input": "입력 문자열 (줄 구분은 \\n)",
+      "expected": "기대 출력 문자열"
+    }
+  ]
+}

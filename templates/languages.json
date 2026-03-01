@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "description": "BOJ 지원 언어 메타데이터. boj make --lang <key> 로 선택.",
+  "languages": {
+    "java": {
+      "name": "Java 11",
+      "extension": "java",
+      "compile": "javac -cp .:$TEMPLATE $TEMPLATE/ParseAndCallSolve.java $TEMPLATE/Test.java Solution.java test/Parse.java",
+      "run": "java -cp .:test:$TEMPLATE Test",
+      "template_dir": "java",
+      "skeleton": {
+        "solution": "Solution.java",
+        "parse": "test/Parse.java",
+        "submit": "submit/Submit.java"
+      },
+      "submit_class": "Main",
+      "boj_lang_id": 28,
+      "notes": "Java 11 (OpenJDK). BOJ 채점 서버 기준."
+    },
+    "python": {
+      "name": "Python 3.10",
+      "extension": "py",
+      "compile": null,
+      "run": "python3 $TEMPLATE/test_runner.py",
+      "template_dir": "python",
+      "skeleton": {
+        "solution": "solution.py",
+        "parse": "test/parse.py",
+        "submit": "submit/Submit.py"
+      },
+      "submit_class": null,
+      "boj_lang_id": 28,
+      "notes": "PyPy3 사용 시 boj_lang_id=74 사용."
+    },
+    "cpp": {
+      "name": "C++17",
+      "extension": "cpp",
+      "compile": "g++ -std=c++17 -O2 -o solution Solution.cpp",
+      "run": "./solution",
+      "template_dir": "cpp",
+      "skeleton": {
+        "solution": "Solution.cpp",
+        "parse": null,
+        "submit": "submit/Submit.cpp"
+      },
+      "submit_class": null,
+      "boj_lang_id": 84,
+      "notes": "C++17. #include <bits/stdc++.h> 사용 가능."
+    },
+    "c": {
+      "name": "C11",
+      "extension": "c",
+      "compile": "gcc -std=c11 -O2 -o solution Solution.c -lm",
+      "run": "./solution",
+      "template_dir": "c",
+      "skeleton": {
+        "solution": "Solution.c",
+        "parse": null,
+        "submit": "submit/Submit.c"
+      },
+      "submit_class": null,
+      "boj_lang_id": 75,
+      "notes": "C11 (gcc)."
+    },
+    "kotlin": {
+      "name": "Kotlin 1.9",
+      "extension": "kt",
+      "compile": "kotlinc Solution.kt -include-runtime -d solution.jar",
+      "run": "java -jar solution.jar",
+      "template_dir": "kotlin",
+      "skeleton": {
+        "solution": "Solution.kt",
+        "parse": null,
+        "submit": "submit/Submit.kt"
+      },
+      "submit_class": null,
+      "boj_lang_id": 69,
+      "notes": "Kotlin 1.9. fun main() 포함."
+    },
+    "go": {
+      "name": "Go 1.21",
+      "extension": "go",
+      "compile": "go build -o solution Solution.go",
+      "run": "./solution",
+      "template_dir": "go",
+      "skeleton": {
+        "solution": "Solution.go",
+        "parse": null,
+        "submit": "submit/Submit.go"
+      },
+      "submit_class": null,
+      "boj_lang_id": 12,
+      "notes": "Go 1.21. package main + func main()."
+    },
+    "rust": {
+      "name": "Rust 2021",
+      "extension": "rs",
+      "compile": "rustc -O -o solution Solution.rs",
+      "run": "./solution",
+      "template_dir": "rust",
+      "skeleton": {
+        "solution": "Solution.rs",
+        "parse": null,
+        "submit": "submit/Submit.rs"
+      },
+      "submit_class": null,
+      "boj_lang_id": 113,
+      "notes": "Rust 2021 edition."
+    },
+    "ruby": {
+      "name": "Ruby 3.2",
+      "extension": "rb",
+      "compile": null,
+      "run": "ruby Solution.rb",
+      "template_dir": "ruby",
+      "skeleton": {
+        "solution": "Solution.rb",
+        "parse": null,
+        "submit": "submit/Submit.rb"
+      },
+      "submit_class": null,
+      "boj_lang_id": 68,
+      "notes": "Ruby 3.2."
+    },
+    "swift": {
+      "name": "Swift 5.9",
+      "extension": "swift",
+      "compile": "swiftc -O -o solution Solution.swift",
+      "run": "./solution",
+      "template_dir": "swift",
+      "skeleton": {
+        "solution": "Solution.swift",
+        "parse": null,
+        "submit": "submit/Submit.swift"
+      },
+      "submit_class": null,
+      "boj_lang_id": 74,
+      "notes": "Swift 5.9."
+    },
+    "scala": {
+      "name": "Scala 3",
+      "extension": "scala",
+      "compile": "scalac Solution.scala",
+      "run": "scala Main",
+      "template_dir": "scala",
+      "skeleton": {
+        "solution": "Solution.scala",
+        "parse": null,
+        "submit": "submit/Submit.scala"
+      },
+      "submit_class": "Main",
+      "boj_lang_id": 15,
+      "notes": "Scala 3."
+    },
+    "js": {
+      "name": "Node.js 18",
+      "extension": "js",
+      "compile": null,
+      "run": "node Solution.js",
+      "template_dir": "js",
+      "skeleton": {
+        "solution": "Solution.js",
+        "parse": null,
+        "submit": "submit/Submit.js"
+      },
+      "submit_class": null,
+      "boj_lang_id": 17,
+      "notes": "Node.js 18. process.stdin 으로 입력."
+    },
+    "ts": {
+      "name": "TypeScript 5",
+      "extension": "ts",
+      "compile": "tsc --target es2020 Solution.ts",
+      "run": "node Solution.js",
+      "template_dir": "ts",
+      "skeleton": {
+        "solution": "Solution.ts",
+        "parse": null,
+        "submit": "submit/Submit.ts"
+      },
+      "submit_class": null,
+      "boj_lang_id": 17,
+      "notes": "TypeScript 5 (node 실행)."
+    }
+  }
+}

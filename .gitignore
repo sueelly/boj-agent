@@ -1,0 +1,4 @@
+# 개발용 — 상호작용/문서용, 배포 제외
+dev/
+.claude/settings.local.json
+.DS_Store

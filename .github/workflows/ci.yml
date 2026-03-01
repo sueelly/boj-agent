@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # ============================================================
+  # BOJ CLI Bash 테스트
+  # ============================================================
+  boj-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 (Java 템플릿 컴파일 확인용)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Run all tests
+        run: |
+          chmod +x tests/run_tests.sh
+          ./tests/run_tests.sh
+
+      - name: Check Java template compilation
+        run: |
+          echo "=== Java 템플릿 컴파일 확인 ==="
+          # Test.java는 문제별 Parse.java에 의존하므로 제외
+          # ParseAndCallSolve.java (인터페이스) + Solution.java (스텁) 만 컴파일 검증
+          FILES="templates/java/ParseAndCallSolve.java templates/java/Solution.java"
+          if ls $FILES 2>/dev/null | grep -q .; then
+            javac $FILES \
+              && echo "✅ Java 템플릿 컴파일 성공" \
+              || { echo "❌ Java 템플릿 컴파일 실패"; exit 1; }
+          else
+            echo "⚠️ Java 템플릿 파일 없음 — 스킵"
+          fi
+
+  # ============================================================
+  # 보안 스캔 — 하드코딩 시크릿 + 위험 패턴
+  # ============================================================
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan for hardcoded secrets
+        run: |
+          echo "=== 하드코딩된 시크릿 스캔 ==="
+          FOUND=false
+
+          SECRETS=$(grep -rn \
+            -E "(password|secret|api_key|apikey|token|passwd)\s*=\s*['\"][^$\{(\s][^'\"]{3,}" \
+            --include="*.sh" \
+            --include="*.yml" \
+            --include="*.yaml" \
+            --include="*.json" \
+            . 2>/dev/null \
+            | grep -v "test\|Test\|example\|placeholder\|TODO\|#\|//" \
+            || true)
+
+          if [ -n "$SECRETS" ]; then
+            echo "❌ 하드코딩된 시크릿 의심 발견:"
+            echo "$SECRETS"
+            FOUND=true
+          else
+            echo "✅ 하드코딩된 시크릿 없음"
+          fi
+
+          if [ "$FOUND" = true ]; then
+            exit 1
+          fi
+
+      - name: Scan for dangerous shell patterns
+        run: |
+          echo "=== 위험 패턴 스캔 (Bash) ==="
+
+          # rm -rf / 또는 ~ 패턴
+          # .claude/ 제외: pre-tool-use.sh가 차단 패턴 목록으로 해당 문자열을 포함함 (오탐)
+          DANGEROUS=$(grep -rn \
+            -E "rm\s+-rf\s+(/|~|\$HOME)" \
+            --include="*.sh" \
+            --exclude-dir=".claude" \
+            . 2>/dev/null | grep -v "test\|#" || true)
+
+          if [ -n "$DANGEROUS" ]; then
+            echo "❌ 위험한 rm -rf 패턴 발견:"
+            echo "$DANGEROUS"
+            exit 1
+          fi
+
+          echo "✅ 위험 패턴 없음"
