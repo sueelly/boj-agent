@@ -398,6 +398,20 @@ baekjoon/
 
 ---
 
+## 📝 기술 노트: run.sh EXIT trap 이력
+
+`run.sh`의 Java/Python 블록에서 `normalize_test_cases` 임시 파일(`$normalized`)과 복원용 백업을 정리하기 위해 **두 단계 EXIT trap**을 사용한다.
+
+- **첫 trap**: `cp` 전에 설정. 중간에 실패해 exit하면 `test_cases_normalized.json`과 `$normalized` 임시 파일만 삭제.
+- **이후** `rm -f "$normalized"`로 임시 파일 삭제 → 백업 생성 → **두 번째 trap으로 교체** (원본 복원 + 백업 파일 삭제).
+
+**trap이 여러 번 수정된 이유**:  
+두 번째 trap에 `$normalized`를 다시 넣는 수정(1996f19, "replace 시 cleanup 누락 방지")이 있었는데, 그 시점에는 이미 100줄에서 `rm -f "$normalized"`로 삭제한 뒤라 두 번째 trap에서 `$normalized`를 지우는 것은 불필요하고, trap 문자열이 설정 시점이 아니라 **실행 시점**에 평가되므로 동작은 하지만 혼란을 준다. 8eff7aa에서 "두 번째 trap에는 `$normalized` 제거하지 말 것"으로 정리했고, 주석으로 재도입 방지(참고: 8eff7aa).
+
+**정리**: 첫 trap만 `$normalized`를 참조(early exit 시 정리). 두 번째 trap은 복원 + `test_cases_orig.json`, `test_cases_normalized.json` 삭제만 수행.
+
+---
+
 ## 🔮 향후 개선 아이디어
 
 1. **자동 난이도 분류**: 문제 태그/난이도 기반 폴더 정리

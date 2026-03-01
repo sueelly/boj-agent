@@ -102,8 +102,8 @@ fetch_boj_stats() {
     BOJ_STATS="[✓ ${time_ms}ms ${memory}KB]"
     echo -e "${GREEN}✓ 통계: ${time_ms}ms / ${memory}KB${NC}"
   else
-    # Accepted 결과 없는 경우
-    if echo "$response" | grep -q "맞았습니다\|Accepted"; then
+    # Accepted 결과 없는 경우 (grep -E: | 는 alternation)
+    if echo "$response" | grep -E -q "맞았습니다|Accepted"; then
       BOJ_STATS="[BOJ 통계: 파싱 실패]"
     else
       BOJ_STATS="[BOJ 통계: Accepted 없음]"
