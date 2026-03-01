@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# ======================================
+# boj — 백준 문제 풀이 CLI (어디서든 실행)
+# ======================================
+# 사용: boj <명령> [문제번호] [옵션]
+# 설치: boj-agent 레포에서 src/setup-boj-cli.sh 한 번 실행
+# ======================================
+
+# BOJ_ROOT가 없으면 설치 시 저장한 경로에서 로드
+if [[ -z "${BOJ_ROOT:-}" && -f "$HOME/.config/boj/root" ]]; then
+  BOJ_ROOT="$(cat "$HOME/.config/boj/root")"
+fi
+
+# 레포 루트 찾기: templates/java/Test.java 가 있는 디렉터리 (cwd 위로 탐색 후 BOJ_ROOT)
+find_boj_root() {
+  local dir
+  dir="$(pwd)"
+  while [[ -n "$dir" && "$dir" != "/" ]]; do
+    if [[ -f "$dir/templates/java/Test.java" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  if [[ -n "${BOJ_ROOT:-}" ]]; then
+    if [[ -f "$BOJ_ROOT/templates/java/Test.java" ]]; then
+      echo "$BOJ_ROOT"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+print_usage() {
+  echo "사용법: boj <명령> [문제번호] [옵션]"
+  echo ""
+  echo "명령:"
+  echo "  boj setup              — 초기 설정 (git, BOJ 세션, 에이전트)"
+  echo "  boj setup --check      — 현재 설정 상태 확인"
+  echo "  boj make 4949          — 에이전트로 환경 생성 (또는 에디터+클립보드)"
+  echo "  boj open 4949          — 해당 문제 폴더를 에디터 루트로 열기"
+  echo "  boj run 4949           — 테스트 실행"
+  echo "  boj submit 4949        — Submit 파일 생성 (BOJ 제출용)"
+  echo "  boj commit 4949 [msg]  — 해당 문제 폴더 커밋"
+  echo "  boj review 4949        — 에이전트로 리뷰 요청 (또는 에디터+클립보드)"
+  echo ""
+  echo "공통 옵션:"
+  echo "  -h, --help             — 명령별 도움말"
+  echo "  (명령별 옵션은 boj <명령> --help 로 확인)"
+  echo ""
+  echo "예시:"
+  echo "  boj make 4949 --lang python"
+  echo "  boj run 4949 --lang java"
+  echo "  boj submit 4949 --open"
+  echo "  boj commit 4949 --no-stats"
+  echo "  boj open 4949 --editor cursor"
+  echo ""
+  echo "설치: src/setup-boj-cli.sh 실행. 레포 경로는 ~/.config/boj/root 에 저장됨."
+  echo "설정: ~/.config/boj/ (root, lang, agent, editor, session, user)"
+}
+
+# setup은 루트 탐색 전에 실행 가능 (초기 설정용)
+SUBCOMMAND="${1:-}"
+if [[ "$SUBCOMMAND" == "setup" ]]; then
+  # ROOT를 가능한 경우 찾되, 없어도 setup은 실행
+  ROOT=""
+  ROOT="$(find_boj_root 2>/dev/null)" || ROOT="${BOJ_ROOT:-$(pwd)}"
+  shift
+  SETUP_SCRIPT="$ROOT/src/commands/setup.sh"
+  if [[ -x "$SETUP_SCRIPT" ]]; then
+    exec "$SETUP_SCRIPT" "$ROOT" "$@"
+  else
+    echo "Error: setup.sh를 찾을 수 없습니다: $SETUP_SCRIPT" >&2
+    exit 1
+  fi
+fi
+
+ROOT=""
+if ! ROOT="$(find_boj_root)"; then
+  echo "Error: boj 레포 루트를 찾을 수 없습니다."
+  echo "  해결 1: boj setup 으로 초기 설정"
+  echo "  해결 2: boj-agent 레포에서 src/setup-boj-cli.sh 실행"
+  echo "  해결 3: export BOJ_ROOT=/path/to/boj-agent 후 재시도"
+  exit 1
+fi
+
+PROBLEM_NUM="${2:-}"
+CMD_SCRIPT="$ROOT/src/commands/$SUBCOMMAND.sh"
+
+case "$SUBCOMMAND" in
+  run|commit|make|open|review|submit)
+    if [[ ! -x "$CMD_SCRIPT" ]]; then
+      echo "Error: $CMD_SCRIPT 를 찾을 수 없거나 실행할 수 없습니다." >&2
+      echo "  (chmod +x $CMD_SCRIPT 로 실행 권한을 추가해보세요)" >&2
+      exit 1
+    fi
+    exec "$CMD_SCRIPT" "$ROOT" "$PROBLEM_NUM" "${@:3}"
+    ;;
+  -h|--help|help|"")
+    print_usage
+    ;;
+  *)
+    echo "Unknown subcommand: $SUBCOMMAND" >&2
+    print_usage
+    exit 1
+    ;;
+esac
