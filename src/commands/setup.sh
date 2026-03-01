@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # boj setup [--check] — 초기 설정/인증 저장
-# 최초 1회 실행으로 git, BOJ 세션, 에이전트 명령 저장
+# 최초 1회 실행으로 루트, 기본 언어, git, BOJ 세션, 에이전트 명령 저장
 
 ROOT="${1:?ROOT}"
 shift
@@ -31,7 +31,7 @@ echo ""
 
 # --- 1. BOJ_ROOT ---
 current_root="$(boj_config_get root "")"
-echo -e "${YELLOW}[1/4] 레포 루트 경로${NC}"
+echo -e "${YELLOW}[1/5] 레포 루트 경로${NC}"
 if [[ -n "$current_root" ]]; then
   echo "  현재: $current_root"
   read -p "  변경하시겠습니까? (y/N): " change_root
@@ -56,8 +56,36 @@ fi
 
 echo ""
 
-# --- 2. Git 정보 확인 ---
-echo -e "${YELLOW}[2/4] Git 사용자 정보${NC}"
+# --- 2. 기본 언어 ---
+echo -e "${YELLOW}[2/5] 기본 언어 (make/run/submit 기본값)${NC}"
+current_lang="$(boj_config_get lang java)"
+if [[ -n "$current_lang" ]]; then
+  echo "  현재: $current_lang"
+  read -p "  변경하시겠습니까? (y/N): " change_lang
+  if [[ ! "$change_lang" =~ ^[Yy]$ ]]; then
+    echo "  유지: $current_lang"
+  else
+    current_lang=""
+  fi
+fi
+if [[ -z "$current_lang" ]]; then
+  echo "  make/run/submit 시 사용할 기본 언어를 입력하세요."
+  echo "  예: java, python, cpp, c, kotlin, go, rust, ruby, swift, scala, js, ts"
+  read -p "  기본 언어 [java]: " new_lang
+  new_lang="${new_lang:-java}"
+  if boj_validate_lang "$new_lang" 2>/dev/null; then
+    boj_config_set lang "$new_lang"
+    echo -e "  ${GREEN}✓ 저장: $new_lang${NC}"
+  else
+    echo -e "  ${YELLOW}유효하지 않아 기본값 java 유지${NC}"
+    boj_config_set lang "java"
+  fi
+fi
+
+echo ""
+
+# --- 3. Git 정보 확인 ---
+echo -e "${YELLOW}[3/5] Git 사용자 정보${NC}"
 git_name="$(git config --global user.name 2>/dev/null || echo '')"
 git_email="$(git config --global user.email 2>/dev/null || echo '')"
 if [[ -n "$git_name" && -n "$git_email" ]]; then
@@ -82,8 +110,8 @@ fi
 
 echo ""
 
-# --- 3. BOJ 세션 쿠키 ---
-echo -e "${YELLOW}[3/4] BOJ 세션 쿠키${NC}"
+# --- 4. BOJ 세션 쿠키 ---
+echo -e "${YELLOW}[4/5] BOJ 세션 쿠키${NC}"
 current_session="$(boj_config_get session "")"
 if [[ -n "$current_session" ]]; then
   echo -e "  ${GREEN}✓${NC} 이미 설정됨"
@@ -122,8 +150,8 @@ fi
 
 echo ""
 
-# --- 4. 에이전트 명령 ---
-echo -e "${YELLOW}[4/4] 에이전트 명령 (make/review에 사용)${NC}"
+# --- 5. 에이전트 명령 ---
+echo -e "${YELLOW}[5/5] 에이전트 명령 (make/review에 사용)${NC}"
 current_agent="$(boj_config_get agent "")"
 if [[ -n "$current_agent" ]]; then
   echo "  현재: $current_agent"
