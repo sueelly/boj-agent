@@ -24,7 +24,7 @@ if [ "$TOOL_NAME" != "Bash" ]; then
 fi
 
 # === 즉시 차단 패턴 ===
-# grep -E 사용: 리터럴 . * $ 는 bash에서 \\ . \\ * \\ $ 로 전달
+# grep -E 사용. ERE에서 | 는 alternation이므로 리터럴 파이프는 [|]
 BLOCKED_PATTERNS=(
   "git push --force"
   "git push -f "
@@ -37,10 +37,10 @@ BLOCKED_PATTERNS=(
   "rm -rf /"
   "rm -rf ~"
   "rm -rf \\\$HOME"
-  "curl .* \| bash"
-  "curl .* \| sh"
-  "wget .* \| bash"
-  "wget .* \| sh"
+  "curl .*[|] *bash"
+  "curl .*[|] *sh"
+  "wget .*[|] *bash"
+  "wget .*[|] *sh"
   "DROP TABLE"
   "DELETE FROM.*WHERE.*1=1"
   "TRUNCATE TABLE"
