@@ -39,11 +39,9 @@ if [ -f "$PENDING_DECISION" ] && [ -s "$PENDING_DECISION" ]; then
   cat "$PENDING_DECISION"
   echo ""
 
-  # DECISIONS.md에 append
-  if [ -f "$DECISIONS_FILE" ]; then
-    cat "$PENDING_DECISION" >> "$DECISIONS_FILE"
-    echo "→ DECISIONS.md에 자동 기록 완료"
-  fi
+  # DECISIONS.md에 append (없으면 생성)
+  cat "$PENDING_DECISION" >> "$DECISIONS_FILE"
+  echo "→ DECISIONS.md에 자동 기록 완료"
   rm -f "$PENDING_DECISION"
 fi
 
