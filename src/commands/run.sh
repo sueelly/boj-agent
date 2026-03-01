@@ -99,8 +99,8 @@ case "$LANG" in
       cp "$normalized" "$PROBLEM_DIR/test/test_cases_normalized.json" || { echo -e "${RED}Error: 정규화 파일 복사 실패${NC}" >&2; exit 1; }
       rm -f "$normalized"
       cp "$PROBLEM_DIR/test/test_cases.json" "$PROBLEM_DIR/test/test_cases_orig.json" || { echo -e "${RED}Error: 원본 백업 실패${NC}" >&2; exit 1; }
-      # 복원용 trap으로 교체 (첫 번째 trap 정리 로직 포함 — 교체 시에도 중간 파일 정리)
-      trap 'rm -f "$PROBLEM_DIR/test/test_cases_normalized.json" "$normalized" 2>/dev/null; cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" 2>/dev/null' EXIT
+      # 복원용 trap으로 교체 ($normalized는 100줄에서 이미 삭제됨 — 복원 후 백업 파일만 제거)
+      trap 'cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" 2>/dev/null' EXIT
       cp "$PROBLEM_DIR/test/test_cases_normalized.json" "$PROBLEM_DIR/test/test_cases.json" || { echo -e "${RED}Error: 정규화 파일 적용 실패${NC}" >&2; exit 1; }
     else
       rm -f "$normalized"
@@ -133,8 +133,8 @@ case "$LANG" in
       cp "$normalized" "$PROBLEM_DIR/test/test_cases_normalized.json" || { echo -e "${RED}Error: 정규화 파일 복사 실패${NC}" >&2; exit 1; }
       rm -f "$normalized"
       cp "$PROBLEM_DIR/test/test_cases.json" "$PROBLEM_DIR/test/test_cases_orig.json" || { echo -e "${RED}Error: 원본 백업 실패${NC}" >&2; exit 1; }
-      # 복원용 trap으로 교체 (첫 번째 trap 정리 로직 포함 — 교체 시에도 중간 파일 정리)
-      trap 'rm -f "$PROBLEM_DIR/test/test_cases_normalized.json" "$normalized" 2>/dev/null; cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" 2>/dev/null' EXIT
+      # 복원용 trap으로 교체 ($normalized는 이미 삭제됨 — 복원 후 백업 파일만 제거)
+      trap 'cp "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases.json" 2>/dev/null; rm -f "$PROBLEM_DIR/test/test_cases_orig.json" "$PROBLEM_DIR/test/test_cases_normalized.json" 2>/dev/null' EXIT
       cp "$PROBLEM_DIR/test/test_cases_normalized.json" "$PROBLEM_DIR/test/test_cases.json" || { echo -e "${RED}Error: 정규화 파일 적용 실패${NC}" >&2; exit 1; }
     else
       rm -f "$normalized"
