@@ -150,6 +150,11 @@ boj_validate_lang() {
 boj_find_problem_dir() {
   local root="$1"
   local problem_num="$2"
+  # 문제번호는 숫자만 허용 (glob 인젝션 방지)
+  if [[ ! "$problem_num" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}Error: 문제 번호는 숫자여야 합니다: '$problem_num'${NC}" >&2
+    return 1
+  fi
   find "$root" -maxdepth 1 -type d -name "${problem_num}*" | head -1
 }
 

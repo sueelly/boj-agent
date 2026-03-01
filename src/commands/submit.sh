@@ -101,18 +101,8 @@ generate_java_submit() {
     imports=$(echo -e "$imports\n$parse_imports" | sort -u | grep -v "^$")
   fi
 
-  # Solution 클래스 본문만 추출 (import/package 줄 제거)
-  local solution_body
-  solution_body=$(grep -v "^import " "$SOLUTION_FILE" | grep -v "^package " | grep -v "^$" | head -1000)
-
-  # Parse 클래스 본문 (있을 경우)
-  local parse_body=""
-  if [[ "$has_parse" == "true" ]]; then
-    parse_body=$(grep -v "^import " "$PARSE_FILE" | grep -v "^package " | grep -v "^$" | head -1000)
-    # ParseAndCallSolve 인터페이스 구현 → Main용으로 변환 불필요 (아래 Main에서 직접 stdin 처리)
-  fi
-
   # Main 클래스 생성: stdin 직접 읽기
+  # (Solution/Parse 클래스 전체를 아래 섹션에서 sed로 직접 변환하여 붙임)
   # 기본 import + Solution/Parse의 import 합산 (중복 제거)
   {
     echo "import java.util.*;"

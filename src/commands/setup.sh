@@ -90,10 +90,10 @@ if [[ -n "$current_session" ]]; then
   read -p "  변경하시겠습니까? (y/N): " change_session
   if [[ ! "$change_session" =~ ^[Yy]$ ]]; then
     echo "  유지"
-    goto_agent=true
+    skip_session=true
   fi
 fi
-if [[ "${goto_agent:-false}" != "true" ]]; then
+if [[ "${skip_session:-false}" != "true" ]]; then
   echo "  BOJ 세션 쿠키가 있으면 commit 통계 조회 등이 가능합니다."
   echo "  방법:"
   echo "    1. 브라우저에서 acmicpc.net 로그인"

@@ -27,6 +27,8 @@ while [[ $# -gt 0 ]]; do
       echo "  --message \"...\"  커밋 메시지 직접 지정"
       echo "  --no-stats       BOJ 통계 조회 스킵"
       exit 0 ;;
+    --) shift; OPT_MSG="$*"; break ;;
+    -*) echo "Unknown option: $1" >&2; exit 1 ;;
     *) OPT_MSG="$*"; break ;;
   esac
 done
@@ -76,8 +78,10 @@ fetch_boj_stats() {
   echo -e "${BLUE}BOJ 통계 조회 중...${NC}"
 
   local response
+  # setup에서 'bojautologin' 또는 'OnlineJudge' 쿠키 값 중 하나를 저장하므로
+  # 두 쿠키 키에 모두 동일 값을 전송하여 어느 경우든 인증되도록 함
   response=$(curl -s --max-time 5 \
-    -H "Cookie: bojautologin=$session" \
+    -H "Cookie: OnlineJudge=$session; bojautologin=$session" \
     -H "User-Agent: Mozilla/5.0 (compatible; boj-agent/1.0)" \
     "$status_url" 2>/dev/null) || {
     BOJ_STATS="[BOJ 통계: 네트워크 오류]"
@@ -121,7 +125,7 @@ echo ""
 
 # ======= 변경 파일 표시 =======
 echo -e "${YELLOW}📋 변경된 파일:${NC}"
-git -C "$ROOT" status --short "$PROBLEM_NAME" 2>/dev/null | head -20
+git -C "$ROOT" status --short -- "$PROBLEM_NAME" 2>/dev/null | head -20
 
 echo ""
 
@@ -148,7 +152,9 @@ files_to_add=()
 [[ -n "$lang_ext" && -f "$PROBLEM_DIR/submit/Submit.$lang_ext" ]] && files_to_add+=("$PROBLEM_NAME/submit/Submit.$lang_ext")
 
 if [[ ${#files_to_add[@]} -gt 0 ]]; then
-  git -C "$ROOT" add "${files_to_add[@]}" 2>/dev/null || true
+  if ! git -C "$ROOT" add "${files_to_add[@]}"; then
+    echo -e "${YELLOW}Warning: 일부 파일 스테이징 실패. 수동으로 git add를 확인하세요.${NC}" >&2
+  fi
 fi
 
 # ======= 커밋 실행 =======
