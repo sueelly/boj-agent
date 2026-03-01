@@ -93,10 +93,10 @@ fetch_boj_stats() {
     return 0
   fi
 
-  # 메모리 파싱 (KB 단위)
+  # 메모리/시간 파싱 (BSD grep 호환: -oE + sed, macOS 기본 grep에 -P 없음)
   local memory time_ms
-  memory=$(echo "$response" | grep -oP '(?<=<td>)\d+(?= KB</td>)' | head -1 2>/dev/null || echo "")
-  time_ms=$(echo "$response" | grep -oP '(?<=<td>)\d+(?= ms</td>)' | head -1 2>/dev/null || echo "")
+  memory=$(echo "$response" | grep -oE '<td>[0-9]+ KB</td>' | head -1 | sed -n 's/<td>\([0-9]*\) KB<\/td>/\1/p' 2>/dev/null || echo "")
+  time_ms=$(echo "$response" | grep -oE '<td>[0-9]+ ms</td>' | head -1 | sed -n 's/<td>\([0-9]*\) ms<\/td>/\1/p' 2>/dev/null || echo "")
 
   if [[ -n "$memory" && -n "$time_ms" ]]; then
     BOJ_STATS="[✓ ${time_ms}ms ${memory}KB]"
