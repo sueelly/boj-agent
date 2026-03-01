@@ -31,12 +31,15 @@ jobs:
       - name: Check Java template compilation
         run: |
           echo "=== Java 템플릿 컴파일 확인 ==="
-          if find templates/java -name "*.java" 2>/dev/null | grep -q .; then
-            javac templates/java/*.java \
+          # Test.java는 문제별 Parse.java에 의존하므로 제외
+          # ParseAndCallSolve.java (인터페이스) + Solution.java (스텁) 만 컴파일 검증
+          FILES="templates/java/ParseAndCallSolve.java templates/java/Solution.java"
+          if ls $FILES 2>/dev/null | grep -q .; then
+            javac $FILES \
               && echo "✅ Java 템플릿 컴파일 성공" \
               || { echo "❌ Java 템플릿 컴파일 실패"; exit 1; }
           else
-            echo "⚠️ templates/java/*.java 없음 — 스킵"
+            echo "⚠️ Java 템플릿 파일 없음 — 스킵"
           fi
 
   # ============================================================
@@ -81,9 +84,11 @@ jobs:
           echo "=== 위험 패턴 스캔 (Bash) ==="
 
           # rm -rf / 또는 ~ 패턴
+          # .claude/ 제외: pre-tool-use.sh가 차단 패턴 목록으로 해당 문자열을 포함함 (오탐)
           DANGEROUS=$(grep -rn \
             -E "rm\s+-rf\s+(/|~|\$HOME)" \
             --include="*.sh" \
+            --exclude-dir=".claude" \
             . 2>/dev/null | grep -v "test\|#" || true)
 
           if [ -n "$DANGEROUS" ]; then
