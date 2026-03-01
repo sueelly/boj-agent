@@ -50,7 +50,10 @@ if [[ -z "$current_root" ]]; then
     echo -e "${RED}Error: 경로가 존재하지 않습니다: $new_root${NC}" >&2
     exit 1
   fi
-  boj_config_set root "$new_root"
+  if ! boj_config_set root "$new_root"; then
+    echo -e "  ${RED}설정 저장 실패. 권한 또는 디스크 공간을 확인하세요.${NC}" >&2
+    exit 1
+  fi
   echo -e "  ${GREEN}✓ 저장: $new_root${NC}"
 fi
 
@@ -74,11 +77,17 @@ if [[ -z "$current_lang" ]]; then
   read -p "  기본 언어 [java]: " new_lang
   new_lang="${new_lang:-java}"
   if boj_validate_lang "$new_lang" 2>/dev/null; then
-    boj_config_set lang "$new_lang"
+    if ! boj_config_set lang "$new_lang"; then
+      echo -e "  ${RED}설정 저장 실패.${NC}" >&2
+      exit 1
+    fi
     echo -e "  ${GREEN}✓ 저장: $new_lang${NC}"
   else
     echo -e "  ${YELLOW}유효하지 않아 기본값 java 유지${NC}"
-    boj_config_set lang "java"
+    if ! boj_config_set lang "java"; then
+      echo -e "  ${RED}설정 저장 실패.${NC}" >&2
+      exit 1
+    fi
   fi
 fi
 
@@ -129,7 +138,10 @@ if [[ "${skip_session:-false}" != "true" ]]; then
   echo "    3. 'bojautologin' 또는 'OnlineJudge' 쿠키 값 복사"
   read -p "  세션 쿠키 값 (없으면 Enter 스킵): " new_session
   if [[ -n "$new_session" ]]; then
-    boj_config_set session "$new_session"
+    if ! boj_config_set session "$new_session"; then
+      echo -e "  ${RED}설정 저장 실패.${NC}" >&2
+      exit 1
+    fi
     echo -e "  ${GREEN}✓ 저장됨${NC}"
   else
     echo "  스킵 (나중에 boj setup 으로 추가 가능)"
@@ -140,7 +152,10 @@ if [[ "${skip_session:-false}" != "true" ]]; then
   if [[ -z "$current_user" ]]; then
     read -p "  BOJ 사용자 ID (통계 조회용, 없으면 Enter 스킵): " new_user
     if [[ -n "$new_user" ]]; then
-      boj_config_set user "$new_user"
+      if ! boj_config_set user "$new_user"; then
+        echo -e "  ${RED}설정 저장 실패.${NC}" >&2
+        exit 1
+      fi
       echo -e "  ${GREEN}✓ 저장됨${NC}"
     fi
   else
@@ -168,7 +183,10 @@ if [[ "$current_agent" != "KEEP" ]]; then
   echo "  없으면 Enter → 에디터+클립보드 fallback"
   read -p "  에이전트 명령: " new_agent
   if [[ -n "$new_agent" ]]; then
-    boj_config_set agent "$new_agent"
+    if ! boj_config_set agent "$new_agent"; then
+      echo -e "  ${RED}설정 저장 실패.${NC}" >&2
+      exit 1
+    fi
     echo -e "  ${GREEN}✓ 저장됨${NC}"
   else
     echo "  미설정 (에디터+클립보드 fallback 사용)"

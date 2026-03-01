@@ -38,7 +38,7 @@ boj_config_get() {
   echo -n "$default"
 }
 
-# 설정 파일에 값 저장
+# 설정 파일에 값 저장 (실패 시 에러 출력 후 return 1)
 boj_config_set() {
   local key="$1"
   local value="$2"
@@ -46,7 +46,11 @@ boj_config_set() {
     echo -e "${RED}Error: 설정 디렉터리에 쓸 수 없습니다: $BOJ_CONFIG_DIR${NC}" >&2
     return 1
   }
-  echo "$value" > "$BOJ_CONFIG_DIR/$key"
+  if ! echo "$value" > "$BOJ_CONFIG_DIR/$key"; then
+    echo -e "${RED}Error: 설정 저장 실패: $BOJ_CONFIG_DIR/$key (권한/디스크 확인)${NC}" >&2
+    return 1
+  fi
+  return 0
 }
 
 # 모든 설정 로드
