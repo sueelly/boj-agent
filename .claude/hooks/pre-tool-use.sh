@@ -24,18 +24,19 @@ if [ "$TOOL_NAME" != "Bash" ]; then
 fi
 
 # === 즉시 차단 패턴 ===
+# grep -E 사용: 리터럴 . * $ 는 bash에서 \\ . \\ * \\ $ 로 전달
 BLOCKED_PATTERNS=(
   "git push --force"
   "git push -f "
   "git push -f$"
   "git commit --no-verify"
   "git reset --hard"
-  "git checkout -- \."
-  "git checkout -- \*"
+  "git checkout -- \\."
+  "git checkout -- \\*"
   "git clean -f"
   "rm -rf /"
   "rm -rf ~"
-  "rm -rf \$HOME"
+  "rm -rf \\\$HOME"
   "curl .* \| bash"
   "curl .* \| sh"
   "wget .* \| bash"
@@ -64,7 +65,7 @@ if echo "$COMMAND" | grep -qE "git push.*origin (main|master)$" 2>/dev/null; the
 fi
 
 # === 경고: git add -A 또는 git add . ===
-if echo "$COMMAND" | grep -qE "^git add (-A|\.)$" 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '^git add (-A|\.)$' 2>/dev/null; then
   STAGED=$(git -C "${PWD}" diff --stat 2>/dev/null | tail -1 || echo "")
   echo "WARNING: 'git add -A' 또는 'git add .' 는 모든 파일을 스테이징합니다." >&2
   echo "특정 파일을 명시적으로 추가하는 것을 권장합니다." >&2

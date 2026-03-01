@@ -25,10 +25,12 @@ boj_config_get() {
     echo "${!env_var}"
     return 0
   fi
-  # 파일 확인
+  # 파일 확인 (한 줄만 읽어 후행 개행/공백 제거 — case/validate 매칭 보장)
   local file="$BOJ_CONFIG_DIR/$key"
   if [[ -f "$file" ]]; then
-    cat "$file"
+    local val
+    IFS= read -r val < "$file" || true
+    echo -n "${val:-}"
     return 0
   fi
   # 기본값
