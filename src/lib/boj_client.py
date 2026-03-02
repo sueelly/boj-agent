@@ -120,7 +120,7 @@ class _InnerHTMLParser(_BaseParser):
             else:
                 attr_str += f' {name}="{value}"'
         if tag in _VOID_ELEMENTS:
-            self._chunks.append(f"<{tag}{attr_str}>")
+            self._chunks.append(f"<{tag}{attr_str}/>")
         else:
             self._chunks.append(f"<{tag}{attr_str}>")
 
