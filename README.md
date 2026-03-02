@@ -44,7 +44,7 @@ boj setup  --check                  # 현재 설정 상태 확인
 
 - **사용 가이드**: [docs/user-guide.md](docs/user-guide.md)
 - **엣지 케이스 매트릭스**: [docs/edge-cases.md](docs/edge-cases.md)
-- **개발 기록**: [docs/devlog.md](docs/devlog.md)
+- **개발 기록**: [docs/DEVLOG.md](docs/DEVLOG.md)
 - **에이전트 지시문**: [prompts/README.md](prompts/README.md)
 
 ## 구조

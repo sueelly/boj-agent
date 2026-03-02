@@ -67,6 +67,10 @@ class _BaseParser(HTMLParser):
             self._in_target = False
             self.done = True
             return
+        if tag in _VOID_ELEMENTS:
+            # Malformed HTML: void closing tag (e.g. </br>). Never incremented depth → don't decrement.
+            self._on_nested_end(tag)
+            return
         self._depth -= 1
         self._on_nested_end(tag)
 

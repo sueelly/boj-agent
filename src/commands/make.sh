@@ -189,7 +189,11 @@ result = result.replace("{{PROBLEM_DIR}}", problem_dir)
 result = result.replace("{{PROBLEM_JSON}}", json.dumps(problem, ensure_ascii=False, indent=2))
 print(result, end="")
 PYEOF
-)
+  )
+  if [[ $? -ne 0 ]]; then
+    echo -e "${RED}Error: 프롬프트 템플릿 생성 실패. prompts/make-skeleton.md 또는 artifacts/problem.json을 확인하세요.${NC}" >&2
+    exit 1
+  fi
 
   read -ra CMD <<< "$AGENT_CMD"
   (cd "$PROBLEM_DIR" && "${CMD[@]}" "$PROMPT")
@@ -199,11 +203,12 @@ PYEOF
     echo -e "${YELLOW}Warning: 에이전트 실행 실패 (exit $agent_exit). 수동으로 진행하세요.${NC}" >&2
   fi
 
-  # ── Gate Check: raw stdin blob 패턴 감지 ─────────────────────────────────
+  # ── Gate Check: 단일 String/str 파라미터(raw stdin blob) 감지 ─────────────
+  # Java: solve(String <any>), Python: solve(... : str) 단독 파라미터
   SOLUTION_FILE="$PROBLEM_DIR/Solution.$EXT"
   if [[ -f "$SOLUTION_FILE" ]]; then
-    if grep -qE 'solve\s*\(\s*(String\s+(input|raw|stdin)|string\s+(input|raw|stdin))' "$SOLUTION_FILE" 2>/dev/null; then
-      echo -e "${YELLOW}Warning: Gate Check — solve()가 raw stdin blob 패턴을 사용합니다.${NC}" >&2
+    if grep -qE 'solve\s*\(\s*(String\s+\w+|(self\s*,\s*)?\w+\s*:\s*str)\s*\)' "$SOLUTION_FILE" 2>/dev/null; then
+      echo -e "${YELLOW}Warning: Gate Check — solve()가 단일 String/str 파라미터(raw stdin blob)를 사용합니다.${NC}" >&2
       echo -e "  ${YELLOW}→ artifacts/signature_review.md를 확인하고 서명을 수정하세요.${NC}" >&2
     fi
   fi
@@ -220,9 +225,10 @@ PYEOF
 else
   # ── fallback: 에디터 + 클립보드 ──────────────────────────────────────────
   echo -e "${YELLOW}Warning: 에이전트 미설정. 에디터+클립보드 fallback.${NC}" >&2
-  PROMPT="백준 ${PROBLEM_NUM}번 스켈레톤 만들어줘. 언어: ${LANG}\n\n$(cat "$PROBLEM_JSON")"
+  # 구분자는 실제 줄바꿈으로 구성. printf로 복사해 JSON 내 \n,\t,\\ 등이 해석되지 않도록 함
+  PROMPT="백준 ${PROBLEM_NUM}번 스켈레톤 만들어줘. 언어: ${LANG}"$'\n\n'"$(cat "$PROBLEM_JSON")"
   if command -v pbcopy &>/dev/null; then
-    echo -e "$PROMPT" | pbcopy
+    printf '%s' "$PROMPT" | pbcopy
     echo -e "${GREEN}📋 problem.json 내용을 클립보드에 복사했습니다.${NC}"
   fi
 fi

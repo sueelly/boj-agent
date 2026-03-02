@@ -1,3 +1,61 @@
+# DEVLOG — BOJ-Agent 변경 기록
+
+변경 사항을 날짜 / 변경 요약 / 의사결정 / 검증 방법 단위로 기록합니다.
+새 항목은 상단에 추가합니다.
+
+항목 형식:
+```
+## [YYYY-MM-DD] 변경 제목 [#N]
+**변경 요약:** 한 줄 설명
+**의사결정:** 선택한 방법과 이유 (검토한 대안 포함)
+**검증 방법:** 어떤 테스트/명령으로 확인하는가
+---
+```
+
+---
+
+## [2026-03-02] chore(docs): devlog.md → DEVLOG.md 리네임 및 구조화 [#14]
+**변경 요약:** 서사형 devlog를 날짜/변경요약/의사결정/검증 단위의 구조화 변경 로그로 전환, /commit 스킬에 DEVLOG 업데이트 단계 추가
+**의사결정:** 서사형(여정 블로그) 형식은 특정 변경이 언제·왜 이루어졌는지 추적이 어렵다. 구조화 형식으로 전환하고 /commit 흐름에 자동 기록 단계를 포함(옵션 B)하여 갱신 루틴을 강제한다. 옵션 A(post-commit hook)는 hook 실패 시 커밋이 차단될 위험이 있고, 옵션 C(check_devlog.sh)는 강제력이 약해 선택하지 않았다.
+**검증 방법:** `git log --follow docs/DEVLOG.md`로 히스토리 보존 확인, /commit 스킬 실행 후 DEVLOG 항목 자동 추가 확인
+
+---
+
+## [2026-03-02] refactor(make): BOJ 문제 수집·정규화·시그니처 생성을 결정적 로컬 파이프라인으로 교체 [#13]
+**변경 요약:** boj make의 에이전트 의존 로직(문제 수집/README 생성/Parse 시그니처 추론)을 결정적 로컬 파이프라인 4개 레이어로 교체
+**의사결정:** 기존 boj make는 에이전트 프롬프트에 모든 판단을 위임해 같은 문제번호로도 결과가 달라졌다. 수집/정규화/시그니처생성/프롬프트최소화 레이어를 코드로 구현해 에이전트 의존도를 줄이고 결정성을 보장한다.
+**검증 방법:** 동일 문제번호로 boj make 2회 실행 후 결과 동일성 확인, 통합 테스트 통과
+
+---
+
+## [2026-03-01] feat(templates): BOJ 지원 언어 메타데이터 기반 템플릿 확장 [#11]
+**변경 요약:** templates/languages.json 도입, 12개 언어 템플릿(C/C++/Java/Python/Kotlin/Go/Rust/JS/TS/Ruby/Swift/Scala) 추가
+**의사결정:** 언어별 확장자·컴파일·실행·스켈레톤을 수작업 나열 대신 메타데이터 파일(languages.json)로 관리. 새 언어 추가 시 JSON 한 항목 추가로 자동 지원 가능. boj make --lang <lang> 선택 가능.
+**검증 방법:** `boj make <N> --lang python`, `boj make <N> --lang kotlin` 등 주요 언어 정상 동작 확인
+
+---
+
+## [2026-03-01] chore(cleanup): baekjoon/ 레거시 폴더 제거 및 의존성 정리 [#10]
+**변경 요약:** Cursor 시절 레거시 baekjoon/ 폴더 삭제, find_boj_root()의 baekjoon/template/Test.java 인식 로직 제거
+**의사결정:** src/boj가 BOJ_ROOT 환경변수·~/.config/boj/ 기반으로 동작하므로 baekjoon/ 디렉터리 탐색 코드가 불필요하다. 레거시 경로 인식을 남겨두면 구 저장소 clone이 있는 환경에서 오탐 가능성이 있어 제거한다.
+**검증 방법:** baekjoon/ 삭제 후 `boj run/make/commit` 정상 동작, README baekjoon/ 참조 제거 확인
+
+---
+
+## [2026-03-01] test(all): 모든 명령어 정상+엣지케이스 테스트 추가 [#9]
+**변경 요약:** make/run/commit/open/review/submit 전 명령어에 정상+실패/엣지케이스 통합·단위 테스트 추가
+**의사결정:** 외부 의존성(BOJ API/git/브라우저)은 mock/fixture로 안정화해 CI에서 재현 가능하게 한다. tests/integration/(명령별), tests/unit/(개별 함수), tests/fixtures/(픽스처) 구조를 표준화.
+**검증 방법:** `./tests/run_tests.sh --all` 전체 통과
+
+---
+
+## 프로젝트 여정 (Legacy)
+
+> Cursor 시절부터 boj-agent CLI로 발전한 1~10단계 여정을 서사형으로 기록합니다.
+> 아래 내용은 수정 없이 보존됩니다.
+
+---
+
 # 🤖 AI를 활용한 알고리즘 문제 풀이 자동화 여정
 
 > 백준 알고리즘 문제 풀이 환경을 AI(Cursor)를 활용해 자동화한 과정을 기록합니다.
