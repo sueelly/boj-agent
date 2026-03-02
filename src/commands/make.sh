@@ -210,7 +210,7 @@ PYEOF
 
   # ── Execution Verify: boj run ─────────────────────────────────────────────
   echo -e "${BLUE}🧪 Execution Verify: boj run ${PROBLEM_NUM}...${NC}"
-  run_out=$( (cd "$ROOT" && "$ROOT/src/boj" run "$PROBLEM_NUM" 2>&1) || true)
+  run_out=$(cd "$ROOT" && "$ROOT/src/boj" run "$PROBLEM_NUM" 2>&1)
   run_exit=$?
   echo "$run_out"
   if [[ $run_exit -ne 0 ]]; then
