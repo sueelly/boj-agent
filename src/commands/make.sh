@@ -225,9 +225,10 @@ PYEOF
 else
   # ── fallback: 에디터 + 클립보드 ──────────────────────────────────────────
   echo -e "${YELLOW}Warning: 에이전트 미설정. 에디터+클립보드 fallback.${NC}" >&2
-  PROMPT="백준 ${PROBLEM_NUM}번 스켈레톤 만들어줘. 언어: ${LANG}\n\n$(cat "$PROBLEM_JSON")"
+  # 구분자는 실제 줄바꿈으로 구성. printf로 복사해 JSON 내 \n,\t,\\ 등이 해석되지 않도록 함
+  PROMPT="백준 ${PROBLEM_NUM}번 스켈레톤 만들어줘. 언어: ${LANG}"$'\n\n'"$(cat "$PROBLEM_JSON")"
   if command -v pbcopy &>/dev/null; then
-    echo -e "$PROMPT" | pbcopy
+    printf '%s' "$PROMPT" | pbcopy
     echo -e "${GREEN}📋 problem.json 내용을 클립보드에 복사했습니다.${NC}"
   fi
 fi
