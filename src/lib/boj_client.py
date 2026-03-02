@@ -123,7 +123,10 @@ class _InnerHTMLParser(_BaseParser):
                 attr_str += f" {name}"
             else:
                 attr_str += f' {name}="{value}"'
-        self._chunks.append(f"<{tag}{attr_str}>")
+        if tag in _VOID_ELEMENTS:
+            self._chunks.append(f"<{tag}{attr_str}/>")
+        else:
+            self._chunks.append(f"<{tag}{attr_str}>")
 
     def _on_nested_end(self, tag: str) -> None:
         self._chunks.append(f"</{tag}>")
