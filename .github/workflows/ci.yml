@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Java 21 (Java 템플릿 컴파일 확인용)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
