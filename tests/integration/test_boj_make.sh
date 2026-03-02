@@ -51,6 +51,32 @@ print('yes' if a == b else 'no')
   fi
 }
 
+# MK1b: void closing tag (e.g. </br>) must not decrement depth — parser still extracts content
+mk1b() {
+  local TMP
+  TMP=$(mktemp -d)
+  trap 'rm -rf "$TMP"' RETURN
+
+  # HTML with malformed </br> inside #problem_title so depth would go negative if we decrement
+  cat > "$TMP/void.html" <<'HTMLEOF'
+<!DOCTYPE html><html><body>
+<div id="problem_title">Two Numbers</br>Sum</div>
+</body></html>
+HTMLEOF
+
+  BOJ_CLIENT_TEST_HTML="$TMP/void.html" \
+    python3 "$REPO_ROOT/src/lib/boj_client.py" --problem 1 --out "$TMP" 2>/dev/null
+
+  local title
+  title=$(python3 -c "import json; d=json.load(open('$TMP/problem.json')); print(d.get('title',''))" 2>/dev/null || echo "")
+
+  if [[ "$title" == "Two NumbersSum" || "$title" == "Two Numbers"* ]]; then
+    _pass "MK1b: void closing tag </br> does not break extraction (title='$title')"
+  else
+    _fail "MK1b: expected non-empty title, got '$title'"
+  fi
+}
+
 # ─────────────────────────────────────────────────────────────
 # MK2: boj_normalizer.py — problem.json → README.md 검증
 # ─────────────────────────────────────────────────────────────
@@ -85,6 +111,7 @@ mk3() {
 
   cp -r "$REPO_ROOT/templates" "$TMP/"
   cp -r "$REPO_ROOT/src" "$TMP/"
+  cp -r "$REPO_ROOT/prompts" "$TMP/"
 
   BOJ_CLIENT_TEST_HTML="$FIXTURE_HTML" \
   BOJ_CONFIG_DIR="$TMP/.config/boj" \
@@ -132,6 +159,7 @@ mk4() {
 
   cp -r "$REPO_ROOT/templates" "$TMP/"
   cp -r "$REPO_ROOT/src" "$TMP/"
+  cp -r "$REPO_ROOT/prompts" "$TMP/"
 
   # 첫 번째 make 실행
   BOJ_CLIENT_TEST_HTML="$FIXTURE_HTML" \
@@ -171,6 +199,7 @@ mk5() {
 
   cp -r "$REPO_ROOT/templates" "$TMP/"
   cp -r "$REPO_ROOT/src" "$TMP/"
+  cp -r "$REPO_ROOT/prompts" "$TMP/"
 
   # make 실행
   BOJ_CLIENT_TEST_HTML="$FIXTURE_HTML" \
@@ -219,6 +248,7 @@ JAVA
 # 실행
 # ─────────────────────────────────────────────────────────────
 mk1
+mk1b
 mk2
 mk3
 mk4

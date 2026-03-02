@@ -189,7 +189,11 @@ result = result.replace("{{PROBLEM_DIR}}", problem_dir)
 result = result.replace("{{PROBLEM_JSON}}", json.dumps(problem, ensure_ascii=False, indent=2))
 print(result, end="")
 PYEOF
-)
+  )
+  if [[ $? -ne 0 ]]; then
+    echo -e "${RED}Error: 프롬프트 템플릿 생성 실패. prompts/make-skeleton.md 또는 artifacts/problem.json을 확인하세요.${NC}" >&2
+    exit 1
+  fi
 
   read -ra CMD <<< "$AGENT_CMD"
   (cd "$PROBLEM_DIR" && "${CMD[@]}" "$PROMPT")
