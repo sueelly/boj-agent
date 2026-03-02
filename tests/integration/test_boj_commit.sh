@@ -3,7 +3,7 @@
 set -e
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TESTS_DIR/../.." && pwd)"
-FIXTURE_DIR="$TESTS_DIR/../fixtures/99999-fixture"
+FIXTURE_DIR="$TESTS_DIR/../fixtures/99999"
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -23,7 +23,7 @@ mkdir -p "$NOGIT_DIR"
 cp -r "$REPO_ROOT/templates" "$NOGIT_DIR/"
 cp -r "$REPO_ROOT/src" "$NOGIT_DIR/"
 chmod +x "$NOGIT_DIR/src/boj" "$NOGIT_DIR/src/commands/"*.sh "$NOGIT_DIR/src/lib/"*.sh 2>/dev/null || true
-cp -r "$FIXTURE_DIR" "$NOGIT_DIR/99999-fixture"
+cp -r "$FIXTURE_DIR" "$NOGIT_DIR/99999"
 
 out=$("$NOGIT_DIR/src/boj" commit 99999 2>&1) || true
 if echo "$out" | grep -qi "Error.*git\|git.*저장소\|git repo"; then
@@ -38,7 +38,7 @@ fi
 git -C "$TMP" init -q 2>/dev/null || true
 git -C "$TMP" config user.email "test@test.com" 2>/dev/null || true
 git -C "$TMP" config user.name "Test" 2>/dev/null || true
-cp -r "$FIXTURE_DIR" "$TMP/99999-fixture"
+cp -r "$FIXTURE_DIR" "$TMP/99999"
 
 out2=$("$TMP/src/boj" commit 88888 2>&1) || true
 if echo "$out2" | grep -qi "Error\|없습니다"; then
@@ -59,10 +59,10 @@ chmod +x "$TMP3/src/boj" "$TMP3/src/commands/"*.sh "$TMP3/src/lib/"*.sh 2>/dev/n
 git -C "$TMP3" init -q 2>/dev/null || true
 git -C "$TMP3" config user.email "test@test.com"
 git -C "$TMP3" config user.name "Test"
-cp -r "$FIXTURE_DIR" "$TMP3/99999-fixture"
+cp -r "$FIXTURE_DIR" "$TMP3/99999"
 
 # git add + commit (변경사항 만들기)
-git -C "$TMP3" add "$TMP3/99999-fixture" 2>/dev/null || true
+git -C "$TMP3" add "$TMP3/99999" 2>/dev/null || true
 # commit.sh는 내부적으로 git add + git commit 수행
 out3=$("$TMP3/src/boj" commit 99999 --no-stats 2>&1 <<< "n") || true
 if echo "$out3" | grep -qi "BOJ 통계: 스킵\|no-stats\|커밋\|변경사항"; then

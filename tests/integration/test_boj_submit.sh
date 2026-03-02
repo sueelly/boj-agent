@@ -3,7 +3,7 @@
 set -e
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TESTS_DIR/../.." && pwd)"
-FIXTURE_DIR="$TESTS_DIR/../fixtures/99999-fixture"
+FIXTURE_DIR="$TESTS_DIR/../fixtures/99999"
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -15,7 +15,7 @@ export BOJ_ROOT="$TMP"
 cp -r "$REPO_ROOT/templates" "$TMP/"
 cp -r "$REPO_ROOT/src" "$TMP/"
 chmod +x "$TMP/src/boj" "$TMP/src/commands/"*.sh "$TMP/src/lib/"*.sh 2>/dev/null || true
-cp -r "$FIXTURE_DIR" "$TMP/99999-fixture"
+cp -r "$FIXTURE_DIR" "$TMP/99999"
 
 # boj 명령을 TMP 안에서 실행 (find_boj_root가 TMP를 루트로 인식하도록)
 BOJ="$TMP/src/boj"
@@ -30,7 +30,7 @@ if [[ $exitcode -ne 0 ]]; then
   exit 1
 fi
 
-SUBMIT_FILE="$TMP/99999-fixture/submit/Submit.java"
+SUBMIT_FILE="$TMP/99999/submit/Submit.java"
 if [[ ! -f "$SUBMIT_FILE" ]]; then
   echo "FAIL: Submit.java가 생성되지 않았습니다"
   echo "$out"
