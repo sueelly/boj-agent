@@ -4,7 +4,7 @@
 # MK2: boj_normalizer.py — problem.json → README.md 내용 검증
 # MK3: boj make 99999 — problem.json + README.md 생성 확인
 # MK4: signature_review.md 아카이브 — 기존 파일 → .bak 생성
-# MK5: Gate Check — solve(String input) 패턴 → Warning 출력
+# MK5: Gate Check — 단일 String/str 파라미터 → Warning 출력
 set -e
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TESTS_DIR/../.." && pwd)"
@@ -162,7 +162,7 @@ mk4() {
 }
 
 # ─────────────────────────────────────────────────────────────
-# MK5: Gate Check — solve(String input) 패턴 → Warning 출력
+# MK5: Gate Check — 단일 String/str 파라미터 → Warning 출력
 # ─────────────────────────────────────────────────────────────
 mk5() {
   local TMP
@@ -202,10 +202,10 @@ JAVA
   # Solution.java를 다시 gate check 대상으로 복원 (에이전트가 덮어씀 방지)
   # Gate Check는 에이전트 후에 파일을 검사함 — 더미 에이전트는 파일을 건드리지 않음
   if echo "$out" | grep -qi "gate check\|raw stdin blob\|Warning.*solve"; then
-    _pass "MK5: Gate Check — raw stdin blob 패턴 감지 시 Warning 출력"
+    _pass "MK5: Gate Check — 단일 String/str 파라미터 감지 시 Warning 출력"
   else
     # make.sh가 Gate Check Warning을 출력했는지 Solution.java로 직접 검증
-    if grep -qE 'solve\s*\(\s*String\s+(input|raw|stdin)' "$prob_dir/Solution.java" 2>/dev/null; then
+    if grep -qE 'solve\s*\(\s*(String\s+\w+|(self\s*,\s*)?\w+\s*:\s*str)\s*\)' "$prob_dir/Solution.java" 2>/dev/null; then
       # 파일은 있는데 경고가 안 나왔으면 실패
       _fail "MK5: Gate Check Warning 미출력 (파일에 금지 패턴 존재)"
       echo "  출력: $out" | head -5

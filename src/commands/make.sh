@@ -199,11 +199,12 @@ PYEOF
     echo -e "${YELLOW}Warning: 에이전트 실행 실패 (exit $agent_exit). 수동으로 진행하세요.${NC}" >&2
   fi
 
-  # ── Gate Check: raw stdin blob 패턴 감지 ─────────────────────────────────
+  # ── Gate Check: 단일 String/str 파라미터(raw stdin blob) 감지 ─────────────
+  # Java: solve(String <any>), Python: solve(... : str) 단독 파라미터
   SOLUTION_FILE="$PROBLEM_DIR/Solution.$EXT"
   if [[ -f "$SOLUTION_FILE" ]]; then
-    if grep -qE 'solve\s*\(\s*(String\s+(input|raw|stdin)|string\s+(input|raw|stdin))' "$SOLUTION_FILE" 2>/dev/null; then
-      echo -e "${YELLOW}Warning: Gate Check — solve()가 raw stdin blob 패턴을 사용합니다.${NC}" >&2
+    if grep -qE 'solve\s*\(\s*(String\s+\w+|(self\s*,\s*)?\w+\s*:\s*str)\s*\)' "$SOLUTION_FILE" 2>/dev/null; then
+      echo -e "${YELLOW}Warning: Gate Check — solve()가 단일 String/str 파라미터(raw stdin blob)를 사용합니다.${NC}" >&2
       echo -e "  ${YELLOW}→ artifacts/signature_review.md를 확인하고 서명을 수정하세요.${NC}" >&2
     fi
   fi

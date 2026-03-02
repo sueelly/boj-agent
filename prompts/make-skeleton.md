@@ -30,11 +30,9 @@
 - **구현**: 비워두거나 `TODO`만 둠 (사용자가 직접 구현).
 
 **서명 금지 규칙 (절대 위반 금지)**:
-- `solve(String input)` ← 금지 (raw stdin blob)
-- `solve(String raw)` ← 금지
-- `solve(String stdin)` ← 금지
-- `solve(String s)` 단독 파라미터 ← 금지 (파싱 없이 전체 입력을 받는 형태)
-- 반드시 입력을 파싱한 후의 값들을 개별 파라미터로 받을 것
+- **단일 String/str 파라미터 전부 금지** — 파라미터 이름과 무관하게, `solve`가 String 하나만 받는 형태는 금지 (raw stdin blob).
+- 예: `solve(String input)`, `solve(String s)`, `solve(String data)`, `solve(s: str)` 등 모두 금지.
+- 반드시 입력을 파싱한 후의 값들을 **개별 파라미터**로 받을 것.
 
 Java 예시:
 ```java
