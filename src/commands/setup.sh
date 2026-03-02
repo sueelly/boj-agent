@@ -1,16 +1,33 @@
 #!/usr/bin/env bash
-# boj setup [--check] — 초기 설정/인증 저장
+# boj setup [--check] [--session <값>] [--lang <언어>] [--root <경로>] — 초기 설정/인증 저장
 # 최초 1회 실행으로 루트, 기본 언어, git, BOJ 세션, 에이전트 명령 저장
+# 비대화형: --session, --lang, --root 플래그로 직접 설정 가능
 
 ROOT="${1:?ROOT}"
 shift
 MODE="interactive"
+OPT_SESSION=""
+OPT_LANG_SET=""
+OPT_ROOT_SET=""
 
 # 옵션 파싱
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check|-c) MODE="check"; shift ;;
-    *) echo "Unknown option: $1"; exit 1 ;;
+    --session)  OPT_SESSION="$2"; MODE="set"; shift 2 ;;
+    --session=*) OPT_SESSION="${1#--session=}"; MODE="set"; shift ;;
+    --lang)     OPT_LANG_SET="$2"; MODE="set"; shift 2 ;;
+    --lang=*)   OPT_LANG_SET="${1#--lang=}"; MODE="set"; shift ;;
+    --root)     OPT_ROOT_SET="$2"; MODE="set"; shift 2 ;;
+    --root=*)   OPT_ROOT_SET="${1#--root=}"; MODE="set"; shift ;;
+    -h|--help)
+      echo "사용법: boj setup [옵션]"
+      echo "  --check           현재 설정 표시"
+      echo "  --session <값>    BOJ 세션 쿠키(OnlineJudge) 저장"
+      echo "  --lang <언어>     기본 언어 저장"
+      echo "  --root <경로>     레포 루트 경로 저장"
+      exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
@@ -20,6 +37,28 @@ source "$ROOT/src/lib/config.sh"
 
 if [[ "$MODE" == "check" ]]; then
   boj_check_config
+  exit 0
+fi
+
+# ── 비대화형 set 모드 ─────────────────────────────────────────────────────────
+if [[ "$MODE" == "set" ]]; then
+  if [[ -n "$OPT_SESSION" ]]; then
+    if ! boj_config_set session "$OPT_SESSION"; then exit 1; fi
+    echo -e "${GREEN}✓ session 저장됨${NC}"
+  fi
+  if [[ -n "$OPT_LANG_SET" ]]; then
+    if ! boj_validate_lang "$OPT_LANG_SET"; then exit 1; fi
+    if ! boj_config_set lang "$OPT_LANG_SET"; then exit 1; fi
+    echo -e "${GREEN}✓ lang 저장됨: $OPT_LANG_SET${NC}"
+  fi
+  if [[ -n "$OPT_ROOT_SET" ]]; then
+    if [[ ! -d "$OPT_ROOT_SET" ]]; then
+      echo -e "${RED}Error: 경로가 존재하지 않습니다: $OPT_ROOT_SET${NC}" >&2
+      exit 1
+    fi
+    if ! boj_config_set root "$OPT_ROOT_SET"; then exit 1; fi
+    echo -e "${GREEN}✓ root 저장됨: $OPT_ROOT_SET${NC}"
+  fi
   exit 0
 fi
 

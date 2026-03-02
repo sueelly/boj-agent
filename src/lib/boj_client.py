@@ -174,14 +174,42 @@ def _extract_samples(html: str) -> list:
 
 # ── fetch ───────────────────────────────────────────────────────────────────
 
+def _load_session() -> str:
+    """Load BOJ session cookie value from config file."""
+    config_dir = os.environ.get("BOJ_CONFIG_DIR", str(Path.home() / ".config" / "boj"))
+    session_file = Path(config_dir) / "session"
+    if session_file.exists():
+        return session_file.read_text(encoding="utf-8").strip()
+    return ""
+
+
 def _fetch_html(problem_num: str) -> str:
     test_html = os.environ.get("BOJ_CLIENT_TEST_HTML", "")
     if test_html:
         return Path(test_html).read_text(encoding="utf-8")
+
+    session = _load_session()
+    headers: dict[str, str] = {"User-Agent": USER_AGENT}
+    if session:
+        headers["Cookie"] = f"OnlineJudge={session}"
+
     url = f"{BOJ_BASE_URL}/{problem_num}"
-    req = request.Request(url, headers={"User-Agent": USER_AGENT})
-    with request.urlopen(req, timeout=10) as resp:
-        return resp.read().decode("utf-8")
+    req = request.Request(url, headers=headers)
+    try:
+        with request.urlopen(req, timeout=10) as resp:
+            return resp.read().decode("utf-8")
+    except request.HTTPError as e:
+        if e.code == 403:
+            print(
+                "Error: BOJ 인증 실패 (403). 세션 쿠키를 설정하세요:\n"
+                "  boj setup --session <OnlineJudge 쿠키 값>",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        if e.code == 404:
+            print(f"Error: 문제를 찾을 수 없습니다: {problem_num}", file=sys.stderr)
+            sys.exit(1)
+        raise
 
 
 # ── public API ───────────────────────────────────────────────────────────────
