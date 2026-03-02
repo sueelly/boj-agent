@@ -57,18 +57,23 @@ mkdir -p "$FIXTURE_DIR"
 echo "=== BOJ $PROBLEM_ID 픽스처 저장 ==="
 echo ""
 
-# 1. HTML 다운로드
+# 1. HTML 다운로드 (또는 로컬 파일 사용)
 BOJ_URL="https://www.acmicpc.net/problem/$PROBLEM_ID"
-echo "[1/3] HTML 다운로드: $BOJ_URL"
-if ! curl -s --max-time 15 \
-    -H "User-Agent: Mozilla/5.0 (compatible; boj-agent/1.0)" \
-    -o "$HTML_FILE" "$BOJ_URL"; then
-  echo "Error: HTML 다운로드 실패" >&2
-  exit 1
+if [[ -n "${BOJ_CLIENT_TEST_HTML:-}" && -f "$BOJ_CLIENT_TEST_HTML" ]]; then
+  echo "[1/3] 로컬 HTML 사용: $BOJ_CLIENT_TEST_HTML"
+  cp "$BOJ_CLIENT_TEST_HTML" "$HTML_FILE"
+else
+  echo "[1/3] HTML 다운로드: $BOJ_URL"
+  if ! curl -s --max-time 15 \
+      -H "User-Agent: Mozilla/5.0 (compatible; boj-agent/1.0)" \
+      -o "$HTML_FILE" "$BOJ_URL"; then
+    echo "Error: HTML 다운로드 실패" >&2
+    exit 1
+  fi
 fi
 
 if [[ ! -s "$HTML_FILE" ]]; then
-  echo "Error: 다운로드된 HTML이 비어 있습니다. 문제 번호를 확인하세요." >&2
+  echo "Error: HTML이 비어 있습니다. 문제 번호 또는 파일 경로를 확인하세요." >&2
   exit 1
 fi
 echo "  ✓ raw.html ($(wc -c < "$HTML_FILE") bytes)"

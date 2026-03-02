@@ -24,7 +24,7 @@ echo "=========================================="
 echo ""
 
 # 매트릭스 범위
-FIXTURES=(99999)
+FIXTURES=(99999 1000 6588 9495)
 LANGS=(java python)
 
 for fixture in "${FIXTURES[@]}"; do

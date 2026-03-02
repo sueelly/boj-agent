@@ -42,21 +42,24 @@ if [[ -z "$langs" ]]; then
   langs="java python cpp c kotlin go rust"
 fi
 
-# 언어별 컴파일러 바이너리
-declare -A LANG_BIN=(
-  [java]="javac"
-  [python]="python3"
-  [cpp]="g++"
-  [c]="gcc"
-  [kotlin]="kotlinc"
-  [go]="go"
-  [rust]="rustc"
-  [ruby]="ruby"
-  [swift]="swiftc"
-  [scala]="scalac"
-  [js]="node"
-  [ts]="tsc"
-)
+# 언어별 컴파일러 바이너리 (bash 3.2 호환 — case 문 사용)
+_lang_bin() {
+  case "$1" in
+    java)   echo "javac" ;;
+    python) echo "python3" ;;
+    cpp)    echo "g++" ;;
+    c)      echo "gcc" ;;
+    kotlin) echo "kotlinc" ;;
+    go)     echo "go" ;;
+    rust)   echo "rustc" ;;
+    ruby)   echo "ruby" ;;
+    swift)  echo "swiftc" ;;
+    scala)  echo "scalac" ;;
+    js)     echo "node" ;;
+    ts)     echo "tsc" ;;
+    *)      echo "" ;;
+  esac
+}
 
 while IFS= read -r lang; do
   [[ -z "$lang" ]] && continue
@@ -91,7 +94,7 @@ elif isinstance(data, list):
   fi
 
   # 3. 컴파일러 바이너리 확인 (로컬 설치 여부)
-  bin="${LANG_BIN[$lang]:-}"
+  bin="$(_lang_bin "$lang")"
   if [[ -n "$bin" ]]; then
     if command -v "$bin" &>/dev/null; then
       _pass "$lang: $bin PATH에 있음"

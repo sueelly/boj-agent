@@ -44,7 +44,7 @@ run_one_fixture() {
 
   rm -rf "$tmp"
 
-  if [[ $exitcode -eq 0 ]] && echo "$out" | grep -q "passed"; then
+  if [[ $exitcode -eq 0 ]] && echo "$out" | grep -qi "passed\|통과"; then
     echo "PASS: run $fixture_id ($lang)"
     return 0
   else
@@ -76,9 +76,8 @@ make_one_fixture() {
   export BOJ_CONFIG_DIR="$tmp/.config/boj"
 
   local out
-  out=$(cd "$tmp" && \
-        BOJ_CLIENT_TEST_HTML="$fixture_dir/raw.html" \
-        echo y | "$tmp/src/boj" make "$fixture_id" --lang "$lang" --no-open 2>&1) || true
+  out=$(BOJ_CLIENT_TEST_HTML="$fixture_dir/raw.html" \
+        bash -c "cd '$tmp' && echo y | '$tmp/src/boj' make '$fixture_id' --lang '$lang' --no-open" 2>&1) || true
   local exitcode=$?
 
   local prob_dir
