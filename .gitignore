@@ -2,3 +2,7 @@
 dev/
 .claude/settings.local.json
 .DS_Store
+# 컴파일 산출물
+*.class
+# oh-my-claudecode 상태 디렉터리
+.omc/
