@@ -9,6 +9,8 @@ MODE="interactive"
 OPT_SESSION=""
 OPT_LANG_SET=""
 OPT_ROOT_SET=""
+OPT_USERNAME=""
+OPT_PASSWORD=""
 
 # 옵션 파싱
 while [[ $# -gt 0 ]]; do
@@ -20,12 +22,18 @@ while [[ $# -gt 0 ]]; do
     --lang=*)   OPT_LANG_SET="${1#--lang=}"; MODE="set"; shift ;;
     --root)     OPT_ROOT_SET="$2"; MODE="set"; shift 2 ;;
     --root=*)   OPT_ROOT_SET="${1#--root=}"; MODE="set"; shift ;;
+    --username) OPT_USERNAME="$2"; MODE="set"; shift 2 ;;
+    --username=*) OPT_USERNAME="${1#--username=}"; MODE="set"; shift ;;
+    --password) OPT_PASSWORD="$2"; MODE="set"; shift 2 ;;
+    --password=*) OPT_PASSWORD="${1#--password=}"; MODE="set"; shift ;;
     -h|--help)
       echo "사용법: boj setup [옵션]"
-      echo "  --check           현재 설정 표시"
-      echo "  --session <값>    BOJ 세션 쿠키(OnlineJudge) 저장"
-      echo "  --lang <언어>     기본 언어 저장"
-      echo "  --root <경로>     레포 루트 경로 저장"
+      echo "  --check                현재 설정 표시"
+      echo "  --session <값>         BOJ 세션 쿠키(OnlineJudge) 직접 저장"
+      echo "  --username <아이디>    BOJ 아이디로 자동 로그인 후 세션 저장"
+      echo "  --password <비밀번호>  BOJ 비밀번호 (--username과 함께 사용)"
+      echo "  --lang <언어>          기본 언어 저장"
+      echo "  --root <경로>          레포 루트 경로 저장"
       exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
@@ -42,6 +50,18 @@ fi
 
 # ── 비대화형 set 모드 ─────────────────────────────────────────────────────────
 if [[ "$MODE" == "set" ]]; then
+  # --username + --password → 자동 로그인 후 세션 저장
+  if [[ -n "$OPT_USERNAME" && -n "$OPT_PASSWORD" ]]; then
+    echo "BOJ 로그인 중..."
+    if ! python3 "$ROOT/src/lib/boj_client.py" \
+        --login --username "$OPT_USERNAME" --password "$OPT_PASSWORD" --save; then
+      exit 1
+    fi
+    echo -e "${GREEN}✓ 로그인 완료 및 session 저장됨${NC}"
+  elif [[ -n "$OPT_USERNAME" || -n "$OPT_PASSWORD" ]]; then
+    echo -e "${RED}Error: --username과 --password를 함께 입력하세요${NC}" >&2
+    exit 1
+  fi
   if [[ -n "$OPT_SESSION" ]]; then
     if ! boj_config_set session "$OPT_SESSION"; then exit 1; fi
     echo -e "${GREEN}✓ session 저장됨${NC}"
@@ -171,20 +191,46 @@ if [[ -n "$current_session" ]]; then
 fi
 if [[ "${skip_session:-false}" != "true" ]]; then
   echo "  BOJ 세션 쿠키가 있으면 commit 통계 조회 등이 가능합니다."
-  echo "  방법:"
-  echo "    1. 브라우저에서 acmicpc.net 로그인"
-  echo "    2. 개발자도구(F12) → Application → Cookies"
-  echo "    3. 'bojautologin' 또는 'OnlineJudge' 쿠키 값 복사"
-  read -p "  세션 쿠키 값 (없으면 Enter 스킵): " new_session
-  if [[ -n "$new_session" ]]; then
-    if ! boj_config_set session "$new_session"; then
-      echo -e "  ${RED}설정 저장 실패.${NC}" >&2
-      exit 1
-    fi
-    echo -e "  ${GREEN}✓ 저장됨${NC}"
-  else
-    echo "  스킵 (나중에 boj setup 으로 추가 가능)"
-  fi
+  echo "  설정 방법을 선택하세요:"
+  echo "    1) 아이디/비밀번호로 자동 로그인"
+  echo "    2) 세션 쿠키 직접 입력"
+  echo "    0) 스킵"
+  read -p "  선택 [1/2/0]: " session_method
+  case "$session_method" in
+    1)
+      read -p "  BOJ 아이디: " boj_username
+      read -s -p "  BOJ 비밀번호: " boj_password
+      echo ""
+      if [[ -n "$boj_username" && -n "$boj_password" ]]; then
+        echo "  로그인 중..."
+        if ! python3 "$ROOT/src/lib/boj_client.py" \
+            --login --username "$boj_username" --password "$boj_password" --save; then
+          echo -e "  ${RED}로그인 실패. 아이디/비밀번호를 확인하세요.${NC}" >&2
+          echo "  스킵 (나중에 boj setup 으로 재시도 가능)"
+        else
+          echo -e "  ${GREEN}✓ 로그인 완료 및 session 저장됨${NC}"
+        fi
+      else
+        echo "  스킵"
+      fi
+      ;;
+    2)
+      echo "  방법: 브라우저 → acmicpc.net 로그인 → F12 → Application → Cookies → OnlineJudge 값 복사"
+      read -p "  세션 쿠키 값: " new_session
+      if [[ -n "$new_session" ]]; then
+        if ! boj_config_set session "$new_session"; then
+          echo -e "  ${RED}설정 저장 실패.${NC}" >&2
+          exit 1
+        fi
+        echo -e "  ${GREEN}✓ 저장됨${NC}"
+      else
+        echo "  스킵"
+      fi
+      ;;
+    *)
+      echo "  스킵 (나중에 boj setup 으로 추가 가능)"
+      ;;
+  esac
 fi
 
 # BOJ 사용자 ID (세션과 독립 — commit 통계용)
