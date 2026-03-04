@@ -1,0 +1,5 @@
+{
+  "testCases": [
+    {"id": 1, "input": "1 2", "expected": "3"}
+  ]
+}
