@@ -9,15 +9,20 @@ Output:
 
 Test isolation:
     BOJ_CLIENT_TEST_HTML=/path/to/file.html  → skip HTTP, parse local file
+    BOJ_BASE_URL_OVERRIDE=http://localhost:PORT → use custom base URL (for local HTTP server tests)
+    BOJ_LOGIN_URL_OVERRIDE=http://localhost:PORT/signin → use custom login URL (for local HTTP server tests)
+    BOJ_CONFIG_DIR=/path/to/dir              → use custom config dir (overrides ~/.config/boj)
 """
 
 import argparse
+import http.cookiejar
 import json
 import os
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib import request
+from urllib.parse import urlencode
 
 BOJ_BASE_URL = "https://www.acmicpc.net/problem"
 USER_AGENT = "Mozilla/5.0 (compatible; boj-agent/1.0)"
@@ -172,6 +177,47 @@ def _extract_samples(html: str) -> list:
     return samples
 
 
+# ── login ───────────────────────────────────────────────────────────────────
+
+BOJ_LOGIN_URL = "https://www.acmicpc.net/signin"
+
+
+def boj_login(username: str, password: str) -> str:
+    """Log in to BOJ and return the OnlineJudge session cookie value.
+
+    Raises:
+        ValueError: if login fails (wrong credentials or unexpected response).
+    """
+    login_url = os.environ.get("BOJ_LOGIN_URL_OVERRIDE", BOJ_LOGIN_URL)
+    jar = http.cookiejar.CookieJar()
+    opener = request.build_opener(request.HTTPCookieProcessor(jar))
+
+    # GET the login page first (may set initial cookies)
+    try:
+        opener.open(request.Request(login_url, headers={"User-Agent": USER_AGENT}), timeout=10)
+    except Exception:
+        pass
+
+    # POST credentials
+    data = urlencode({
+        "login_user_id": username,
+        "login_password": password,
+        "auto_login": "on",
+    }).encode("utf-8")
+    post_req = request.Request(login_url, data=data, headers={"User-Agent": USER_AGENT})
+    try:
+        opener.open(post_req, timeout=10)
+    except request.HTTPError as e:
+        if e.code not in (301, 302, 303, 307, 308):
+            raise
+
+    for cookie in jar:
+        if cookie.name == "OnlineJudge":
+            return cookie.value
+
+    raise ValueError("로그인 실패: 아이디/비밀번호를 확인하세요")
+
+
 # ── fetch ───────────────────────────────────────────────────────────────────
 
 def _load_session() -> str:
@@ -193,7 +239,8 @@ def _fetch_html(problem_num: str) -> str:
     if session:
         headers["Cookie"] = f"OnlineJudge={session}"
 
-    url = f"{BOJ_BASE_URL}/{problem_num}"
+    base_url = os.environ.get("BOJ_BASE_URL_OVERRIDE", BOJ_BASE_URL)
+    url = f"{base_url}/{problem_num}"
     req = request.Request(url, headers=headers)
     try:
         with request.urlopen(req, timeout=10) as resp:
@@ -231,15 +278,44 @@ def parse_problem(html: str, problem_num: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="BOJ Problem Fetcher")
-    parser.add_argument("--problem", required=True, help="Problem number")
-    parser.add_argument("--out", required=True, help="Output directory for problem.json")
+    parser.add_argument("--problem", help="Problem number")
+    parser.add_argument("--out", help="Output directory for problem.json")
     parser.add_argument(
         "--image-mode",
         choices=["download", "reference", "skip"],
         default="reference",
         help="Image handling mode (default: reference)",
     )
+    # login mode
+    parser.add_argument("--login", action="store_true", help="Log in to BOJ and obtain session cookie")
+    parser.add_argument("--username", help="BOJ username (used with --login)")
+    parser.add_argument("--password", help="BOJ password (used with --login)")
+    parser.add_argument("--save", action="store_true", help="Save session cookie to config dir (used with --login)")
     args = parser.parse_args()
+
+    if args.login:
+        if not args.username or not args.password:
+            print("Error: --login requires --username and --password", file=sys.stderr)
+            sys.exit(1)
+        try:
+            session = boj_login(args.username, args.password)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error: BOJ 로그인 실패: {e}", file=sys.stderr)
+            sys.exit(1)
+        if args.save:
+            config_dir = os.environ.get("BOJ_CONFIG_DIR", str(Path.home() / ".config" / "boj"))
+            Path(config_dir).mkdir(parents=True, exist_ok=True)
+            Path(config_dir, "session").write_text(session, encoding="utf-8")
+            print(f"✓ session 저장됨 ({config_dir}/session)", file=sys.stderr)
+        else:
+            print(session)
+        return
+
+    if not args.problem or not args.out:
+        parser.error("--problem and --out are required (or use --login mode)")
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
