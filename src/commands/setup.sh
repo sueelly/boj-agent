@@ -53,8 +53,8 @@ if [[ "$MODE" == "set" ]]; then
   # --username + --password → 자동 로그인 후 세션 저장
   if [[ -n "$OPT_USERNAME" && -n "$OPT_PASSWORD" ]]; then
     echo "BOJ 로그인 중..."
-    if ! python3 "$ROOT/src/lib/boj_client.py" \
-        --login --username "$OPT_USERNAME" --password "$OPT_PASSWORD" --save; then
+    if ! BOJ_LOGIN_PASSWORD="$OPT_PASSWORD" python3 "$ROOT/src/lib/boj_client.py" \
+        --login --username "$OPT_USERNAME" --save; then
       exit 1
     fi
     echo -e "${GREEN}✓ 로그인 완료 및 session 저장됨${NC}"
@@ -203,8 +203,8 @@ if [[ "${skip_session:-false}" != "true" ]]; then
       echo ""
       if [[ -n "$boj_username" && -n "$boj_password" ]]; then
         echo "  로그인 중..."
-        if ! python3 "$ROOT/src/lib/boj_client.py" \
-            --login --username "$boj_username" --password "$boj_password" --save; then
+        if ! BOJ_LOGIN_PASSWORD="$boj_password" python3 "$ROOT/src/lib/boj_client.py" \
+            --login --username "$boj_username" --save; then
           echo -e "  ${RED}로그인 실패. 아이디/비밀번호를 확인하세요.${NC}" >&2
           echo "  스킵 (나중에 boj setup 으로 재시도 가능)"
         else

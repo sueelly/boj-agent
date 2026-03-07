@@ -161,11 +161,12 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.login:
-        if not args.username or not args.password:
-            print("Error: --login requires --username and --password", file=sys.stderr)
+        password = args.password or os.environ.get("BOJ_LOGIN_PASSWORD", "")
+        if not args.username or not password:
+            print("Error: --login requires --username and --password (or BOJ_LOGIN_PASSWORD env var)", file=sys.stderr)
             sys.exit(1)
         try:
-            session = boj_login(args.username, args.password)
+            session = boj_login(args.username, password)
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)

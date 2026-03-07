@@ -6,10 +6,10 @@ source "$TESTS_DIR/unit/lib/test_helper.sh"
 _run_make() {
   local tmp="$1"
   local extra_args="${2:-}"
-  cd "$tmp" && \
+  (cd "$tmp" && \
     BOJ_CLIENT_TEST_HTML="$HELPER_FIXTURES_DIR/99999/raw.html" \
     BOJ_CONFIG_DIR="$tmp/.config/boj" \
-    bash -c "echo y | '$tmp/src/boj' make 99999 --no-open $extra_args" 2>&1 || true
+    bash -c "echo y | '$tmp/src/boj' make 99999 --no-open $extra_args") 2>&1 || true
 }
 
 # ── existing_sig_review_archived ─────────────────────────────────────────────
