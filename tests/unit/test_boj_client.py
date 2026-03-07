@@ -264,7 +264,7 @@ class TestFetchLiveBOJ(unittest.TestCase):
                         "아이디/비밀번호를 확인하세요."
                     )
             else:
-                raise AssertionError(
+                raise unittest.SkipTest(
                     "실제 BOJ 테스트를 실행하려면 다음 환경변수 중 하나를 설정하세요:\n"
                     "  BOJ_SESSION=<OnlineJudge 쿠키값>\n"
                     "  또는\n"
