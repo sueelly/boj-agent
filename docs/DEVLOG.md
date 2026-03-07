@@ -14,6 +14,12 @@
 
 ---
 
+## [2026-03-08] fix(ci): pip deps, git config, CWD side-effect, credential exposure [#23]
+**변경 요약:** PR #24 CI 4종류 실패 수정 — pip install 누락, git global config 체크, make_branches.sh CWD 오염, setup.sh 비밀번호 커맨드라인 노출.
+**의사결정:** (1) ci.yml에 `pip install -r requirements.txt` 추가. (2) `commit.sh` git email 체크를 `--global` 제거 → local 우선으로 변경. (3) `_run_make`를 `(...)` subshell로 래핑해 teardown 후 getcwd 오류 방지. (4) `--password` 인자 제거 후 `BOJ_LOGIN_PASSWORD` env var로 전달해 `ps aux` 노출 차단.
+**검증 방법:** `./tests/run_tests.sh --unit` 전체 통과, `bash tests/unit/commands/make_branches.sh`, `bash tests/unit/commands/commit_branches.sh`
+---
+
 ## [2026-03-08] refactor(client): urllib/HTMLParser → requests+BeautifulSoup 전환 [#13]
 **변경 요약:** `boj_client.py`에서 stdlib(`urllib`, `http.cookiejar`, `html.parser`) 제거 후 `requests`+`beautifulsoup4`로 교체. 커스텀 HTMLParser 서브클래스 3개(`_BaseParser`, `_TextParser`, `_InnerHTMLParser`) 및 추출 헬퍼 함수 3개 삭제. `requirements.txt` 신규 생성.
 **의사결정:** 기존 HTMLParser 기반 구현은 64줄짜리 `_BaseParser` + 2개 서브클래스로 유지보수 부담이 컸음. BeautifulSoup `find(id=...)` + `get_text()`/`decode_contents()`로 동일 기능을 훨씬 간결하게 표현 가능. `requests.Session`은 302 응답 Set-Cookie를 자동 처리하므로 로그인 로직도 단순화됨.
