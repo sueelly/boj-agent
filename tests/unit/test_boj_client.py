@@ -111,8 +111,8 @@ def _start_login_server():
 class TestFetchWithLocalServer(unittest.TestCase):
     """로컬 서버를 이용한 HTTP fetch 단위 테스트 — 네트워크 불필요."""
 
-    def test_session_cookie_sent_when_configured(self):
-        """세션 파일이 있으면 Cookie: OnlineJudge=<값> 헤더를 전송해야 한다."""
+    def test_no_cookie_even_when_session_file_exists(self):
+        """세션 파일이 있어도 Cookie 헤더를 전송하지 않아야 한다 (공개 페이지, 인증 불필요)."""
         captured = []
         server, port = _start_server(
             _make_handler(200, b"<html><body>ok</body></html>", record_into=captured)
@@ -132,8 +132,8 @@ class TestFetchWithLocalServer(unittest.TestCase):
 
         self.assertTrue(len(captured) > 0, "서버가 요청을 받지 못했습니다")
         cookie = captured[0].get("Cookie", "")
-        self.assertIn("OnlineJudge=MYSESSION123", cookie,
-                      f"Cookie 헤더에 세션값이 없습니다: {cookie!r}")
+        self.assertNotIn("OnlineJudge", cookie,
+                         f"세션 파일이 있음에도 Cookie 헤더가 전송됨: {cookie!r}")
 
     def test_no_cookie_when_no_session(self):
         """세션 파일이 없으면 Cookie 헤더를 전송하지 않아야 한다."""

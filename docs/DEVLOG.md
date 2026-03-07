@@ -14,6 +14,12 @@
 
 ---
 
+## [2026-03-08] fix(client): remove session dep, fix whitespace, remove --password arg [#24]
+**변경 요약:** `_load_session()` 제거 (BOJ 문제 페이지 공개 접근 가능), `get_text(strip=True)` → `get_text(separator="\n").strip()` whitespace 보존 수정, `--password` argparse 인자 및 `setup.sh` 옵션 파싱 완전 제거.
+**의사결정:** Cursor bot 보안 리뷰 + BOJ 비인증 fetch 확인으로 세션 로직 불필요 판명. `get_text(strip=True)`는 각 텍스트 노드를 개별 strip 후 join해 내부 개행/공백을 손실시킴; `separator="\n"`으로 수정. `--password` 커맨드라인 인자는 `ps aux`에 노출되므로 `BOJ_LOGIN_PASSWORD` env var 전용으로 전환.
+**검증 방법:** `python3 tests/unit/test_boj_client.py -v` (7 passed, 1 skipped)
+---
+
 ## [2026-03-08] fix(ci): pip deps, git config, CWD side-effect, credential exposure [#23]
 **변경 요약:** PR #24 CI 4종류 실패 수정 — pip install 누락, git global config 체크, make_branches.sh CWD 오염, setup.sh 비밀번호 커맨드라인 노출.
 **의사결정:** (1) ci.yml에 `pip install -r requirements.txt` 추가. (2) `commit.sh` git email 체크를 `--global` 제거 → local 우선으로 변경. (3) `_run_make`를 `(...)` subshell로 래핑해 teardown 후 getcwd 오류 방지. (4) `--password` 인자 제거 후 `BOJ_LOGIN_PASSWORD` env var로 전달해 `ps aux` 노출 차단.

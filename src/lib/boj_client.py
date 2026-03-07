@@ -63,35 +63,23 @@ def boj_login(username: str, password: str) -> str:
 
 # ── fetch ───────────────────────────────────────────────────────────────────
 
-def _load_session() -> str:
-    """Load BOJ session cookie value from config file."""
-    config_dir = os.environ.get("BOJ_CONFIG_DIR", str(Path.home() / ".config" / "boj"))
-    session_file = Path(config_dir) / "session"
-    if session_file.exists():
-        return session_file.read_text(encoding="utf-8").strip()
-    return ""
-
-
 def _fetch_html(problem_num: str) -> str:
     test_html = os.environ.get("BOJ_CLIENT_TEST_HTML", "")
     if test_html:
         return Path(test_html).read_text(encoding="utf-8")
 
-    session_cookie = _load_session()
     base_url = os.environ.get("BOJ_BASE_URL_OVERRIDE", BOJ_BASE_URL)
     url = f"{base_url}/{problem_num}"
-    cookies = {"OnlineJudge": session_cookie} if session_cookie else {}
 
     try:
-        resp = requests.get(url, headers={"User-Agent": USER_AGENT}, cookies=cookies, timeout=10)
+        resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=10)
     except requests.exceptions.RequestException as e:
         print(f"Error: BOJ 페이지 가져오기 실패: {e}", file=sys.stderr)
         sys.exit(1)
 
     if resp.status_code == 403:
         print(
-            "Error: BOJ 인증 실패 (403). 세션 쿠키를 설정하세요:\n"
-            "  boj setup --session <OnlineJudge 쿠키 값>",
+            f"Error: BOJ 접근 거부 (403): {url}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -125,8 +113,8 @@ def parse_problem(html: str, problem_num: str) -> dict:
         out = soup.find(id=f"sample-output-{n}")
         samples.append({
             "id": n,
-            "input": inp.get_text(strip=True),
-            "output": out.get_text(strip=True) if out else "",
+            "input": inp.get_text(separator="\n").strip(),
+            "output": out.get_text(separator="\n").strip() if out else "",
         })
         n += 1
 
@@ -156,12 +144,11 @@ def main() -> None:
     # login mode
     parser.add_argument("--login", action="store_true", help="Log in to BOJ and obtain session cookie")
     parser.add_argument("--username", help="BOJ username (used with --login)")
-    parser.add_argument("--password", help="BOJ password (used with --login)")
     parser.add_argument("--save", action="store_true", help="Save session cookie to config dir (used with --login)")
     args = parser.parse_args()
 
     if args.login:
-        password = args.password or os.environ.get("BOJ_LOGIN_PASSWORD", "")
+        password = os.environ.get("BOJ_LOGIN_PASSWORD", "")
         if not args.username or not password:
             print("Error: --login requires --username and --password (or BOJ_LOGIN_PASSWORD env var)", file=sys.stderr)
             sys.exit(1)

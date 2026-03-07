@@ -10,7 +10,6 @@ OPT_SESSION=""
 OPT_LANG_SET=""
 OPT_ROOT_SET=""
 OPT_USERNAME=""
-OPT_PASSWORD=""
 
 # 옵션 파싱
 while [[ $# -gt 0 ]]; do
@@ -24,14 +23,11 @@ while [[ $# -gt 0 ]]; do
     --root=*)   OPT_ROOT_SET="${1#--root=}"; MODE="set"; shift ;;
     --username) OPT_USERNAME="$2"; MODE="set"; shift 2 ;;
     --username=*) OPT_USERNAME="${1#--username=}"; MODE="set"; shift ;;
-    --password) OPT_PASSWORD="$2"; MODE="set"; shift 2 ;;
-    --password=*) OPT_PASSWORD="${1#--password=}"; MODE="set"; shift ;;
     -h|--help)
       echo "사용법: boj setup [옵션]"
       echo "  --check                현재 설정 표시"
       echo "  --session <값>         BOJ 세션 쿠키(OnlineJudge) 직접 저장"
-      echo "  --username <아이디>    BOJ 아이디로 자동 로그인 후 세션 저장"
-      echo "  --password <비밀번호>  BOJ 비밀번호 (--username과 함께 사용)"
+      echo "  --username <아이디>    BOJ 아이디로 자동 로그인 후 세션 저장 (비밀번호는 BOJ_LOGIN_PASSWORD 환경변수)"
       echo "  --lang <언어>          기본 언어 저장"
       echo "  --root <경로>          레포 루트 경로 저장"
       exit 0 ;;
@@ -50,17 +46,18 @@ fi
 
 # ── 비대화형 set 모드 ─────────────────────────────────────────────────────────
 if [[ "$MODE" == "set" ]]; then
-  # --username + --password → 자동 로그인 후 세션 저장
-  if [[ -n "$OPT_USERNAME" && -n "$OPT_PASSWORD" ]]; then
+  # --username → BOJ_LOGIN_PASSWORD 환경변수로 자동 로그인 후 세션 저장
+  if [[ -n "$OPT_USERNAME" ]]; then
+    if [[ -z "${BOJ_LOGIN_PASSWORD:-}" ]]; then
+      echo -e "${RED}Error: --username 사용 시 BOJ_LOGIN_PASSWORD 환경변수를 설정하세요${NC}" >&2
+      exit 1
+    fi
     echo "BOJ 로그인 중..."
-    if ! BOJ_LOGIN_PASSWORD="$OPT_PASSWORD" python3 "$ROOT/src/lib/boj_client.py" \
+    if ! python3 "$ROOT/src/lib/boj_client.py" \
         --login --username "$OPT_USERNAME" --save; then
       exit 1
     fi
     echo -e "${GREEN}✓ 로그인 완료 및 session 저장됨${NC}"
-  elif [[ -n "$OPT_USERNAME" || -n "$OPT_PASSWORD" ]]; then
-    echo -e "${RED}Error: --username과 --password를 함께 입력하세요${NC}" >&2
-    exit 1
   fi
   if [[ -n "$OPT_SESSION" ]]; then
     if ! boj_config_set session "$OPT_SESSION"; then exit 1; fi
