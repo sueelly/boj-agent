@@ -8,10 +8,10 @@ missing_problem_dir() {
   local tmp
   tmp=$(setup_tmp_boj_root)
 
-  # open.sh는 폴더 없으면 boj make를 시도하는데, BOJ_CLIENT_TEST_HTML 없이 실행하면 실패
-  # 따라서 exit 1이 되어야 함
+  # open.sh는 폴더 없으면 boj make를 시도함
+  # BOJ_CLIENT_TEST_HTML=/dev/null → 빈 HTML → 제목 없음 → 즉시 exit 1 (네트워크 불필요)
   local out
-  out=$(cd "$tmp" && BOJ_EDITOR=true "$tmp/src/boj" open 88888 2>&1)
+  out=$(cd "$tmp" && BOJ_CLIENT_TEST_HTML=/dev/null BOJ_EDITOR=true "$tmp/src/boj" open 88888 2>&1)
   local exitcode=$?
 
   # make가 실패하므로 exit 1이어야 함
