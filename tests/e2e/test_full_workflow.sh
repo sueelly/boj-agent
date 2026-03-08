@@ -83,6 +83,11 @@ if [[ -n "$prob_dir" ]]; then
   cp "$FIXTURES_DIR/99999/test/test_cases.json" "$prob_dir/test/"
 fi
 
+# 진단: prob_dir 내용 확인 (CI 실패 디버그용)
+echo "  [diag] prob_dir=$prob_dir"
+echo "  [diag] $(ls -1 "$prob_dir" 2>&1 || echo '(ls failed)')"
+echo "  [diag] test/: $(ls -1 "$prob_dir/test" 2>&1 || echo '(no test/)')"
+
 run_out=$(cd "$E2E_TMP" && "$BOJ" run 99999 2>&1) || true
 run_exit=$?
 
