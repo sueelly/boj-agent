@@ -1,0 +1,50 @@
+# dev.log — 개발 일지
+
+## 2026-03-08 | Issue #25: pytest characterization test strategy 문서 작성
+
+**브랜치**: `docs/issue-25-test-strategy`
+**기반**: `main` (d75221d — PR #24 머지 후)
+
+### 배경
+
+- PR #24(이슈 #23)가 main에 머지됨: 테스트 커버리지 개선, 픽스처 추가, boj_client Python 단위 테스트, E2E 워크플로우, CI 수정
+- `docs/rewrite-plan.md`에서 Bash CLI → Python 코어 전환 계획 수립 완료
+- 전환 전에 현재 동작을 pytest로 고정(freeze)하는 특성화 테스트 전략 필요
+
+### 주요 작업
+
+1. **`docs/test-strategy.md` 신규 작성** — 12개 섹션 구성:
+   - 디렉터리 구조 (신규 `tests/characterization/` + 기존 구조 반영)
+   - 픽스처 관례 (레이아웃, `scripts/record_fixture.sh`, 불변성)
+   - 격리 규칙 (env var 기반 네트워크/에이전트/에디터 격리)
+   - conftest.py 공통 fixture (`boj_env`, `fixture_path`, `run_boj`)
+   - 테스트 네이밍 (`test_<behavior>_when_<condition>`)
+   - AAA 패턴 (Arrange/Act/Assert)
+   - 테스트 매트릭스 (`docs/edge-cases.md` ID 참조: M1-M12, R1-R12 등)
+   - Marker 규약 (`@pytest.mark.network`, `xfail`, `slow`)
+   - subprocess 호출 패턴 + 단언/안티패턴
+   - pyproject.toml 설정
+   - 커맨드별 작성 가이드 (make/run/submit/commit/open/review/setup)
+   - 기존 Bash 테스트 전환 관계
+
+2. **정합성 검증** — 실제 프로젝트 구조와 비교 후 수정:
+   - Section 1: 레거시 픽스처(`99999-fixture/`, `boj_client/`), 기존 테스트 하위 디렉터리(`unit/commands/`, `unit/lib/`, `harness/`, `lib/`) 추가
+   - Section 11: 전환 매핑 테이블에 config, helper, harness, 레거시 픽스처 행 추가
+
+### 이전 주요 이력 (PR #24 / 이슈 #23)
+
+- `f04bca8` fix(run): LANG → PROG_LANG 리네임 (POSIX locale 변수 충돌 방지)
+- `4a6795e` refactor(client): urllib/HTMLParser → requests+BeautifulSoup
+- `99c60d5` test(fixtures): 모든 픽스처에 Java/Python 솔루션 추가
+- `34ea4f2` test(unit): boj_client HTTP fetch/login 단위 테스트 추가
+- `3fb2fed` test(e2e): 전체 E2E 워크플로우 + 언어 매트릭스 하네스 추가
+- `12bab48` docs(coverage): 테스트 커버리지 문서 + `record_fixture.sh` 추가
+
+### 결정 사항
+
+- 특성화 테스트는 `tests/characterization/`에 위치 (기존 Bash 테스트와 공존)
+- 네트워크 테스트는 `@pytest.mark.network`로 기본 제외
+- 알려진 취약 동작(submit inner class 등)은 `xfail`로 문서화
+- 기존 Bash 테스트는 Python 전환 완료까지 유지
+
+---
