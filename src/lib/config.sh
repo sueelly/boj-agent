@@ -128,13 +128,22 @@ boj_open_editor() {
     "$editor" "$path"
     return 0
   fi
-  # fallback
-  for ed in cursor code vim nano; do
+  # GUI 에디터: TTY 불필요
+  for ed in cursor code; do
     if command -v "$ed" &>/dev/null; then
       "$ed" "$path"
       return 0
     fi
   done
+  # 터미널 에디터: 대화형 TTY 있을 때만
+  if [[ -t 0 ]]; then
+    for ed in vim nano; do
+      if command -v "$ed" &>/dev/null; then
+        "$ed" "$path"
+        return 0
+      fi
+    done
+  fi
   echo -e "${RED}Error: 에디터를 찾을 수 없습니다. --editor 또는 ~/.config/boj/editor 설정.${NC}" >&2
   return 1
 }

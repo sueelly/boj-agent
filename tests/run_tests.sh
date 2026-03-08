@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# tests/ 전체 테스트 실행 (unit + integration)
-# 사용: ./tests/run_tests.sh [--unit|--integration|--all]
+# tests/ 전체 테스트 실행 (unit + integration + e2e + matrix)
+# 사용: ./tests/run_tests.sh [--unit|--integration|--e2e|--matrix|--all]
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INTEGRATION_DIR="$TESTS_DIR/integration"
 UNIT_DIR="$TESTS_DIR/unit"
+UNIT_CMD_DIR="$TESTS_DIR/unit/commands"
+E2E_DIR="$TESTS_DIR/e2e"
+HARNESS_DIR="$TESTS_DIR/harness"
 
 MODE="${1:---all}"
 passed=0
@@ -33,6 +36,9 @@ if [[ "$MODE" == "--unit" || "$MODE" == "--all" ]]; then
   for f in "$UNIT_DIR"/test_*.sh; do
     [[ -f "$f" ]] && run_test_file "$f" || true
   done
+  for f in "$UNIT_CMD_DIR"/*.sh; do
+    [[ -f "$f" ]] && run_test_file "$f" || true
+  done
 fi
 
 if [[ "$MODE" == "--integration" || "$MODE" == "--all" ]]; then
@@ -40,6 +46,19 @@ if [[ "$MODE" == "--integration" || "$MODE" == "--all" ]]; then
   for f in "$INTEGRATION_DIR"/test_*.sh; do
     [[ -f "$f" ]] && run_test_file "$f" || true
   done
+fi
+
+if [[ "$MODE" == "--e2e" || "$MODE" == "--all" ]]; then
+  echo "=== E2E 테스트 ==="
+  for f in "$E2E_DIR"/test_*.sh; do
+    [[ -f "$f" ]] && run_test_file "$f" || true
+  done
+fi
+
+if [[ "$MODE" == "--matrix" ]]; then
+  echo "=== 다언어 매트릭스 테스트 ==="
+  [[ -f "$HARNESS_DIR/lang_compat.sh" ]] && run_test_file "$HARNESS_DIR/lang_compat.sh" || true
+  [[ -f "$HARNESS_DIR/run_matrix.sh" ]] && run_test_file "$HARNESS_DIR/run_matrix.sh" || true
 fi
 
 echo ""

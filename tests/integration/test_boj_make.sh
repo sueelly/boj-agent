@@ -8,9 +8,9 @@
 set -e
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TESTS_DIR/../.." && pwd)"
-FIXTURE_HTML="$TESTS_DIR/../fixtures/boj_client/99999.html"
-FIXTURE_JSON="$TESTS_DIR/../fixtures/boj_client/99999-problem.json"
-FIXTURE_README="$TESTS_DIR/../fixtures/boj_client/99999-readme.md"
+FIXTURE_HTML="$TESTS_DIR/../fixtures/99999/raw.html"
+FIXTURE_JSON="$TESTS_DIR/../fixtures/99999/problem.json"
+FIXTURE_README="$TESTS_DIR/../fixtures/99999/readme.md"
 
 passed=0
 failed=0

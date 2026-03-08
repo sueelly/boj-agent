@@ -3,14 +3,14 @@
 set -e
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TESTS_DIR/../.." && pwd)"
-FIXTURE_DIR="$TESTS_DIR/../fixtures/99999-fixture"
+FIXTURE_DIR="$TESTS_DIR/../fixtures/99999"
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 cp -r "$REPO_ROOT/templates" "$TMP/"
 cp -r "$REPO_ROOT/src" "$TMP/"
-cp -r "$FIXTURE_DIR" "$TMP/99999-fixture"
+cp -r "$FIXTURE_DIR" "$TMP/99999"
 
 cd "$TMP"
 out=$("$TMP/src/boj" run 99999 2>&1) || true

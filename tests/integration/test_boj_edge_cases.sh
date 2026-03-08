@@ -4,7 +4,7 @@
 set -e
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TESTS_DIR/../.." && pwd)"
-FIXTURE_DIR="$TESTS_DIR/../fixtures/99999-fixture"
+FIXTURE_DIR="$TESTS_DIR/../fixtures/99999"
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -16,7 +16,7 @@ export BOJ_ROOT="$TMP"
 cp -r "$REPO_ROOT/src" "$TMP/"
 cp -r "$REPO_ROOT/templates" "$TMP/"
 chmod +x "$TMP/src/boj" "$TMP/src/commands/"*.sh "$TMP/src/lib/"*.sh 2>/dev/null || true
-cp -r "$FIXTURE_DIR" "$TMP/99999-fixture"
+cp -r "$FIXTURE_DIR" "$TMP/99999"
 
 pass=0
 fail=0
@@ -57,7 +57,7 @@ TMP_NO_ID=$(mktemp -d)
 cp -r "$REPO_ROOT/src" "$TMP_NO_ID/"
 cp -r "$REPO_ROOT/templates" "$TMP_NO_ID/"
 chmod +x "$TMP_NO_ID/src/boj" "$TMP_NO_ID/src/commands/"*.sh "$TMP_NO_ID/src/lib/"*.sh 2>/dev/null || true
-cp -r "$FIXTURE_DIR" "$TMP_NO_ID/99999-noid"
+cp -r "$FIXTURE_DIR" "$TMP_NO_ID/99999-noid" && cp -r "$FIXTURE_DIR/test" "$TMP_NO_ID/99999-noid/test" 2>/dev/null || true
 # id 없는 test_cases.json 만들기
 cat > "$TMP_NO_ID/99999-noid/test/test_cases.json" << 'EOF'
 {

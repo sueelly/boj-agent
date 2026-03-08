@@ -1,0 +1,10 @@
+{
+  "testCases": [
+    {
+      "id": 1,
+      "description": "sample",
+      "input": "5\no.o.o\n.ox..\noxxxo\n..x..\no.o.o",
+      "expected": "12"
+    }
+  ]
+}
