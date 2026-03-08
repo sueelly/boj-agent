@@ -90,15 +90,18 @@ fi
 echo -e "${BLUE}🔍 [A] BOJ ${PROBLEM_NUM}번 문제 정보 가져오는 중...${NC}"
 
 TMP_FETCH=$(mktemp -d)
-trap 'rm -rf "$TMP_FETCH"' EXIT
-
+_PY_ERR=$(mktemp)
+trap 'rm -f "$_PY_ERR"; rm -rf "$TMP_FETCH"' EXIT
 if ! python3 "$ROOT/src/lib/boj_client.py" \
     --problem "$PROBLEM_NUM" \
     --out "$TMP_FETCH" \
-    --image-mode "$IMAGE_MODE" 2>/dev/null; then
+    --image-mode "$IMAGE_MODE" 2>"$_PY_ERR"; then
+  [[ -s "$_PY_ERR" ]] && cat "$_PY_ERR" >&2
+  rm -f "$_PY_ERR"
   echo -e "${RED}Error: 문제 정보 가져오기 실패. 문제번호 또는 네트워크를 확인하세요.${NC}" >&2
   exit 1
 fi
+rm -f "$_PY_ERR"
 
 TMP_JSON="$TMP_FETCH/problem.json"
 

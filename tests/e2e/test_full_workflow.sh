@@ -48,9 +48,10 @@ echo ""
 
 # ── STEP 1: boj make 99999 ───────────────────────────────────────────────────
 echo "--- STEP 1: boj make 99999 ---"
-make_out=$(BOJ_CLIENT_TEST_HTML="$FIXTURES_DIR/99999/raw.html" \
-           bash -c "cd '$E2E_TMP' && echo y | '$BOJ' make 99999 --no-open" 2>&1) || true
+export BOJ_CLIENT_TEST_HTML="$FIXTURES_DIR/99999/raw.html"
+make_out=$(bash -c "cd '$E2E_TMP' && echo y | '$BOJ' make 99999 --no-open" 2>&1) || true
 make_exit=$?
+unset BOJ_CLIENT_TEST_HTML
 
 prob_dir=$(find "$E2E_TMP" -maxdepth 1 -type d -name "99999*" | head -1)
 
