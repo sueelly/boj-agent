@@ -20,6 +20,9 @@ _fail() { echo "FAIL: $1"; echo "  → ${2:-}"; ((failed++)) || true; }
 E2E_TMP=$(mktemp -d)
 trap 'rm -rf "$E2E_TMP"' EXIT
 
+# boj make 시 python3가 pip 설치 경로(bs4 등)를 찾을 수 있도록 원래 HOME 보관
+ORIG_HOME="${HOME:-}"
+
 export BOJ_ROOT="$E2E_TMP"
 export HOME="$E2E_TMP"
 export BOJ_CONFIG_DIR="$E2E_TMP/.config/boj"
@@ -49,7 +52,8 @@ echo ""
 # ── STEP 1: boj make 99999 ───────────────────────────────────────────────────
 echo "--- STEP 1: boj make 99999 ---"
 export BOJ_CLIENT_TEST_HTML="$FIXTURES_DIR/99999/raw.html"
-make_out=$(bash -c "cd '$E2E_TMP' && echo y | '$BOJ' make 99999 --no-open" 2>&1) || true
+# make 시에만 HOME 복원: python3가 시스템/사용자 site-packages(bs4 등)를 찾을 수 있게 함
+make_out=$(HOME="${ORIG_HOME:-$HOME}" bash -c "cd '$E2E_TMP' && echo y | '$BOJ' make 99999 --no-open" 2>&1) || true
 make_exit=$?
 unset BOJ_CLIENT_TEST_HTML
 
