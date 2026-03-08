@@ -102,8 +102,22 @@ BOJ HTML 구조가 바뀌면 새 픽스처를 추가하고, 기존 것은 회귀
 | `BOJ_LOGIN_URL_OVERRIDE` | 로그인 URL을 로컬 서버로 교체 |
 | `BOJ_CONFIG_DIR` | 설정 디렉터리를 임시 경로로 격리 |
 | `BOJ_ROOT` | BOJ 작업 루트를 임시 디렉터리로 격리 |
-| `BOJ_AGENT_CMD` | 에이전트를 mock 명령으로 교체 (예: `echo MOCK`) |
+| `BOJ_AGENT_CMD` | 에이전트를 mock 명령으로 교체 (예: `echo MOCK`) — **full 격리에서만 설정** |
 | `BOJ_EDITOR` | 에디터를 `true`로 교체 (UI 방지) |
+
+### 3.1.1 2단계 격리 정책
+
+커맨드별로 에이전트 격리 수준을 분리한다:
+
+| 격리 수준 | 대상 커맨드 | BOJ fetch | Agent | Marker |
+|-----------|------------|-----------|-------|--------|
+| **full** | run, commit, open, setup, submit | 우회 | 모킹 (`echo MOCK`) | 없음 |
+| **agent** | make, review | 우회 | **실제 실행** (`BOJ_AGENT_CMD` 필요) | `@pytest.mark.agent` |
+
+- **full 격리**: `BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 우회. 폴더 구조, JSON 생성, exit code 등 구조적 동작만 검증.
+- **agent 격리**: `BOJ_AGENT_CMD`를 설정하지 않아 실제 에이전트가 실행됨. signature_review.md 생성, 코드 리뷰 피드백 등 에이전트 동작을 검증.
+- `@pytest.mark.agent` 테스트는 CI에서 기본 제외 (credential + 비용). 로컬 `/verify` 단계에서만 실행.
+- `BOJ_AGENT_CMD`는 setup 커맨드에서 설정하며, 미설정 시 기본값을 사용한다.
 
 ### 3.2 conftest.py 공통 fixture
 
@@ -160,7 +174,6 @@ def boj_env(tmp_path):
         "BOJ_ROOT": str(tmp_path),
         "HOME": str(tmp_path),
         "BOJ_CONFIG_DIR": str(tmp_path / ".config" / "boj"),
-        "BOJ_AGENT_CMD": "echo MOCK_AGENT",
         "BOJ_EDITOR": "true",
     })
 
@@ -324,7 +337,32 @@ def test_live_fetch_problem_1010(boj_env):
 
 네트워크 테스트는 **1010** (이미지 포함)과 **10951** (EOF 파싱) 두 문제에 한정한다.
 
-### 7.2 `@pytest.mark.xfail`
+### 7.2 `@pytest.mark.agent`
+
+실제 에이전트 실행이 필요한 테스트에 부착한다. CI에서 기본 제외되며, 로컬 `/verify`에서만 실행한다.
+
+```python
+# conftest.py
+def pytest_configure(config):
+    config.addinivalue_line("markers", "agent: requires real agent execution (costly/slow)")
+```
+
+```python
+@pytest.mark.agent
+def test_make_generates_signature_review(boj_env, fixture_path):
+    """make 실행 후 signature_review.md가 생성되고 PASS 판정이다."""
+    tmp_path, env = boj_env
+    env["BOJ_CLIENT_TEST_HTML"] = str(fixture_path(99999) / "raw.html")
+
+    result = run_boj(env, "make", "99999", "--no-open")
+
+    prob_dir = next(tmp_path.glob("99999*"))
+    review = prob_dir / "artifacts" / "signature_review.md"
+    assert review.exists(), "signature_review.md 미생성"
+    assert "PASS" in review.read_text(), "signature_review.md에서 PASS 판정 없음"
+```
+
+### 7.3 `@pytest.mark.xfail`
 
 현재 미지원이거나 알려진 취약 동작을 문서화한다.
 재작성 후 xfail이 pass로 바뀌면 제거한다.
@@ -335,7 +373,7 @@ def test_submit_with_inner_class(boj_env, fixture_path):
     """Solution에 inner class가 있을 때 Submit.java가 올바르게 생성된다."""
 ```
 
-### 7.3 `@pytest.mark.slow`
+### 7.4 `@pytest.mark.slow`
 
 실행 시간이 5초 이상인 테스트에 부착한다.
 
@@ -413,9 +451,10 @@ assert "Solution.java" in result.stderr
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not network' -v --tb=short"
+addopts = "-m 'not network and not agent' -v --tb=short"
 markers = [
     "network: requires internet access to BOJ",
+    "agent: requires real agent execution (costly/slow)",
     "slow: takes > 5 seconds",
     "xfail: known broken behavior (document for rewrite)",
 ]
@@ -427,17 +466,46 @@ markers = [
 
 ### 10.1 boj make
 
-**격리 키**: `BOJ_CLIENT_TEST_HTML` (HTTP 우회), `BOJ_AGENT_CMD=echo MOCK` (에이전트 우회)
+make는 두 가지 테스트 전략을 사용한다:
+
+#### A. 모킹 테스트 (fast, CI용)
+
+`BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 우회. 폴더 구조, JSON 생성, README 생성 등 구조적 동작만 검증한다.
 
 ```python
-def test_make_happy(boj_env, fixture_path):
+def test_make_creates_structure(boj_env, fixture_path):
+    """make 실행 시 폴더·JSON·README가 생성된다."""
     tmp_path, env = boj_env
     env["BOJ_CLIENT_TEST_HTML"] = str(fixture_path(99999) / "raw.html")
+    env["BOJ_AGENT_CMD"] = "echo MOCK"
+
     result = run_boj(env, "make", "99999", "--no-open")
+
     assert result.returncode == 0
     prob_dir = next(tmp_path.glob("99999*"))
     assert (prob_dir / "artifacts" / "problem.json").exists()
     assert (prob_dir / "README.md").exists()
+```
+
+#### B. 에이전트 테스트 (`@pytest.mark.agent`)
+
+실제 에이전트가 실행되어 signature_review.md 생성, 점수 PASS 확인, 기준 미달 시 재생성 루프를 검증한다.
+
+```python
+@pytest.mark.agent
+def test_make_generates_signature_review(boj_env, fixture_path):
+    """make 실행 후 signature_review.md가 생성되고 PASS 판정이다."""
+    tmp_path, env = boj_env
+    env["BOJ_CLIENT_TEST_HTML"] = str(fixture_path(99999) / "raw.html")
+    # BOJ_AGENT_CMD를 설정하지 않아 실제 에이전트 실행
+
+    result = run_boj(env, "make", "99999", "--no-open")
+
+    assert result.returncode == 0
+    prob_dir = next(tmp_path.glob("99999*"))
+    review = prob_dir / "artifacts" / "signature_review.md"
+    assert review.exists(), "signature_review.md 미생성"
+    assert "PASS" in review.read_text(), "signature_review.md에서 PASS 판정 없음"
 ```
 
 ### 10.2 boj run
@@ -467,12 +535,29 @@ def test_run_java_happy(boj_env, fixture_path):
 
 ### 10.3 boj submit
 
+submit은 에이전트 연동이 없다. 하드코딩된 Java 접합 로직(sed/grep)이 정상 동작하는지 검증한다.
+항상 `BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 모킹한다.
+
 ```python
 def test_submit_java_compiles(boj_env, fixture_path):
-    # ... (make + 픽스처 복사 후)
+    """submit이 Submit.java를 생성하고 컴파일이 성공한다."""
+    tmp_path, env = boj_env
+    env["BOJ_AGENT_CMD"] = "echo MOCK"
+    fix = fixture_path(99999)
+
+    # make로 폴더 생성
+    env["BOJ_CLIENT_TEST_HTML"] = str(fix / "raw.html")
+    run_boj(env, "make", "99999", "--no-open")
+    prob_dir = next(tmp_path.glob("99999*"))
+
+    # 픽스처에서 솔루션 복사
+    shutil.copy(fix / "Solution.java", prob_dir)
+
+    # submit 실행
     result = run_boj(env, "submit", "99999")
     assert result.returncode == 0
     assert (prob_dir / "submit" / "Submit.java").exists()
+
     # 컴파일 검증
     compile_result = subprocess.run(
         ["javac", str(prob_dir / "submit" / "Submit.java")],
@@ -496,10 +581,57 @@ def test_commit_creates_git_commit(boj_env, fixture_path):
     assert log.stdout.strip() != ""  # 커밋 1개 이상
 ```
 
-### 10.5 boj open / review / setup
+### 10.5 boj open
+
+에디터/브라우저 호출은 `BOJ_EDITOR=true`로 대체하여 실행 여부만 확인한다.
+`BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 모킹한다.
+
+### 10.6 boj review
+
+review는 두 가지 테스트 전략을 사용한다:
+
+#### A. 모킹 테스트 (fast, CI용)
+
+`BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 우회. 에이전트 미설정 fallback 동작, 폴더 없음 에러 등 구조적 동작만 검증한다.
+
+```python
+def test_review_exits_one_when_no_problem_dir(boj_env):
+    """문제 폴더가 없으면 exit 1로 종료한다."""
+    tmp_path, env = boj_env
+    env["BOJ_AGENT_CMD"] = "echo MOCK"
+
+    result = run_boj(env, "review", "99999")
+    assert result.returncode != 0
+    assert "Error:" in result.stderr
+```
+
+#### B. 에이전트 테스트 (`@pytest.mark.agent`)
+
+실제 에이전트가 코드 리뷰 피드백을 stdout으로 출력하는지 검증한다.
+
+```python
+@pytest.mark.agent
+def test_review_outputs_feedback(boj_env, fixture_path):
+    """review 실행 시 에이전트가 코드 리뷰 피드백을 출력한다."""
+    tmp_path, env = boj_env
+    fix = fixture_path(99999)
+    env["BOJ_CLIENT_TEST_HTML"] = str(fix / "raw.html")
+    # BOJ_AGENT_CMD를 설정하지 않아 실제 에이전트 실행
+
+    # make로 폴더 생성 + 솔루션 복사
+    run_boj(env, "make", "99999", "--no-open")
+    prob_dir = next(tmp_path.glob("99999*"))
+    shutil.copy(fix / "Solution.java", prob_dir)
+
+    result = run_boj(env, "review", "99999")
+    assert result.returncode == 0
+    assert len(result.stdout.strip()) > 0, "리뷰 피드백이 비어 있음"
+```
+
+### 10.7 boj setup
 
 대화형 명령은 `input_text` 파라미터로 stdin을 제공한다.
-에디터/브라우저 호출은 `BOJ_EDITOR=true`로 대체하여 실행 여부만 확인한다.
+`BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 모킹한다.
 
 ---
 
@@ -511,7 +643,7 @@ def test_commit_creates_git_commit(boj_env, fixture_path):
 | 단위 (설정) | `tests/unit/test_config.sh` | `tests/characterization/test_setup.py` |
 | 단위 (헬퍼) | `tests/unit/lib/test_helper.sh` | pytest fixture로 대체 (`conftest.py`) |
 | 통합 | `tests/integration/*.sh` | 동일 파일에 통합 (subprocess 호출) |
-| E2E | `tests/e2e/test_full_workflow.sh` | `tests/characterization/test_workflow.py` |
+| E2E | `tests/e2e/test_full_workflow.sh` | `tests/e2e/test_full_workflow.py` (Python 전환) |
 | 하네스 | `tests/harness/*.sh` | Phase 1 범위 외 (다언어 지원 시 재구성) |
 | Python 단위 | `tests/unit/test_boj_client.py` | 유지 (그대로) |
 | 레거시 픽스처 | `tests/fixtures/99999-fixture/` | `tests/fixtures/99999/`로 통합 후 제거 |
@@ -535,7 +667,7 @@ def test_commit_creates_git_commit(boj_env, fixture_path):
     python3 -m pytest tests/characterization/ -v --tb=short
 ```
 
-CI에서는 `not network` marker로 네트워크 테스트를 자동 제외한다.
+CI에서는 `not network and not agent` marker로 네트워크 테스트와 에이전트 테스트를 자동 제외한다.
 네트워크 테스트는 수동 트리거 또는 별도 워크플로우로만 실행한다.
 
 ---
