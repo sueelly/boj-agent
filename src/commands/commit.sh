@@ -40,7 +40,7 @@ if ! git -C "$ROOT" rev-parse --git-dir &>/dev/null; then
 fi
 
 # git user 확인
-git_email="$(git config --global user.email 2>/dev/null || echo '')"
+git_email="$(git -C "$ROOT" config user.email 2>/dev/null || echo '')"
 if [[ -z "$git_email" ]]; then
   echo -e "${RED}Error: git user.email이 설정되지 않았습니다. boj setup 또는 git config --global user.email 실행.${NC}" >&2
   exit 1

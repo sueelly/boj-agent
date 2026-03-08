@@ -1,0 +1,17 @@
+{
+  "problem_num": "1000",
+  "title": "A+B",
+  "time_limit": "",
+  "memory_limit": "",
+  "description_html": "<p>두 정수 A와 B를 입력받은 다음,&nbsp;A+B를 출력하는 프로그램을 작성하시오.</p>",
+  "input_html": "<p>첫째 줄에 A와 B가 주어진다. (0 &lt; A, B &lt; 10)</p>",
+  "output_html": "<p>첫째 줄에 A+B를 출력한다.</p>",
+  "samples": [
+    {
+      "id": 1,
+      "input": "1 2",
+      "output": "3"
+    }
+  ],
+  "images": []
+}

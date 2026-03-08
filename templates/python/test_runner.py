@@ -7,6 +7,7 @@ test.parse.parse_and_solve(sol, input) 호출 후 기대값과 비교.
 계약: test/parse.py에 parse_and_solve(sol, input: str) -> str 함수가 있어야 함.
 solution 모듈에는 solve(...) 메서드를 가진 객체가 있어야 함.
 """
+import importlib.util
 import json
 import re
 import sys
@@ -46,13 +47,26 @@ def normalize(s: str) -> str:
 
 
 def main() -> None:
+    # Insert problem dir (cwd) at front so user's solution.py takes priority
+    # over any same-named file in the script's own templates directory.
+    cwd = str(Path.cwd())
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
+
     test_file = Path("test/test_cases.json")
     if not test_file.exists():
         print("❌ Error: test/test_cases.json 파일을 찾을 수 없습니다.", file=sys.stderr)
         sys.exit(1)
 
     import solution
-    from test import parse
+
+    parse_path = Path("test/parse.py")
+    if not parse_path.exists():
+        print("❌ Error: test/parse.py 파일을 찾을 수 없습니다.", file=sys.stderr)
+        sys.exit(1)
+    _spec = importlib.util.spec_from_file_location("_parse", parse_path)
+    parse = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(parse)
 
     sol = solution.Solution()
     cases = load_test_cases(test_file)

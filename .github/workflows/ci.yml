@@ -23,6 +23,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Install Python dependencies
+        run: python3 -m pip install -r requirements.txt
+
       - name: Run all tests
         run: |
           chmod +x tests/run_tests.sh

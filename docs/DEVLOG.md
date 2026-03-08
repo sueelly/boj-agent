@@ -14,6 +14,44 @@
 
 ---
 
+## [2026-03-08] fix(client): remove session dep, fix whitespace, remove --password arg [#24]
+**변경 요약:** `_load_session()` 제거 (BOJ 문제 페이지 공개 접근 가능), `get_text(strip=True)` → `get_text(separator="\n").strip()` whitespace 보존 수정, `--password` argparse 인자 및 `setup.sh` 옵션 파싱 완전 제거.
+**의사결정:** Cursor bot 보안 리뷰 + BOJ 비인증 fetch 확인으로 세션 로직 불필요 판명. `get_text(strip=True)`는 각 텍스트 노드를 개별 strip 후 join해 내부 개행/공백을 손실시킴; `separator="\n"`으로 수정. `--password` 커맨드라인 인자는 `ps aux`에 노출되므로 `BOJ_LOGIN_PASSWORD` env var 전용으로 전환.
+**검증 방법:** `python3 tests/unit/test_boj_client.py -v` (7 passed, 1 skipped)
+---
+
+## [2026-03-08] fix(ci): pip deps, git config, CWD side-effect, credential exposure [#23]
+**변경 요약:** PR #24 CI 4종류 실패 수정 — pip install 누락, git global config 체크, make_branches.sh CWD 오염, setup.sh 비밀번호 커맨드라인 노출.
+**의사결정:** (1) ci.yml에 `pip install -r requirements.txt` 추가. (2) `commit.sh` git email 체크를 `--global` 제거 → local 우선으로 변경. (3) `_run_make`를 `(...)` subshell로 래핑해 teardown 후 getcwd 오류 방지. (4) `--password` 인자 제거 후 `BOJ_LOGIN_PASSWORD` env var로 전달해 `ps aux` 노출 차단.
+**검증 방법:** `./tests/run_tests.sh --unit` 전체 통과, `bash tests/unit/commands/make_branches.sh`, `bash tests/unit/commands/commit_branches.sh`
+---
+
+## [2026-03-08] refactor(client): urllib/HTMLParser → requests+BeautifulSoup 전환 [#13]
+**변경 요약:** `boj_client.py`에서 stdlib(`urllib`, `http.cookiejar`, `html.parser`) 제거 후 `requests`+`beautifulsoup4`로 교체. 커스텀 HTMLParser 서브클래스 3개(`_BaseParser`, `_TextParser`, `_InnerHTMLParser`) 및 추출 헬퍼 함수 3개 삭제. `requirements.txt` 신규 생성.
+**의사결정:** 기존 HTMLParser 기반 구현은 64줄짜리 `_BaseParser` + 2개 서브클래스로 유지보수 부담이 컸음. BeautifulSoup `find(id=...)` + `get_text()`/`decode_contents()`로 동일 기능을 훨씬 간결하게 표현 가능. `requests.Session`은 302 응답 Set-Cookie를 자동 처리하므로 로그인 로직도 단순화됨.
+**검증 방법:** `python3 tests/unit/test_boj_client.py -v` (7개 로컬 테스트 모두 통과), `parse_problem` 픽스처 직접 검증(`title == '두 수의 합'`, `len(samples) == 2`), `./tests/integration/test_boj_run.sh` (PASS)
+
+---
+
+## [2026-03-08] docs(rewrite): Python 전환 계획 문서화 및 브랜칭 전략 결정 [#23]
+**변경 요약:** 전체 코드베이스 분석 후 Shell→Python 전환 계획(`docs/rewrite-plan.md`)과 브랜칭 전략(`docs/branching-recommendation.md`) 작성
+**의사결정:**
+- **전환 방향**: Shell+Python 혼합 구조의 유지보수 한계(중복 trap 로직, config 이중화, PTY 없이 테스트 불가, `set -e` 회피 패턴)를 근거로 전체 CLI를 Python으로 이전하기로 결정. `boj_client.py`/`boj_normalizer.py`(issue #13)가 올바른 방향임을 확인.
+- **이전 순서**: 한 번에 전부 바꾸지 않고 수직 슬라이스(vertical slice) 방식 채택. `boj run`(Java only) → `boj make` → `boj submit` → 나머지 순서로 명령어별 PR.
+- **패키지 구조**: `boj_core/`(순수 로직, CLI/색상/대화 없음) + `boj_cli/`(얇은 래퍼) 이층 구조. `boj_core`는 100% 단위 테스트 가능, 미래 MCP 노출도 코어 변경 없이 가능.
+- **브랜칭**: Option B 채택 — issue #23 테스트 인프라(fixtures, test_helper, test_boj_client.py)를 main에 머지 후 `rewrite/python-core` 브랜치 생성. issue #23 작업을 버리는 Option C는 배제.
+- **검토한 대안**: Option A(test/issue-23 HEAD에서 바로 분기)는 이슈 경계가 불명확해서 PR 리뷰가 어렵다는 이유로 배제.
+**검증 방법:** `cat docs/rewrite-plan.md`로 10개 섹션 존재 확인, `cat docs/branching-recommendation.md`로 옵션 3개 및 권장안 확인, `git diff --stat`로 docs/ 외 변경 없음 확인
+
+---
+
+## [2026-03-08] test(coverage): boj_client HTTP fetch/login 단위 테스트 및 픽스처 인프라 추가 [#23]
+**변경 요약:** 로컬 HTTP 서버 기반 `test_boj_client.py` 작성, 4개 문제 픽스처(1000/6588/9495/99999) 추가, `test_helper.sh` 공통 헬퍼 도입, `setup` 명령에 비대화형 플래그(`--set-key`) 추가
+**의사결정:** 네트워크 없이 재현 가능한 테스트를 위해 `BOJ_CLIENT_TEST_HTML`(HTML 픽스처 직접 주입) + `BOJ_BASE_URL_OVERRIDE`(로컬 서버 URL로 교체) 두 가지 격리 메커니즘을 병행 사용. 로컬 HTTP 서버 방식은 쿠키/헤더 동작까지 검증 가능해 단순 파일 주입보다 신뢰도가 높음. `boj_login()`은 `BOJ_LOGIN_URL_OVERRIDE`로 격리.
+**검증 방법:** `python -m pytest tests/unit/test_boj_client.py -v` 전체 통과
+
+---
+
 ## [2026-03-02] chore(docs): devlog.md → DEVLOG.md 리네임 및 구조화 [#14]
 **변경 요약:** 서사형 devlog를 날짜/변경요약/의사결정/검증 단위의 구조화 변경 로그로 전환, /commit 스킬에 DEVLOG 업데이트 단계 추가
 **의사결정:** 서사형(여정 블로그) 형식은 특정 변경이 언제·왜 이루어졌는지 추적이 어렵다. 구조화 형식으로 전환하고 /commit 흐름에 자동 기록 단계를 포함(옵션 B)하여 갱신 루틴을 강제한다. 옵션 A(post-commit hook)는 hook 실패 시 커밋이 차단될 위험이 있고, 옵션 C(check_devlog.sh)는 강제력이 약해 선택하지 않았다.
