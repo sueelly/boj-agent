@@ -41,12 +41,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-LANG="${OPT_LANG:-$boj_lang}"
+PROG_LANG="${OPT_LANG:-$boj_lang}"
 IMAGE_MODE="${OPT_IMAGE_MODE:-reference}"
 OUTPUT_DIR="${OPT_OUTPUT:-$ROOT}"
 
 # ── 유효성 검사 ──────────────────────────────────────────────────────────────
-boj_validate_lang "$LANG" || exit 1
+boj_validate_lang "$PROG_LANG" || exit 1
 
 case "$IMAGE_MODE" in
   download|reference|skip) ;;
@@ -69,9 +69,9 @@ _lang_ext() {
     *) echo "" ;;
   esac
 }
-EXT="$(_lang_ext "$LANG")"
+EXT="$(_lang_ext "$PROG_LANG")"
 SUPPORTS_PARSE="false"
-[[ "$LANG" == "java" || "$LANG" == "python" ]] && SUPPORTS_PARSE="true"
+[[ "$PROG_LANG" == "java" || "$PROG_LANG" == "python" ]] && SUPPORTS_PARSE="true"
 
 # ── 기존 폴더 확인 (네트워크 전) ─────────────────────────────────────────────
 EXISTING_DIR="$(boj_find_problem_dir "$OUTPUT_DIR" "$PROBLEM_NUM")"
@@ -174,12 +174,12 @@ fi
 
 if [[ -n "$AGENT_CMD" ]]; then
   echo -e "${BLUE}🤖 [C] 스켈레톤 생성 중 (에이전트)...${NC}"
-  echo -e "  문제: ${PROBLEM_NUM} (${PROBLEM_TITLE}) | 언어: ${LANG} | SUPPORTS_PARSE: ${SUPPORTS_PARSE}"
+  echo -e "  문제: ${PROBLEM_NUM} (${PROBLEM_TITLE}) | 언어: ${PROG_LANG} | SUPPORTS_PARSE: ${SUPPORTS_PARSE}"
   echo ""
 
   # 프롬프트 템플릿에 변수 치환 (Python으로 안전하게 처리)
   PROMPT=$(python3 - "$ROOT/prompts/make-skeleton.md" "$PROBLEM_JSON" \
-      "$LANG" "$EXT" "$SUPPORTS_PARSE" "$PROBLEM_DIR" <<'PYEOF'
+      "$PROG_LANG" "$EXT" "$SUPPORTS_PARSE" "$PROBLEM_DIR" <<'PYEOF'
 import sys, json, pathlib
 template_path, json_path, lang, ext, supports_parse, problem_dir = sys.argv[1:]
 template = pathlib.Path(template_path).read_text(encoding="utf-8")
@@ -229,7 +229,7 @@ else
   # ── fallback: 에디터 + 클립보드 ──────────────────────────────────────────
   echo -e "${YELLOW}Warning: 에이전트 미설정. 에디터+클립보드 fallback.${NC}" >&2
   # 구분자는 실제 줄바꿈으로 구성. printf로 복사해 JSON 내 \n,\t,\\ 등이 해석되지 않도록 함
-  PROMPT="백준 ${PROBLEM_NUM}번 스켈레톤 만들어줘. 언어: ${LANG}"$'\n\n'"$(cat "$PROBLEM_JSON")"
+  PROMPT="백준 ${PROBLEM_NUM}번 스켈레톤 만들어줘. 언어: ${PROG_LANG}"$'\n\n'"$(cat "$PROBLEM_JSON")"
   if command -v pbcopy &>/dev/null; then
     printf '%s' "$PROMPT" | pbcopy
     echo -e "${GREEN}📋 problem.json 내용을 클립보드에 복사했습니다.${NC}"

@@ -32,16 +32,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-LANG="${OPT_LANG:-$boj_lang}"
+PROG_LANG="${OPT_LANG:-$boj_lang}"
 
 # 문제 폴더 찾기
 PROBLEM_DIR="$(boj_require_problem_dir "$ROOT" "$PROBLEM_NUM")" || exit 1
 PROBLEM_NAME="$(basename "$PROBLEM_DIR")"
 
-echo -e "${BLUE}📦 Submit 생성: $PROBLEM_NAME ($LANG)${NC}"
+echo -e "${BLUE}📦 Submit 생성: $PROBLEM_NAME ($PROG_LANG)${NC}"
 
 # 언어별 파일 확장자
-case "$LANG" in
+case "$PROG_LANG" in
   java)     EXT="java"; SUBMIT_FILE="submit/Submit.java" ;;
   python)   EXT="py";   SUBMIT_FILE="submit/Submit.py" ;;
   cpp)      EXT="cpp";  SUBMIT_FILE="submit/Submit.cpp" ;;
@@ -55,7 +55,7 @@ esac
 
 # Python은 템플릿 convention solution.py 우선 (run.sh와 동일)
 SOLUTION_FILE="$PROBLEM_DIR/Solution.$EXT"
-if [[ "$LANG" == "python" ]]; then
+if [[ "$PROG_LANG" == "python" ]]; then
   if [[ -f "$PROBLEM_DIR/solution.py" ]]; then SOLUTION_FILE="$PROBLEM_DIR/solution.py"
   elif [[ -f "$PROBLEM_DIR/Solution.py" ]]; then SOLUTION_FILE="$PROBLEM_DIR/Solution.py"
   fi
@@ -257,14 +257,14 @@ CMAIN_END
 }
 
 # 언어별 생성 실행
-case "$LANG" in
+case "$PROG_LANG" in
   java)   generate_java_submit ;;
   python) generate_python_submit ;;
   cpp)    generate_cpp_submit ;;
   c)      generate_c_submit ;;
   kotlin|go)
     # 에이전트 활용 안내
-    echo -e "${YELLOW}$LANG Submit 생성은 에이전트를 통해 진행하세요.${NC}"
+    echo -e "${YELLOW}$PROG_LANG Submit 생성은 에이전트를 통해 진행하세요.${NC}"
     echo "에이전트에 전달할 내용이 클립보드에 복사됩니다."
     PROMPT="$PROBLEM_NAME 문제의 Submit.$EXT 를 생성해줘. Solution.$EXT 내용을 BOJ 제출용 단일 파일로 변환."
     if command -v pbcopy &>/dev/null; then

@@ -27,14 +27,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-LANG="${OPT_LANG:-$boj_lang}"
+PROG_LANG="${OPT_LANG:-$boj_lang}"
 
 # 언어 유효성 검사
-boj_validate_lang "$LANG" || exit 1
+boj_validate_lang "$PROG_LANG" || exit 1
 
 # 문제 폴더 찾기
 PROBLEM_DIR="$(boj_require_problem_dir "$ROOT" "$PROBLEM_NUM")" || exit 1
-TEMPLATE="$ROOT/templates/$LANG"
+TEMPLATE="$ROOT/templates/$PROG_LANG"
 
 # test_cases.json 확인
 if [[ ! -f "$PROBLEM_DIR/test/test_cases.json" ]]; then
@@ -73,7 +73,7 @@ PYEOF
 }
 
 # 언어별 실행
-case "$LANG" in
+case "$PROG_LANG" in
   java)
     # Parse.java 확인
     if [[ ! -f "$PROBLEM_DIR/test/Parse.java" ]]; then
@@ -82,7 +82,7 @@ case "$LANG" in
     fi
     # 템플릿 확인
     if [[ ! -f "$TEMPLATE/Test.java" ]]; then
-      echo -e "${RED}Error: 테스트 러너 템플릿이 없습니다: $TEMPLATE/Test.java (BOJ_LANG=$LANG)${NC}" >&2
+      echo -e "${RED}Error: 테스트 러너 템플릿이 없습니다: $TEMPLATE/Test.java (BOJ_LANG=$PROG_LANG)${NC}" >&2
       exit 1
     fi
     if [[ ! -f "$PROBLEM_DIR/Solution.java" ]]; then
@@ -161,7 +161,7 @@ case "$LANG" in
     ;;
 
   *)
-    echo -e "${RED}Error: '$LANG' 언어는 현재 run 명령으로 지원되지 않습니다.${NC}" >&2
+    echo -e "${RED}Error: '$PROG_LANG' 언어는 현재 run 명령으로 지원되지 않습니다.${NC}" >&2
     echo "지원 언어: java python" >&2
     exit 1
     ;;
