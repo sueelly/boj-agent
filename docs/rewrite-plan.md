@@ -127,7 +127,11 @@
 
 ---
 
-## 6. 제안 목표 아키텍처
+## 6. 확정된 목표 아키텍처 (옵션 C)
+
+> 2026-03-09 결정: **옵션 C — Python 패키지 내 통합** 채택.
+> 런타임 파일(Test.java, test_runner.py)을 boj_core/runners/ 안에 배치하고,
+> 참고 자료(스텁/스키마)는 reference/로 분리한다.
 
 ```
 boj-agent/
@@ -137,12 +141,19 @@ boj-agent/
       config.py               # 설정 로더 (env > 파일 > 기본값), config.sh 대체
       client.py               # BOJ HTML fetcher (src/lib/boj_client.py에서 이동)
       normalizer.py           # problem.json -> README.md (src/lib/boj_normalizer.py에서 이동)
-      runner.py               # Java 테스트 러너 로직 (컴파일, 실행, 비교)
+      runner.py               # 테스트 러너 로직 (컴파일, 실행, 비교)
       submitter.py            # 제출 파일 생성 (Java 우선)
       workspace.py            # 문제 디렉터리 레이아웃, 경로 해석
+      runners/                # 언어별 런타임 파일
+        java_runtime/
+          Test.java
+          ParseAndCallSolve.java
+        python_runtime/
+          test_runner.py
+      languages.json          # 언어 메타데이터
     boj_cli/                  # CLI 진입점 — boj_core 위 얇은 래퍼
       __init__.py
-      main.py                 # argparse 디스패처 (또는 Click)
+      main.py                 # argparse 디스패처
       cmd_make.py             # boj make
       cmd_run.py              # boj run
       cmd_commit.py           # boj commit
@@ -150,35 +161,25 @@ boj-agent/
       cmd_open.py             # boj open
       cmd_setup.py            # boj setup
       cmd_review.py           # boj review
-    boj                       # 쉘 스텁: exec python3 -m boj_cli "$@"  (PATH 호환용 유지)
-    lib/                      # 전환 기간 동안 유지
-      boj_client.py           # boj_core/client.py로 옮길 때까지 유지
-      boj_normalizer.py       # boj_core/normalizer.py로 옮길 때까지 유지
-      config.sh               # 모든 쉘 명령 이전 완료까지 유지
-  templates/
-    java/                     # 변경 없음 — Test.java, ParseAndCallSolve.java
+    boj                       # 쉘 스텁: exec python3 -m boj_cli "$@"
+  reference/                  # 에이전트/사용자 참고 자료
+    stubs/                    # 언어별 스켈레톤 예시
+    schemas/                  # test_cases.json 스키마
+  prompts/                    # 에이전트 지시문
   tests/
     unit/
       test_config.py
-      test_client.py          # 이미 존재 — 유지
-      test_normalizer.py      # 픽스처로 이미 존재 — 정식화
-      test_runner.py          # Java 러너 단위 테스트 (픽스처로 컴파일·실행)
-      test_submitter.py       # 제출 생성 단위 테스트
+      test_client.py
+      test_normalizer.py
+      test_runner.py
+      test_submitter.py
       test_workspace.py
     integration/
-      test_run.py             # 픽스처로 subprocess boj run
-      test_make.py            # BOJ_CLIENT_TEST_HTML로 subprocess boj make
+      test_run.py
+      test_make.py
     fixtures/                 # 기존 픽스처 전부 유지
-  skills/
-    boj_make.md               # Claude Code 스킬: `boj make` 호출 얇은 래퍼
-    boj_run.md                # Claude Code 스킬: `boj run` 호출 얇은 래퍼
   docs/
-    rewrite-plan.md           # 본 문서
-    architecture.md
-    test-strategy.md
-    migration-log.md
-    portfolio-notes.md
-  pyproject.toml              # 패키지 정의
+  pyproject.toml              # 패키지 정의, ROOT 탐지 마커
 ```
 
 **경계:**
@@ -214,36 +215,15 @@ boj-agent/
 
 ---
 
-## 8. Git 히스토리 복구 계획
+## 8. 브랜치 전략 (확정)
 
-**브랜치 분석:**
+> PR #23, #24가 이미 main에 머지됨. 옵션 B 채택 완료.
 
-```
-main: ... -> 6e701cc (PR #21 머지: 네이티브 슬래시 커맨드) -> ...
-                                                               |
-test/issue-23-test-coverage: b7ace23 (main보다 11커밋 앞섬)
-```
+**현재 진행:**
 
-**안정 스냅샷 후보:**
-
-- `6e701cc` — 이슈 #23 테스트 작업 전 main에 마지막 머지. 당시 테스트 통과, 안정.
-- `b7ace23` (test/issue-23 현재 HEAD) — #23 미머지; 픽스처, 테스트 헬퍼, boj_client Python 단위 테스트 추가. 최근 작업 중 가장 가치 있음.
-
-**옵션:**
-
-| 옵션 | 방법 | 트레이드오프 |
-|------|------|--------------|
-| A. test/issue-23 HEAD에서 계속 | `b7ace23`에서 `rewrite/python-core` 생성 | 머지 안 된 테스트 인프라 포함. 브랜치 이름은 명확. |
-| B. #23 머지 후 main에서 분기 | PR #23 → main 머지 후 `git checkout -b rewrite/python-core` | 깔끔한 기준선. PR 리뷰 필요. 권장. |
-| C. `6e701cc`(#23 이전)에서 분기 | `git checkout -b rewrite/python-core 6e701cc` | #23 테스트 개선 분 손실. 비권장. |
-
-**권장: 옵션 B.**
-
-1. PR #23 완료 후 머지(또는 최소한 픽스처 + test_helper 개선만이라도 cherry-pick)
-2. 머지 후 main에서 `rewrite/python-core` 생성
-3. 재작성은 별도 장기 브랜치로 진행
-
-**참고:** 이슈 #23이 추가하는 `tests/unit/test_boj_client.py`와 픽스처는 Python 재작성에 필수. 버리지 말 것.
+1. `refactor/docs-consolidation` 브랜치에서 문서 통합 작업 (이슈 #42)
+2. 문서 정리 PR 머지 후 `refactor/python-rewrite`를 main에서 별도 생성
+3. 기존 6개 feature 브랜치(#26~#35)는 Bash characterization 테스트 — Python 전환 시 무의미해지므로 정리 예정
 
 ---
 
