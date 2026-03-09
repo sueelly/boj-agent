@@ -33,23 +33,30 @@ src/
   boj                   # CLI 진입점 (서브커맨드 디스패처)
   setup-boj-cli.sh      # 설치 스크립트
   commands/             # make, run, commit, open, review, submit, setup
-  lib/                  # 공통 라이브러리 (config.sh 등)
-templates/              # 언어별 테스트 러너 + 인터페이스
-  _common/
-  java/                 # Test.java, ParseAndCallSolve.java
-  python/               # test_runner.py
-  cpp/, c/
-  languages.json        # 지원 언어 메타데이터
+  lib/
+    config.sh           # 공통 설정 로더 (env > 파일 > 기본값)
+    boj_client.py       # BOJ HTML fetch + 파싱 (Python)
+    boj_normalizer.py   # problem.json → README.md (Python)
+templates/              # 언어별 테스트 러너 + 인터페이스 + 스텁
+  _common/              # test_cases.json 스키마 예시
+  java/                 # Test.java, ParseAndCallSolve.java (런타임)
+  python/               # test_runner.py (런타임)
+  cpp/, c/, kotlin/     # 스텁만 존재
+  languages.json        # 언어 메타데이터
 tests/
   run_tests.sh          # 전체 테스트 실행
   integration/          # 명령어별 통합 테스트
-  unit/                 # 단위 테스트
-  fixtures/             # 테스트 픽스처 (99999-fixture 등)
+  unit/                 # 단위 테스트 (Bash + test_boj_client.py)
+  fixtures/             # 테스트 픽스처 (99999, 1000, 6588, 9495)
 docs/
+  ARCHITECTURE.md       # 현재 구조 + 목표 구조 (Option C)
+  COMMAND-SPEC.md       # 명령어별 로직 정의서
   user-guide.md         # 사용자 가이드
   edge-cases.md         # 엣지케이스 매트릭스 (구현/테스트 기준)
-  issues.md             # GitHub 이슈 템플릿
-prompts/                # 에이전트 지시문 (언어/플랫폼 중립)
+  test-strategy.md      # pytest 특성화 테스트 전략
+  rewrite-plan.md       # Python 전환 계획
+  DEVLOG.md             # 변경 기록 (구조화 + Legacy 여정)
+prompts/                # 에이전트 지시문 (make-skeleton, review, submit)
 ```
 
 ## 언어별 규칙
