@@ -33,7 +33,6 @@ tests/
         Parse.java            # Java IO 어댑터
         parse.py              # Python IO 어댑터
         test_cases.json       # 테스트 케이스
-    99999-fixture/            # 레거시 픽스처 (기존 Bash 테스트용, 전환 후 제거)
     boj_client/               # boj_client.py 단위 테스트용 (99999.html, problem.json 등)
   unit/                       # 기존 Bash 단위 테스트 (전환 기간 유지)
     test_boj_client.py        # Python 단위 테스트 (유지)
@@ -646,7 +645,7 @@ def test_review_outputs_feedback(boj_env, fixture_path):
 | E2E | `tests/e2e/test_full_workflow.sh` | `tests/e2e/test_full_workflow.py` (Python 전환) |
 | 하네스 | `tests/harness/*.sh` | Phase 1 범위 외 (다언어 지원 시 재구성) |
 | Python 단위 | `tests/unit/test_boj_client.py` | 유지 (그대로) |
-| 레거시 픽스처 | `tests/fixtures/99999-fixture/` | `tests/fixtures/99999/`로 통합 후 제거 |
+| 레거시 픽스처 | `tests/fixtures/99999-fixture/` | 제거 완료 (`tests/fixtures/99999/`로 통합됨) |
 
 **전환 전략:**
 
