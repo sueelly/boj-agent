@@ -1,72 +1,80 @@
 # BOJ-Agent: 백준 문제 풀이 CLI
 
 ## 프로젝트 개요
-Bash 스크립트 기반 BOJ 문제 풀이 자동화 CLI. 명령어: `make`, `open`, `run`, `commit`, `review`, `submit`, `setup`.
+Bash + Python 혼합 CLI로 BOJ 문제 풀이 자동화.
+명령어 7개: `make`, `open`, `run`, `commit`, `review`, `submit`, `setup`.
+Python 코어로 전환 예정 (docs/dev/rewrite-plan.md, docs/ARCHITECTURE.md 참고).
 
-## 절대 규칙 (예외 없음)
-- main/master에 직접 커밋 금지. 항상 브랜치 사용
-- 테스트 없이 PR 금지. 증거 = 통과된 테스트 결과
+## 절대 규칙
+- main에 직접 커밋 금지 — 항상 브랜치 + PR
+- 테스트 없이 PR 금지 — 증거 = 통과된 테스트 결과
 - 모든 작업은 GitHub 이슈 번호와 연결
 - 커밋 형식: `feat|fix|refactor|docs|test|chore(scope): message [#N]`
 - force push 금지
-- 불확실한 결정(스키마 변경, BOJ API 연동 방식, 인증 로직)은 추측 말고 질문
+- 불확실한 결정은 추측 말고 질문
 
-## 빌드/테스트 명령
+## 빌드/테스트
 ```bash
-# 전체 테스트 실행
-./tests/run_tests.sh
-
-# 단일 명령 테스트
-./tests/integration/test_boj_run.sh
-./tests/integration/test_boj_help.sh
-
-# BOJ run 직접 테스트 (픽스처 사용)
-BOJ_ROOT=. src/boj run 99999
-
-# Java 템플릿 컴파일 확인
-javac templates/java/*.java
+./tests/run_tests.sh                    # 전체 (단위 + 통합)
+./tests/run_tests.sh --unit             # 단위만
+./tests/run_tests.sh --integration      # 통합만
+BOJ_ROOT=. src/boj run 99999           # 픽스처 직접 테스트
+python -m pytest tests/unit/test_boj_client.py  # Python 단위
+javac templates/java/*.java             # Java 템플릿 컴파일
 ```
 
 ## 프로젝트 구조
 ```
 src/
-  boj                   # CLI 진입점 (서브커맨드 디스패처)
-  setup-boj-cli.sh      # 설치 스크립트
-  commands/             # make, run, commit, open, review, submit, setup
-  lib/                  # 공통 라이브러리 (config.sh 등)
-templates/              # 언어별 테스트 러너 + 인터페이스
-  _common/
-  java/                 # Test.java, ParseAndCallSolve.java
-  python/               # test_runner.py
-  cpp/, c/
-  languages.json        # 지원 언어 메타데이터
+  boj                       # CLI 진입점 (Bash 디스패처)
+  setup-boj-cli.sh          # ~/bin/boj 설치 스크립트
+  commands/                 # 서브커맨드 (각각 독립 Bash 스크립트)
+    make.sh, run.sh, commit.sh, submit.sh, setup.sh, open.sh, review.sh
+  lib/
+    config.sh               # 공통 설정 로더 (env > 파일 > 기본값)
+    boj_client.py            # BOJ HTML fetch + 파싱 (Python, requests+BS4)
+    boj_normalizer.py        # problem.json → README.md (Python)
+templates/
+  java/                     # Test.java, ParseAndCallSolve.java (런타임 인프라)
+  python/                   # test_runner.py (런타임 인프라)
+  cpp/, c/, kotlin/          # 스텁만 존재 (런타임 미지원)
+  _common/test_cases.json    # 스키마 예시
+  languages.json             # 언어 메타데이터
 tests/
-  run_tests.sh          # 전체 테스트 실행
-  integration/          # 명령어별 통합 테스트
-  unit/                 # 단위 테스트
-  fixtures/             # 테스트 픽스처 (99999-fixture 등)
+  run_tests.sh               # 전체 테스트 실행
+  unit/                      # Bash 단위 (commands/) + Python (test_boj_client.py)
+  integration/               # 명령어별 통합 테스트
+  fixtures/                  # 테스트 픽스처 (99999, 1000, 6588, 9495, boj_client/)
+  lib/                       # 테스트 헬퍼 (matrix_helpers.sh)
 docs/
-  user-guide.md         # 사용자 가이드
-  edge-cases.md         # 엣지케이스 매트릭스 (구현/테스트 기준)
-  issues.md             # GitHub 이슈 템플릿
-prompts/                # 에이전트 지시문 (언어/플랫폼 중립)
+  ARCHITECTURE.md            # 현재 구조 + 목표 구조 (Option C)
+  COMMAND-SPEC.md            # 명령어별 로직 정의서
+  user-guide.md              # 사용자 가이드
+  edge-cases.md              # 엣지케이스 매트릭스
+  dev/                       # 개발 프로세스 가이드
+    WORKFLOW.md, VERIFICATION.md, test-strategy.md, rewrite-plan.md
+    test-coverage/
+  records/
+    DEVLOG.md                # 변경 기록
+prompts/                     # 에이전트 지시문 (make-skeleton, review, submit)
+scripts/                     # 유틸리티 (record_fixture.sh)
 ```
 
-## 언어별 규칙
-- **Bash**: 함수명 snake_case, 전역변수 UPPER_SNAKE_CASE, `set -euo pipefail` 지양 (서브셸 오류 처리 직접)
-- **Java(템플릿)**: Java 11+ 호환 유지, 외부 라이브러리 금지 (BOJ 제출 환경 기준)
-- **Python(템플릿)**: Python 3.10+ 호환, 표준 라이브러리만
-
 ## 설정 우선순위
-1. 환경변수 (`BOJ_ROOT`, `BOJ_LANG`, `BOJ_AGENT_CMD`, `BOJ_EDITOR`)
-2. `~/.config/boj/` 파일 (root, lang, agent, editor, session)
+1. 환경변수 (`BOJ_ROOT`, `BOJ_LANG`, `BOJ_AGENT_CMD`, `BOJ_EDITOR`, `BOJ_SESSION`, `BOJ_USER`)
+2. `$BOJ_CONFIG_DIR/` 파일 (기본: `~/.config/boj/`)
 3. 기본값 (lang=java, editor=code)
 
-## 에러 처리 규칙
-- `Error:` 접두사 → exit 1 (계속 불가)
-- `Warning:` 접두사 → exit 0 (계속 가능)
-- BOJ 통계 조회 실패 → commit은 진행, 메시지에 실패 이유 포함
+## 에러 처리
+- `Error:` → exit 1 (계속 불가)
+- `Warning:` → exit 0 (계속 가능)
+- BOJ 통계 실패 → commit 진행, 메시지에 실패 이유 포함
 - 에이전트 없음 → 에디터 + 클립보드 fallback
+
+## 언어별 규칙
+- **Bash**: snake_case 함수, UPPER_SNAKE_CASE 전역, `set -euo pipefail` 지양
+- **Java(템플릿)**: Java 11+ 호환, 외부 라이브러리 금지
+- **Python**: 3.10+, 표준 라이브러리만 (boj_client는 requests+bs4 예외)
 
 ## 워크플로우
 ```
@@ -90,22 +98,3 @@ prompts/                # 에이전트 지시문 (언어/플랫폼 중립)
 @.claude/rules/git.md
 @.claude/rules/security.md
 @.claude/rules/testing.md
-
-## 자동 의사결정 감지
-대화 중 다음 결정 시 `/tmp/claude-pending-decision.txt`에 기록:
-- BOJ API/크롤링 방식 선택
-- 언어별 템플릿 구조 선택
-- 인증 방식 선택 (세션쿠키 vs OAuth 등)
-- Submit.java 생성 전략 (병합 vs 변환)
-
-기록 형식:
-```
-## [YYYY-MM-DD] BRANCH: 결정 제목
-**컨텍스트**: 왜 필요했는가
-**결정**: 선택한 방법
-**검토한 대안**: 검토했지만 선택하지 않은 것들
-**근거**: 이유
-**트레이드오프**: 단점
-**이슈**: #N
----
-```

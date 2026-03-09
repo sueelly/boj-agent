@@ -14,6 +14,13 @@
 
 ---
 
+## [2026-03-09] refactor(docs): 문서 통합 및 코드 괴리 해소 [#42]
+**변경 요약:** 문서 ↔ 코드 괴리 분석 후 정리. 실체 없는 언어 스텁 7개 디렉터리 삭제, 불필요 문서 3개 삭제, 레거시 픽스처 삭제, test_cases.json 형식 수정, Option C 아키텍처·브랜치 전략 확정, COMMAND-SPEC.md·ARCHITECTURE.md 신규 작성.
+**의사결정:** 이전 분석이 "미구현"이라 판단한 플래그(--no-open, --image-mode, --output, --editor, --force, --no-stats, --message, BOJ_CONFIG_DIR)가 전부 구현되어 있음을 코드 리딩으로 발견. 잘못된 커밋을 revert하고 실제 괴리(test_cases.json flat→nested, 삭제된 스텁/픽스처 참조)만 수정. templates/ 구조는 Option C(boj_core/runners/ + reference/) 확정.
+**검증 방법:** 각 명령어 코드(src/commands/*.sh)와 문서 1:1 대조, `git diff --stat`
+
+---
+
 ## [2026-03-08] fix(client): remove session dep, fix whitespace, remove --password arg [#24]
 **변경 요약:** `_load_session()` 제거 (BOJ 문제 페이지 공개 접근 가능), `get_text(strip=True)` → `get_text(separator="\n").strip()` whitespace 보존 수정, `--password` argparse 인자 및 `setup.sh` 옵션 파싱 완전 제거.
 **의사결정:** Cursor bot 보안 리뷰 + BOJ 비인증 fetch 확인으로 세션 로직 불필요 판명. `get_text(strip=True)`는 각 텍스트 노드를 개별 strip 후 join해 내부 개행/공백을 손실시킴; `separator="\n"`으로 수정. `--password` 커맨드라인 인자는 `ps aux`에 노출되므로 `BOJ_LOGIN_PASSWORD` env var 전용으로 전환.
@@ -55,7 +62,7 @@
 ## [2026-03-02] chore(docs): devlog.md → DEVLOG.md 리네임 및 구조화 [#14]
 **변경 요약:** 서사형 devlog를 날짜/변경요약/의사결정/검증 단위의 구조화 변경 로그로 전환, /commit 스킬에 DEVLOG 업데이트 단계 추가
 **의사결정:** 서사형(여정 블로그) 형식은 특정 변경이 언제·왜 이루어졌는지 추적이 어렵다. 구조화 형식으로 전환하고 /commit 흐름에 자동 기록 단계를 포함(옵션 B)하여 갱신 루틴을 강제한다. 옵션 A(post-commit hook)는 hook 실패 시 커밋이 차단될 위험이 있고, 옵션 C(check_devlog.sh)는 강제력이 약해 선택하지 않았다.
-**검증 방법:** `git log --follow docs/DEVLOG.md`로 히스토리 보존 확인, /commit 스킬 실행 후 DEVLOG 항목 자동 추가 확인
+**검증 방법:** `git log --follow docs/records/DEVLOG.md`로 히스토리 보존 확인, /commit 스킬 실행 후 DEVLOG 항목 자동 추가 확인
 
 ---
 

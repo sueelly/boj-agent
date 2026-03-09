@@ -1,5 +1,5 @@
 # 개발용 — 상호작용/문서용, 배포 제외
-dev/
+/dev/
 .claude/settings.local.json
 .DS_Store
 # 컴파일 산출물

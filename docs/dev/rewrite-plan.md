@@ -127,36 +127,63 @@
 
 ---
 
-## 6. 제안 목표 아키텍처
+## 6. 확정 목표 아키텍처 (Option C)
 
 ```
 boj-agent/
   src/
-    boj_core/                 # Python 패키지 — 순수 로직, CLI 없음
+    core/                 # Python 패키지 — 순수 로직, CLI 없음
       __init__.py
       config.py               # 설정 로더 (env > 파일 > 기본값), config.sh 대체
       client.py               # BOJ HTML fetcher (src/lib/boj_client.py에서 이동)
       normalizer.py           # problem.json -> README.md (src/lib/boj_normalizer.py에서 이동)
-      runner.py               # Java 테스트 러너 로직 (컴파일, 실행, 비교)
+      runners/                # 언어별 테스트 실행 로직
+        __init__.py
+        java/
+          java.py               # Java 컴파일/실행 로직
+          java_runtime/         # Java 전용 런타임 파일 (templates/java/에서 이동)
+            Test.java
+            ParseAndCallSolve.java
+        python/
+          python.py             # Python 실행 로직
+          python_runtime/       # Python 전용 런타임 파일 (templates/python/에서 이동)
+            test_runner.py
       submitter.py            # 제출 파일 생성 (Java 우선)
       workspace.py            # 문제 디렉터리 레이아웃, 경로 해석
-    boj_cli/                  # CLI 진입점 — boj_core 위 얇은 래퍼
+    cli/                  # CLI 진입점 — boj_core 위 얇은 래퍼
       __init__.py
       main.py                 # argparse 디스패처 (또는 Click)
-      cmd_make.py             # boj make
-      cmd_run.py              # boj run
-      cmd_commit.py           # boj commit
-      cmd_submit.py           # boj submit
-      cmd_open.py             # boj open
-      cmd_setup.py            # boj setup
-      cmd_review.py           # boj review
+      boj_make.py             # boj make
+      boj_run.py              # boj run
+      boj_commit.py           # boj commit
+      boj_submit.py           # boj submit
+      boj_open.py             # boj open
+      boj_setup.py            # boj setup
+      boj_review.py           # boj review
     boj                       # 쉘 스텁: exec python3 -m boj_cli "$@"  (PATH 호환용 유지)
-    lib/                      # 전환 기간 동안 유지
+    lib/                      # legacy. 전환 기간 동안 유지
       boj_client.py           # boj_core/client.py로 옮길 때까지 유지
       boj_normalizer.py       # boj_core/normalizer.py로 옮길 때까지 유지
       config.sh               # 모든 쉘 명령 이전 완료까지 유지
-  templates/
-    java/                     # 변경 없음 — Test.java, ParseAndCallSolve.java
+  reference/                  # 에이전트/사용자 참고용 예시 (프로젝트 루트)
+    stubs/                    # 언어별 스켈레톤 예시
+      java/Solution.java
+      java/Parse.java
+      python/solution.py
+      python/parse.py
+    schemas/                  # JSON 스키마 예시
+      test_cases.json
+    usecases/                 # 실제 사용 시 결과 예시
+      java/
+        README.md
+        Solution.java
+        submit/
+          REVIEW.md
+          Submit.java
+        test/
+          Parse.java
+          test_cases.json
+
   tests/
     unit/
       test_config.py
@@ -165,27 +192,44 @@ boj-agent/
       test_runner.py          # Java 러너 단위 테스트 (픽스처로 컴파일·실행)
       test_submitter.py       # 제출 생성 단위 테스트
       test_workspace.py
-    integration/
+    integration/              # cli test
       test_run.py             # 픽스처로 subprocess boj run
       test_make.py            # BOJ_CLIENT_TEST_HTML로 subprocess boj make
+      test_open.py
+      test_submit.py
+      test_commit.py
+      test_review.py
+      test_setup.py
     fixtures/                 # 기존 픽스처 전부 유지
-  skills/
-    boj_make.md               # Claude Code 스킬: `boj make` 호출 얇은 래퍼
-    boj_run.md                # Claude Code 스킬: `boj run` 호출 얇은 래퍼
-  docs/
-    rewrite-plan.md           # 본 문서
-    architecture.md
-    test-strategy.md
-    migration-log.md
-    portfolio-notes.md
+  docs/                       # 문서
+    ARCHITECTURE.md           # 프로젝트 구조 (현재 + 목표)
+    COMMAND-SPEC.md           # 명령어별 로직 정의서
+    edge-cases.md             # 엣지케이스 매트릭스
+    user-guide.md             # 사용자 가이드
+    dev/                      # 개발 프로세스 가이드
+      WORKFLOW.md             # 이슈 → PR → 머지 워크플로우
+      VERIFICATION.md         # 7단계 검증 파이프라인
+      test-strategy.md        # pytest 특성화 테스트 전략
+      test-coverage/          # 테스트 커버리지 데이터
+      rewrite-plan.md         # Python 전환 계획
+    records/                  # 기록
+      DEVLOG.md               # 변경 기록 (구조화 + Legacy 여정)
+  prompts/                    # 에이전트 지시문 (reference/와 같은 레벨)
   pyproject.toml              # 패키지 정의
+  languages.json              # 언어 메타데이터 (프로젝트 루트로 이동)
 ```
+
+**Option C 선택 이유:**
+
+1. 런타임 파일(Test.java, test_runner.py)이 `boj_core/runners/` 안에 있어 패키지와 일체화
+2. `reference/`는 에이전트 프롬프트와 함께 참조되는 자료이므로 `prompts/`와 같은 레벨
+3. ROOT 탐지를 `templates/java/Test.java` 대신 `pyproject.toml` 또는 `.boj-root` 마커 파일로 교체
+4. 실체 없는 언어 스텁 제거 — `languages.json`에 메타데이터만 유지
 
 **경계:**
 
 - `boj_core`: CLI 없음, 컬러 없음, 대화형 프롬프트 없음. 순수 함수와 subprocess 호출. 100% 테스트 가능.
 - `boj_cli`: 얇은 래퍼. 출력 포맷, 대화형 프롬프트 처리. `boj_core` 호출.
-- Skills: `boj <command>`를 호출하는 한 줄 마크다운. 로직 없음.
 - 향후 MCP: 필요 시 `boj_core` 함수를 MCP 도구로 노출 가능. 코어 수정 불필요.
 
 ---
@@ -214,34 +258,16 @@ boj-agent/
 
 ---
 
-## 8. Git 히스토리 복구 계획
+## 8. 브랜치 전략 (확정)
 
-**브랜치 분석:**
+PR #23, #24가 이미 main에 머지된 상태이므로 main이 가장 안정된 기준점이다.
 
-```
-main: ... -> 6e701cc (PR #21 머지: 네이티브 슬래시 커맨드) -> ...
-                                                               |
-test/issue-23-test-coverage: b7ace23 (main보다 11커밋 앞섬)
-```
+**확정 전략:**
 
-**안정 스냅샷 후보:**
-
-- `6e701cc` — 이슈 #23 테스트 작업 전 main에 마지막 머지. 당시 테스트 통과, 안정.
-- `b7ace23` (test/issue-23 현재 HEAD) — #23 미머지; 픽스처, 테스트 헬퍼, boj_client Python 단위 테스트 추가. 최근 작업 중 가장 가치 있음.
-
-**옵션:**
-
-| 옵션 | 방법 | 트레이드오프 |
-|------|------|--------------|
-| A. test/issue-23 HEAD에서 계속 | `b7ace23`에서 `rewrite/python-core` 생성 | 머지 안 된 테스트 인프라 포함. 브랜치 이름은 명확. |
-| B. #23 머지 후 main에서 분기 | PR #23 → main 머지 후 `git checkout -b rewrite/python-core` | 깔끔한 기준선. PR 리뷰 필요. 권장. |
-| C. `6e701cc`(#23 이전)에서 분기 | `git checkout -b rewrite/python-core 6e701cc` | #23 테스트 개선 분 손실. 비권장. |
-
-**권장: 옵션 B.**
-
-1. PR #23 완료 후 머지(또는 최소한 픽스처 + test_helper 개선만이라도 cherry-pick)
-2. 머지 후 main에서 `rewrite/python-core` 생성
-3. 재작성은 별도 장기 브랜치로 진행
+1. `main`에서 `refactor/docs-consolidation` 브랜치 생성 (현재 진행 중)
+2. 문서 정리 PR을 먼저 머지
+3. 이후 `main`에서 `refactor/python-rewrite` 브랜치를 별도로 생성
+4. Python 재작성은 명령어별로 별도 PR (`boj run` → `boj make` → `boj submit` → 나머지)
 
 **참고:** 이슈 #23이 추가하는 `tests/unit/test_boj_client.py`와 픽스처는 Python 재작성에 필수. 버리지 말 것.
 
@@ -253,9 +279,9 @@ test/issue-23-test-coverage: b7ace23 (main보다 11커밋 앞섬)
 
 | 파일 | 내용 |
 |------|------|
-| `docs/rewrite-plan.md` | 본 문서 |
-| `docs/architecture.md` | 목표 아키텍처 다이어그램 + 경계 정의 + 데이터 흐름 |
-| `docs/test-strategy.md` | 픽스처 관례, pytest 패턴, 새 픽스처 추가 방법, 격리 규칙 |
+| `docs/dev/rewrite-plan.md` | 본 문서 |
+| `docs/ARCHITECTURE.md` | 목표 아키텍처 다이어그램 + 경계 정의 + 데이터 흐름 |
+| `docs/dev/test-strategy.md` | 픽스처 관례, pytest 패턴, 새 픽스처 추가 방법, 격리 규칙 |
 | `docs/migration-log.md` | 명령별 마이그레이션 로그(날짜, 변경 내용, 검증 근거) |
 | `docs/portfolio-notes.md` | 포트폴리오용 프로젝트 서술 — 존재 이유, 배운 점 |
 
@@ -267,7 +293,7 @@ test/issue-23-test-coverage: b7ace23 (main보다 11커밋 앞섬)
 
 1. PR #23을 main에 머지(또는 안정 상태로 만들기)
 2. 업데이트된 main에서 `rewrite/python-core` 브랜치 생성
-3. `docs/architecture.md`, `docs/test-strategy.md` 작성
+3. `docs/ARCHITECTURE.md`, `docs/dev/test-strategy.md` 작성
 4. `pyproject.toml`에 boj-core 패키지 구조 설정
 5. `boj_client.py` → `boj_core/client.py`, `boj_normalizer.py` → `boj_core/normalizer.py` 이동/이름 변경
 6. `boj_core/config.py` 작성 (`config.sh`에서 이전)
