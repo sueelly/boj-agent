@@ -62,7 +62,7 @@
 ## [2026-03-02] chore(docs): devlog.md → DEVLOG.md 리네임 및 구조화 [#14]
 **변경 요약:** 서사형 devlog를 날짜/변경요약/의사결정/검증 단위의 구조화 변경 로그로 전환, /commit 스킬에 DEVLOG 업데이트 단계 추가
 **의사결정:** 서사형(여정 블로그) 형식은 특정 변경이 언제·왜 이루어졌는지 추적이 어렵다. 구조화 형식으로 전환하고 /commit 흐름에 자동 기록 단계를 포함(옵션 B)하여 갱신 루틴을 강제한다. 옵션 A(post-commit hook)는 hook 실패 시 커밋이 차단될 위험이 있고, 옵션 C(check_devlog.sh)는 강제력이 약해 선택하지 않았다.
-**검증 방법:** `git log --follow docs/DEVLOG.md`로 히스토리 보존 확인, /commit 스킬 실행 후 DEVLOG 항목 자동 추가 확인
+**검증 방법:** `git log --follow docs/records/DEVLOG.md`로 히스토리 보존 확인, /commit 스킬 실행 후 DEVLOG 항목 자동 추가 확인
 
 ---
 

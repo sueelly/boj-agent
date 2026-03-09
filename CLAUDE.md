@@ -53,9 +53,12 @@ docs/
   COMMAND-SPEC.md       # 명령어별 로직 정의서
   user-guide.md         # 사용자 가이드
   edge-cases.md         # 엣지케이스 매트릭스 (구현/테스트 기준)
-  test-strategy.md      # pytest 특성화 테스트 전략
-  rewrite-plan.md       # Python 전환 계획
-  DEVLOG.md             # 변경 기록 (구조화 + Legacy 여정)
+  dev/                  # 개발 프로세스 가이드
+    WORKFLOW.md, AGENT-GUIDE.md, HOW-TO-USE.md, VERIFICATION.md
+    QUICKSTART.md, issues.md, test-strategy.md, rewrite-plan.md
+    test-coverage/
+  records/              # 기록
+    DEVLOG.md           # 변경 기록 (구조화 + Legacy 여정)
 prompts/                # 에이전트 지시문 (make-skeleton, review, submit)
 ```
 

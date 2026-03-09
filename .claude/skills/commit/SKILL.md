@@ -98,11 +98,11 @@ git commit -m "feat(auth): add JWT token generation [#42]"
 
 ## 7. DEVLOG 업데이트
 
-커밋 성공 후 `docs/DEVLOG.md` 상단(구조화 섹션)에 항목을 추가한다.
+커밋 성공 후 `docs/records/DEVLOG.md` 상단(구조화 섹션)에 항목을 추가한다.
 
 ```bash
 # DEVLOG 존재 여부 확인
-ls docs/DEVLOG.md 2>/dev/null || echo "DEVLOG 없음 — 건너뜀"
+ls docs/records/DEVLOG.md 2>/dev/null || echo "DEVLOG 없음 — 건너뜀"
 ```
 
 DEVLOG가 있으면 다음 형식으로 **파일 상단 (첫 번째 `---` 구분선 바로 아래)** 에 삽입:

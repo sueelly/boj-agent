@@ -1,6 +1,6 @@
 # pytest Characterization Test Strategy
 
-> Python 재작성(`docs/rewrite-plan.md`) 전에 현재 Bash CLI의 동작을 pytest로 고정(freeze)하는 특성화 테스트 전략.
+> Python 재작성(`docs/dev/rewrite-plan.md`) 전에 현재 Bash CLI의 동작을 pytest로 고정(freeze)하는 특성화 테스트 전략.
 > 이 문서만 읽으면 누구든 일관된 스타일로 테스트를 작성할 수 있어야 한다.
 
 ---

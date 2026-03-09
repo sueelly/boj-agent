@@ -252,9 +252,9 @@ PR #23, #24가 이미 main에 머지된 상태이므로 main이 가장 안정된
 
 | 파일 | 내용 |
 |------|------|
-| `docs/rewrite-plan.md` | 본 문서 |
-| `docs/architecture.md` | 목표 아키텍처 다이어그램 + 경계 정의 + 데이터 흐름 |
-| `docs/test-strategy.md` | 픽스처 관례, pytest 패턴, 새 픽스처 추가 방법, 격리 규칙 |
+| `docs/dev/rewrite-plan.md` | 본 문서 |
+| `docs/ARCHITECTURE.md` | 목표 아키텍처 다이어그램 + 경계 정의 + 데이터 흐름 |
+| `docs/dev/test-strategy.md` | 픽스처 관례, pytest 패턴, 새 픽스처 추가 방법, 격리 규칙 |
 | `docs/migration-log.md` | 명령별 마이그레이션 로그(날짜, 변경 내용, 검증 근거) |
 | `docs/portfolio-notes.md` | 포트폴리오용 프로젝트 서술 — 존재 이유, 배운 점 |
 
@@ -266,7 +266,7 @@ PR #23, #24가 이미 main에 머지된 상태이므로 main이 가장 안정된
 
 1. PR #23을 main에 머지(또는 안정 상태로 만들기)
 2. 업데이트된 main에서 `rewrite/python-core` 브랜치 생성
-3. `docs/architecture.md`, `docs/test-strategy.md` 작성
+3. `docs/ARCHITECTURE.md`, `docs/dev/test-strategy.md` 작성
 4. `pyproject.toml`에 boj-core 패키지 구조 설정
 5. `boj_client.py` → `boj_core/client.py`, `boj_normalizer.py` → `boj_core/normalizer.py` 이동/이름 변경
 6. `boj_core/config.py` 작성 (`config.sh`에서 이전)

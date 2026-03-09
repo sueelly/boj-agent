@@ -49,6 +49,22 @@ boj-agent/
     integration/              # Bash 통합 테스트
     e2e/                      # E2E 테스트
   docs/                       # 문서
+    ARCHITECTURE.md           # 프로젝트 구조 (현재 + 목표)
+    COMMAND-SPEC.md           # 명령어별 로직 정의서
+    edge-cases.md             # 엣지케이스 매트릭스
+    user-guide.md             # 사용자 가이드
+    dev/                      # 개발 프로세스 가이드
+      WORKFLOW.md             # 이슈 → PR → 머지 워크플로우
+      AGENT-GUIDE.md          # 에이전트 동작 원리
+      HOW-TO-USE.md           # 슬래시 커맨드 사용법
+      VERIFICATION.md         # 7단계 검증 파이프라인
+      QUICKSTART.md           # 첫 적용 체크리스트
+      issues.md               # GitHub 이슈 템플릿
+      test-strategy.md        # pytest 특성화 테스트 전략
+      test-coverage/          # 테스트 커버리지 데이터
+      rewrite-plan.md         # Python 전환 계획
+    records/                  # 기록
+      DEVLOG.md               # 변경 기록 (구조화 + Legacy 여정)
 ```
 
 ### 핵심 설계 결정
