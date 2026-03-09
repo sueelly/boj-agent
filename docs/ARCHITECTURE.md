@@ -55,11 +55,7 @@ boj-agent/
     user-guide.md             # 사용자 가이드
     dev/                      # 개발 프로세스 가이드
       WORKFLOW.md             # 이슈 → PR → 머지 워크플로우
-      AGENT-GUIDE.md          # 에이전트 동작 원리
-      HOW-TO-USE.md           # 슬래시 커맨드 사용법
       VERIFICATION.md         # 7단계 검증 파이프라인
-      QUICKSTART.md           # 첫 적용 체크리스트
-      issues.md               # GitHub 이슈 템플릿
       test-strategy.md        # pytest 특성화 테스트 전략
       test-coverage/          # 테스트 커버리지 데이터
       rewrite-plan.md         # Python 전환 계획
@@ -96,60 +92,69 @@ boj-agent/
   src/
     core/                 # Python 패키지 — 순수 로직, CLI 없음
       __init__.py
-      config.py               # 설정 로더 (env > 파일 > 기본값)
-      client.py               # BOJ HTML fetcher
-      normalizer.py           # problem.json → README.md
+      config.py               # 설정 로더 (env > 파일 > 기본값), config.sh 대체
+      client.py               # BOJ HTML fetcher (src/lib/boj_client.py에서 이동)
+      normalizer.py           # problem.json → README.md (src/lib/boj_normalizer.py에서 이동)
       runners/                # 언어별 테스트 실행 로직
         __init__.py
         java/
-          java_runner.py               # Java 컴파일/실행 로직
-          runtime/         # Java 전용 런타임 파일
+          java.py               # Java 컴파일/실행 로직
+          java_runtime/         # Java 전용 런타임 파일 (templates/java/에서 이동)
             Test.java
             ParseAndCallSolve.java
         python/
-          python_runner.py             # Python 실행 로직
-          python_runtime/       # Python 전용 런타임 파일
+          python.py             # Python 실행 로직
+          python_runtime/       # Python 전용 런타임 파일 (templates/python/에서 이동)
             test_runner.py
-      submitter.py            # 제출 파일 생성
+      submitter.py            # 제출 파일 생성 (Java 우선)
       workspace.py            # 문제 디렉터리 레이아웃, 경로 해석
-    cli/                  # CLI 진입점 — boj_core 위 얇은 래퍼
+    cli/                  # CLI 진입점 — core 위 얇은 래퍼
       __init__.py
-      main.py                 # argparse 디스패처
-      command/
-        boj_make.py
-        boj_run.py
-        boj_commit.py
-        boj_submit.py
-        boj_open.py
-        boj_setup.py
-        boj_review.py
-    boj                       # 쉘 스텁: exec python3 -m boj_cli "$@"
+      main.py                 # argparse 디스패처 (또는 Click)
+      boj_make.py
+      boj_run.py
+      boj_commit.py
+      boj_submit.py
+      boj_open.py
+      boj_setup.py
+      boj_review.py
+    boj                       # 쉘 스텁: exec python3 -m boj_cli "$@" (PATH 호환용 유지)
+    lib/                      # legacy. 전환 기간 동안 유지
+      boj_client.py           # core/client.py로 옮길 때까지 유지
+      boj_normalizer.py       # core/normalizer.py로 옮길 때까지 유지
+      config.sh               # 모든 쉘 명령 이전 완료까지 유지
   reference/                  # 에이전트/사용자 참고용 예시
-    stubs/                    # 언어별 스켈레톤
-    schemas/                  # test_cases.json 스키마
+    stubs/                    # 언어별 스켈레톤 예시
+      java/Solution.java, Parse.java
+      python/solution.py, parse.py
+    schemas/                  # JSON 스키마 예시
+      test_cases.json
+    usecases/                 # 실제 사용 시 결과 예시
+      java/                   # README, Solution, submit/, test/
   tests/
-    unit/                     # boj_core 단위 테스트 (pytest)
+    unit/                     # core 단위 테스트 (pytest)
     integration/              # subprocess boj CLI 호출 테스트
-    e2e/
     fixtures/                 # 기존 픽스처 유지
-  prompts/                    # 에이전트 지시문
-  docs/
-  languages.json              # 언어 메타데이터
+  prompts/                    # 에이전트 지시문 (reference/와 같은 레벨)
+  docs/                       # 문서
+    ARCHITECTURE.md, COMMAND-SPEC.md, edge-cases.md, user-guide.md
+    dev/                      # 개발 프로세스 가이드
+    records/                  # 기록 (DEVLOG.md)
+  languages.json              # 언어 메타데이터 (프로젝트 루트)
   pyproject.toml              # 패키지 정의
 ```
 
 ### 경계
 
-| 레이어 | 책임 | 금지 |
-|--------|------|------|
-| `boj_core` | 순수 로직, subprocess 호출, 파일 I/O | CLI 출력, 컬러, 대화형 프롬프트 |
-| `boj_cli` | 출력 포맷, 대화형 프롬프트, 에러 표시 | 비즈니스 로직 |
+- **core**: CLI 없음, 컬러 없음, 대화형 프롬프트 없음. 순수 함수와 subprocess 호출. 100% 테스트 가능.
+- **cli**: 얇은 래퍼. 출력 포맷, 대화형 프롬프트 처리. core 호출.
+- 향후 MCP: 필요 시 core 함수를 MCP 도구로 노출 가능. 코어 수정 불필요.
 
 ### Option C 선택 이유
 
-1. 런타임 파일(Test.java, test_runner.py)이 `boj_core/runners/` 안에 있어 패키지와 일체화
+1. 런타임 파일(Test.java, test_runner.py)이 `core/runners/` 안에 있어 패키지와 일체화
 2. `reference/`는 에이전트 프롬프트와 함께 참조되는 자료이므로 `prompts/`와 같은 레벨
-3. ROOT 탐지를 `pyproject.toml` 또는 `.boj-root` 마커 파일로 교체 가능
+3. ROOT 탐지를 `pyproject.toml` 또는 `.boj-root` 마커 파일로 교체
 4. 실체 없는 언어 스텁 제거 — `languages.json`에 메타데이터만 유지
 
 ### 마이그레이션 순서
