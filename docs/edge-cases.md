@@ -41,10 +41,14 @@
 | M2 | 네트워크 | 네트워크 없음 (BOJ 접근 불가) | `Error: BOJ에 연결할 수 없습니다. 네트워크를 확인하세요.` | 아니오 | 예 |
 | M3 | 파일시스템 | 문제 폴더 이미 존재 | `Warning: '4949-괄호의-값' 폴더가 이미 있습니다. 덮어쓰시겠습니까? (y/N)` | 사용자 확인 | 사용자 선택 |
 | M4 | 파일시스템 | BOJ_ROOT 쓰기 권한 없음 | `Error: 문제 폴더를 생성할 수 없습니다 (권한 없음).` | 아니오 | 예 |
-| M5 | 템플릿 | 요청 언어 템플릿 없음 (`--lang rust`) | `Error: 'rust' 템플릿이 없습니다. 지원 언어: java python cpp c` | 아니오 | 예 |
+| M5 | 문제데이터 | 문제 본문에 이미지 있음 (`--image-mode reference`) | 이미지를 원본 URL 참조로 README에 포함 | N/A | 아니오 |
+| M6 | 문제데이터 | 이미지 다운로드 실패 (`--image-mode download`) | `Warning: 이미지 다운로드 실패 (URL). reference 모드로 대체.` | reference로 대체 | 아니오 |
+| M7 | 문제데이터 | 이미지 URL이 외부 도메인 | reference 모드: 원본 URL 사용. download 모드: 시도 후 실패 시 경고 | 경고 후 계속 | 아니오 |
+| M8 | 템플릿 | 요청 언어 템플릿 없음 (`--lang rust`) | `Error: 'rust' 템플릿이 없습니다. 지원 언어: java python cpp c` | 아니오 | 예 |
 | M9 | config | 에이전트 설정 없음 (BOJ_AGENT_CMD 없음) | 에디터 열기 + 클립보드 복사 fallback | 예 | 아니오 |
 | M10 | 문제데이터 | 에이전트 timeout/오류 | `Error: 에이전트 실행 실패. 수동으로 진행하세요.` + URL 출력 | 아니오 | 예 |
 | M11 | 문제데이터 | 생성 후 자체검증: README ↔ 문제 불일치 | `Warning: README 내용이 문제와 다를 수 있습니다. 확인하세요.` | 아니오 | 아니오 |
+| M12 | 파일시스템 | `--output` 경로가 존재하지 않음 | `Error: 출력 경로가 존재하지 않습니다: /invalid/path` | 아니오 | 예 |
 
 ---
 
@@ -88,8 +92,9 @@
 | # | 카테고리 | 케이스 | 기대 동작 | 자동복구 | 중단 |
 |---|---------|--------|-----------|---------|------|
 | O1 | 파일시스템 | 문제 폴더 없음 | make 먼저 실행 안내 + `boj make 4949` 명령 제안 | 아니오 | 예 |
-| O2 | config | 에디터 CLI 없음 (cursor/code 모두 없음) | `Error: 에디터를 찾을 수 없습니다. ~/.config/boj/editor 설정.` | 아니오 | 예 |
-| O3 | config | 설정 에디터가 PATH에 없음 | `Error: 설정된 에디터 'mycustom'을 찾을 수 없습니다.` | 아니오 | 예 |
+| O2 | config | 에디터 CLI 없음 (cursor/code 모두 없음) | `Error: 에디터를 찾을 수 없습니다. --editor 또는 ~/.config/boj/editor 설정.` | 아니오 | 예 |
+| O3 | config | `--editor vim` 사용 | `vim /path/to/problem` 실행 | N/A | 아니오 |
+| O4 | config | 설정 에디터가 PATH에 없음 | `Error: 설정된 에디터 'mycustom'을 찾을 수 없습니다.` | 아니오 | 예 |
 
 ---
 
@@ -112,7 +117,7 @@
 | SB2 | 파일시스템 | `Solution.java` 없음 | `Error: Solution.java가 없습니다. 먼저 풀이를 작성하세요.` | 아니오 | 예 |
 | SB3 | 파일시스템 | `test/Parse.java` 없음 | `Warning: Parse.java가 없습니다. stdin 직접 입력 방식으로 생성합니다.` | stdin 방식으로 대체 | 아니오 |
 | SB4 | 파일시스템 | `submit/` 폴더 없음 | 자동 생성 | 예 | 아니오 |
-| SB5 | 파일시스템 | `Submit.java` 이미 존재 | 덮어쓰기 확인 프롬프트 | 사용자 확인 | 사용자 선택 |
+| SB5 | 파일시스템 | `Submit.java` 이미 존재 | `Warning: Submit.java가 이미 있습니다. 덮어쓰시겠습니까? (y/N)` | 사용자 확인 | 사용자 선택 |
 | SB6 | 문제데이터 | Solution에 inner class 있음 | inner class 포함하여 Submit.java 생성 | 예 | 아니오 |
 | SB7 | 문제데이터 | Solution에 외부 라이브러리 import | `Warning: 외부 라이브러리는 BOJ에서 지원하지 않습니다: import com.example.*` | 아니오 | 아니오 (경고만) |
 | SB8 | config | 언어 미설정 | java 기본값 사용, `Warning: 언어 미설정. java 사용.` | 예 | 아니오 |
@@ -133,7 +138,8 @@
 
 - **에이전트 없음**: 에디터 + 클립보드 fallback
 - **BOJ 통계 실패**: commit은 진행, 메시지에 실패 이유 포함
+- **이미지 다운로드 실패**: reference 모드로 대체
 - **id/description 없음**: 자동 보완 후 실행
 - **submit/ 폴더 없음**: 자동 생성
 
-*최종 업데이트: 2026-03-09*
+*최종 업데이트: 2026-03-01*
