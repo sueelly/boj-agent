@@ -132,34 +132,36 @@
 ```
 boj-agent/
   src/
-    boj_core/                 # Python 패키지 — 순수 로직, CLI 없음
+    core/                 # Python 패키지 — 순수 로직, CLI 없음
       __init__.py
       config.py               # 설정 로더 (env > 파일 > 기본값), config.sh 대체
       client.py               # BOJ HTML fetcher (src/lib/boj_client.py에서 이동)
       normalizer.py           # problem.json -> README.md (src/lib/boj_normalizer.py에서 이동)
       runners/                # 언어별 테스트 실행 로직
         __init__.py
-        java.py               # Java 컴파일/실행 로직
-        python.py             # Python 실행 로직
-        java_runtime/         # Java 전용 런타임 파일 (templates/java/에서 이동)
-          Test.java
-          ParseAndCallSolve.java
-        python_runtime/       # Python 전용 런타임 파일 (templates/python/에서 이동)
-          test_runner.py
+        java/
+          java.py               # Java 컴파일/실행 로직
+          java_runtime/         # Java 전용 런타임 파일 (templates/java/에서 이동)
+            Test.java
+            ParseAndCallSolve.java
+        python/
+          python.py             # Python 실행 로직
+          python_runtime/       # Python 전용 런타임 파일 (templates/python/에서 이동)
+            test_runner.py
       submitter.py            # 제출 파일 생성 (Java 우선)
       workspace.py            # 문제 디렉터리 레이아웃, 경로 해석
-    boj_cli/                  # CLI 진입점 — boj_core 위 얇은 래퍼
+    cli/                  # CLI 진입점 — boj_core 위 얇은 래퍼
       __init__.py
       main.py                 # argparse 디스패처 (또는 Click)
-      cmd_make.py             # boj make
-      cmd_run.py              # boj run
-      cmd_commit.py           # boj commit
-      cmd_submit.py           # boj submit
-      cmd_open.py             # boj open
-      cmd_setup.py            # boj setup
-      cmd_review.py           # boj review
+      boj_make.py             # boj make
+      boj_run.py              # boj run
+      boj_commit.py           # boj commit
+      boj_submit.py           # boj submit
+      boj_open.py             # boj open
+      boj_setup.py            # boj setup
+      boj_review.py           # boj review
     boj                       # 쉘 스텁: exec python3 -m boj_cli "$@"  (PATH 호환용 유지)
-    lib/                      # 전환 기간 동안 유지
+    lib/                      # legacy. 전환 기간 동안 유지
       boj_client.py           # boj_core/client.py로 옮길 때까지 유지
       boj_normalizer.py       # boj_core/normalizer.py로 옮길 때까지 유지
       config.sh               # 모든 쉘 명령 이전 완료까지 유지
@@ -171,6 +173,17 @@ boj-agent/
       python/parse.py
     schemas/                  # JSON 스키마 예시
       test_cases.json
+    usecases/                 # 실제 사용 시 결과 예시
+      java/
+        README.md
+        Solution.java
+        submit/
+          REVIEW.md
+          Submit.java
+        test/
+          Parse.java
+          test_cases.json
+
   tests/
     unit/
       test_config.py
@@ -179,14 +192,28 @@ boj-agent/
       test_runner.py          # Java 러너 단위 테스트 (픽스처로 컴파일·실행)
       test_submitter.py       # 제출 생성 단위 테스트
       test_workspace.py
-    integration/
+    integration/              # cli test
       test_run.py             # 픽스처로 subprocess boj run
       test_make.py            # BOJ_CLIENT_TEST_HTML로 subprocess boj make
+      test_open.py
+      test_submit.py
+      test_commit.py
+      test_review.py
+      test_setup.py
     fixtures/                 # 기존 픽스처 전부 유지
-  docs/
-    rewrite-plan.md           # 본 문서
-    ARCHITECTURE.md
-    test-strategy.md
+  docs/                       # 문서
+    ARCHITECTURE.md           # 프로젝트 구조 (현재 + 목표)
+    COMMAND-SPEC.md           # 명령어별 로직 정의서
+    edge-cases.md             # 엣지케이스 매트릭스
+    user-guide.md             # 사용자 가이드
+    dev/                      # 개발 프로세스 가이드
+      WORKFLOW.md             # 이슈 → PR → 머지 워크플로우
+      VERIFICATION.md         # 7단계 검증 파이프라인
+      test-strategy.md        # pytest 특성화 테스트 전략
+      test-coverage/          # 테스트 커버리지 데이터
+      rewrite-plan.md         # Python 전환 계획
+    records/                  # 기록
+      DEVLOG.md               # 변경 기록 (구조화 + Legacy 여정)
   prompts/                    # 에이전트 지시문 (reference/와 같은 레벨)
   pyproject.toml              # 패키지 정의
   languages.json              # 언어 메타데이터 (프로젝트 루트로 이동)

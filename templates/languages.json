@@ -78,6 +78,7 @@
       "notes": "Kotlin 1.9. fun main() 포함."
     },
     "go": {
+      "supported": false,
       "name": "Go 1.21",
       "extension": "go",
       "compile": "go build -o solution Solution.go",
@@ -93,6 +94,7 @@
       "notes": "Go 1.21. package main + func main()."
     },
     "rust": {
+      "supported": false,
       "name": "Rust 2021",
       "extension": "rs",
       "compile": "rustc -O -o solution Solution.rs",
@@ -108,6 +110,7 @@
       "notes": "Rust 2021 edition."
     },
     "ruby": {
+      "supported": false,
       "name": "Ruby 3.2",
       "extension": "rb",
       "compile": null,
@@ -123,6 +126,7 @@
       "notes": "Ruby 3.2."
     },
     "swift": {
+      "supported": false,
       "name": "Swift 5.9",
       "extension": "swift",
       "compile": "swiftc -O -o solution Solution.swift",
@@ -138,6 +142,7 @@
       "notes": "Swift 5.9."
     },
     "scala": {
+      "supported": false,
       "name": "Scala 3",
       "extension": "scala",
       "compile": "scalac Solution.scala",
@@ -153,6 +158,7 @@
       "notes": "Scala 3."
     },
     "js": {
+      "supported": false,
       "name": "Node.js 18",
       "extension": "js",
       "compile": null,
@@ -168,6 +174,7 @@
       "notes": "Node.js 18. process.stdin 으로 입력."
     },
     "ts": {
+      "supported": false,
       "name": "TypeScript 5",
       "extension": "ts",
       "compile": "tsc --target es2020 Solution.ts",
