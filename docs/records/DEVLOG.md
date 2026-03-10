@@ -14,6 +14,13 @@
 
 ---
 
+## [2026-03-10] refactor(config): Python config 모듈 구현 [#45]
+**변경 요약:** Bash `config.sh`를 대체하는 Python `src/core/config.py` 구현. config key 구조 변경(root 분리, session 제거, key 이름 변경), setup_done flag, agent 커맨드 매핑, git config 연동 추가.
+**의사결정:** Option C 구조(src/core/)에 배치. 기존 config.sh는 Bash 명령어 전환 완료까지 병행 유지. 환경변수 매핑은 BOJ_PROG_LANG, BOJ_SOLUTION_ROOT 등 새 이름으로 통일하되 레거시(BOJ_ROOT, BOJ_LANG)는 Bash 측에서만 사용. 지원 언어는 런타임 지원 기준 java/python만.
+**검증 방법:** `PYTHONPATH=. python3 -m pytest tests/unit/test_config.py -v` (31 passed), 전체 `tests/unit/` (38 passed, 1 skipped)
+
+---
+
 ## [2026-03-09] refactor(docs): 문서 통합 및 코드 괴리 해소 [#42]
 **변경 요약:** 문서 ↔ 코드 괴리 분석 후 정리. 실체 없는 언어 스텁 7개 디렉터리 삭제, 불필요 문서 3개 삭제, 레거시 픽스처 삭제, test_cases.json 형식 수정, Option C 아키텍처·브랜치 전략 확정, COMMAND-SPEC.md·ARCHITECTURE.md 신규 작성.
 **의사결정:** 이전 분석이 "미구현"이라 판단한 플래그(--no-open, --image-mode, --output, --editor, --force, --no-stats, --message, BOJ_CONFIG_DIR)가 전부 구현되어 있음을 코드 리딩으로 발견. 잘못된 커밋을 revert하고 실제 괴리(test_cases.json flat→nested, 삭제된 스텁/픽스처 참조)만 수정. templates/ 구조는 Option C(boj_core/runners/ + reference/) 확정.

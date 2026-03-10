@@ -18,12 +18,35 @@
 
 ---
 
-## 공통: `src/lib/config.sh`
+## 공통: 설정 모듈
+
+### Bash (레거시): `src/lib/config.sh`
+
+전환 완료 시까지 유지. 기존 Bash 명령어에서 사용.
+
+### Python (신규): `src/core/config.py`
+
+Bash config.sh를 대체하는 Python 구현. 모든 Python 명령어에서 사용.
 
 ### 설정 우선순위
 환경변수 `BOJ_<KEY>` > `$BOJ_CONFIG_DIR/<key>` 파일 > 기본값
 
-### 주요 함수
+### Python 주요 함수
+
+| 함수 | 역할 |
+|------|------|
+| `config_get(key, default)` | 설정값 읽기 (우선순위 적용) |
+| `config_set(key, value)` | `$BOJ_CONFIG_DIR/<key>`에 저장 |
+| `is_setup_done()` | `setup_done` 플래그 파일 존재 여부 |
+| `mark_setup_done()` | `setup_done` 플래그 파일 생성 |
+| `check_config()` | 전체 설정 상태 표시 (--check용) |
+| `validate_lang(lang)` | 지원 언어 검증 (java, python) |
+| `validate_path(path)` | 경로 존재 여부 검증 |
+| `get_agent_command(name)` | agent 이름 → 실행 명령어 매핑 |
+| `get_git_config(key)` | git config --global 값 읽기 |
+| `set_git_config(key, value)` | git config --global 값 쓰기 |
+
+### Bash 주요 함수 (레거시)
 
 | 함수 | 역할 |
 |------|------|
@@ -38,15 +61,29 @@
 
 ### 환경변수
 
-| 변수 | 역할 |
-|------|------|
-| `BOJ_CONFIG_DIR` | 설정 디렉터리 (기본: `~/.config/boj`) |
-| `BOJ_ROOT` | 문제 풀이 루트 |
-| `BOJ_LANG` | 기본 언어 |
-| `BOJ_AGENT_CMD` / `BOJ_AGENT` | 에이전트 명령 |
-| `BOJ_EDITOR` | 에디터 |
-| `BOJ_SESSION` | BOJ 세션 쿠키 |
-| `BOJ_USER` | BOJ 사용자 ID |
+| 변수 | 역할 | 비고 |
+|------|------|------|
+| `BOJ_CONFIG_DIR` | 설정 디렉터리 (기본: `~/.config/boj`) | |
+| `BOJ_SOLUTION_ROOT` | 문제 풀이 루트 | 신규 (기존 `BOJ_ROOT` 대체) |
+| `BOJ_AGENT_ROOT` | agent 폴더 루트 | 신규 |
+| `BOJ_PROG_LANG` | 기본 언어 | 신규 (기존 `BOJ_LANG` 대체) |
+| `BOJ_AGENT` | 에이전트 명령 | |
+| `BOJ_EDITOR` | 에디터 | |
+| `BOJ_USERNAME` | BOJ 사용자 ID | 신규 (기존 `BOJ_USER` 대체) |
+| `BOJ_ROOT` | (레거시) 문제 풀이 루트 | Bash 명령어에서만 사용 |
+| `BOJ_LANG` | (레거시) 기본 언어 | Bash 명령어에서만 사용 |
+
+### 설정 키 매핑
+
+| config 파일 | 환경변수 | 기본값 | 용도 |
+|-------------|----------|--------|------|
+| `boj_solution_root` | `BOJ_SOLUTION_ROOT` | (없음) | 문제 풀이 루트 경로 |
+| `boj_agent_root` | `BOJ_AGENT_ROOT` | (없음) | agent 폴더 루트 경로 |
+| `prog_lang` | `BOJ_PROG_LANG` | `java` | 기본 프로그래밍 언어 |
+| `editor` | `BOJ_EDITOR` | `code` | 에디터 실행 명령 |
+| `agent` | `BOJ_AGENT` | (없음) | 에이전트 실행 명령 |
+| `username` | `BOJ_USERNAME` | (없음) | BOJ 사용자 ID |
+| `setup_done` | - | - | 설정 완료 플래그 파일 |
 
 ---
 
