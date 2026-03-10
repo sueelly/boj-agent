@@ -5,7 +5,7 @@ Usage:
     python3 boj_normalizer.py --input problem.json --out README.md
 
 Pure function: same problem.json always produces the same README.md.
-Format follows prompts/make-environment.md spec.
+Format: HTML-based README with problem statement, examples, and metadata.
 """
 
 import argparse
