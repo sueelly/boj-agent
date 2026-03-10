@@ -70,7 +70,7 @@
 - `templates/java/Test.java`가 있어야 리포 루트 추적 가능
 - 문제 폴더: `{ROOT}/{N}-{slug}/` 내 `test/test_cases.json`, `test/Parse.java`, `Solution.java`
 - 설정: `~/.config/boj/{key}` 파일
-- 에이전트 프롬프트: `prompts/make-skeleton.md`, `prompts/review.md`
+- 에이전트 프롬프트: `prompts/make-skeleton.md`, `prompts/make-environment.md`
 - 중간 A→B 산출물: `artifacts/problem.json`
 
 **에이전트 관련 가정:**

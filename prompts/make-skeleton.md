@@ -19,15 +19,12 @@
 {{PROBLEM_JSON}}
 ```
 
-> **problem.json 필드**: `problem_num`, `title`, `time_limit`, `memory_limit`, `description_html`, `input_html`, `output_html`, `samples[{id, input, output}]`, `images`
-
 ---
 
 ## 생성할 파일
 
-### 1. Solution 파일
+### 1. `Solution.{{EXT}}`
 
-- **파일명**: Java → `Solution.java`, Python → `solution.py` (소문자), 기타 → `Solution.{{EXT}}`
 - **역할**: 순수 알고리즘 담당. 파싱된 값을 파라미터로 받아 결과 반환.
 - **메서드**: `solve(...)` — 문제에 맞는 파라미터와 반환 타입.
 - **구현**: 비워두거나 `TODO`만 둠 (사용자가 직접 구현).
@@ -49,35 +46,9 @@ public int solve(String input) { ... }  // 절대 금지
 
 ### 2. `test/Parse.{{EXT}}` (SUPPORTS_PARSE=true일 때만)
 
-입력 문자열을 파싱해 `Solution.solve(...)`에 넘기고, 반환값을 문자열로 돌려주는 어댑터.
-
-**Java** — `public class Parse implements ParseAndCallSolve`:
-```java
-import java.util.StringTokenizer;
-
-public class Parse implements ParseAndCallSolve {
-    @Override
-    public String parseAndCallSolve(Solution sol, String input) {
-        StringTokenizer st = new StringTokenizer(input);
-        int n = Integer.parseInt(st.nextToken());
-        // ... 문제에 맞게 파싱
-        return String.valueOf(sol.solve(n));
-    }
-}
-```
-- `public class` 필수 (submit.sh가 제출 파일 생성 시 `public` 제거)
-- `implements ParseAndCallSolve` 필수 (테스트 러너 계약)
-
-**Python** — 모듈 레벨 함수 `parse_and_solve`:
-```python
-def parse_and_solve(sol, input: str) -> str:
-    lines = input.strip().split('\n')
-    n = int(lines[0])
-    # ... 문제에 맞게 파싱
-    return str(sol.solve(n))
-```
-- 클래스가 아닌 **모듈 레벨 함수**로 작성
-- 파일 경로: `test/parse.py` (소문자)
+- Java: `ParseAndCallSolve` 인터페이스 구현 (`parseAndCallSolve(Solution sol, String input)`)
+- Python: `parse_and_solve(sol, input: str) -> str` 함수
+- templates 디렉터리의 인터페이스 계약을 반드시 준수할 것
 
 ### 3. `test/test_cases.json`
 
@@ -85,61 +56,19 @@ problem.json의 `samples`를 변환:
 ```json
 {
   "testCases": [
-    {"input": "...", "expected": "..."},
+    {"id": 1, "description": "예제 1", "input": "...", "expected": "..."},
     ...
   ]
 }
 ```
-- `id`와 `description`은 **생략 가능** — `boj run`이 자동으로 채움 (순번 1,2,3... / "예제 N")
-- `input`은 전체 입력(줄 구분 `\n`), `expected`는 기대 출력
 
-### 4. `artifacts/signature_review.md` — 서명 리뷰
+### 4. `artifacts/signature_review.md`
 
-solve() 서명을 3역할 관점에서 평가. 아래 기준으로 채점 (각 0-2점, 총 24점 만점):
-
-**응시자 관점** (4기준):
-| 기준 | 설명 |
-|------|------|
-| 파라미터 이름이 직관적인가 | 변수명만 보고 의미 파악 가능 |
-| 반환 타입이 명확한가 | 기대 출력과 일치 |
-| 구현 방향이 명확한가 | 서명만 보고 어떻게 풀지 감 잡힘 |
-| 불필요한 파싱 로직이 없는가 | Solution이 파싱을 하지 않음 |
-
-**출제자 관점** (4기준):
-| 기준 | 설명 |
-|------|------|
-| 문제 입력 형식과 일치하는가 | 입력 스펙과 파라미터 대응 |
-| 경계값/엣지케이스 처리 가능한가 | 자료형이 범위를 커버 |
-| 반환값이 출력 형식과 일치하는가 | 출력 스펙과 반환 타입 대응 |
-| 알고리즘 핵심 로직과 일치하는가 | 풀이 의도가 서명에 드러남 |
-
-**코드 리뷰어 관점** (4기준):
-| 기준 | 설명 |
-|------|------|
-| raw stdin blob 패턴 없음 | 단일 String/str 금지 위반 없음 |
-| 타입 안전성 | 적절한 자료형 사용 |
-| 언어 관용구 준수 | 언어별 네이밍/타입 컨벤션 |
-| Parse 계약과의 호환성 | Parse가 이 서명으로 호출 가능 |
-
-**판정 기준**:
-- **PASS**: 총점 18+ AND raw stdin blob 없음
-- **WARN**: 총점 12-17 또는 경미한 문제
-- **FAIL**: 총점 11 이하 또는 raw stdin blob 감지
-
----
-
-## 서명 리뷰 루프 (필수)
-
-스켈레톤 생성 후 반드시 다음 루프를 실행:
-
-1. Solution의 `solve()` 서명으로 `artifacts/signature_review.md` 작성
-2. 판정이 **PASS**이면 → 완료
-3. 판정이 **WARN** 또는 **FAIL**이면 → 개선 제안에 따라 서명 수정 → 다시 1로
-4. **최대 5회** 반복. 5회 내 PASS 불가 시 최선의 결과로 마무리
-
-> **참고**: 생성 완료 후 make.sh가 자동으로 Gate Check를 수행합니다.
-> `solve(String x)` / `solve(x: str)` 패턴이 감지되면 경고가 출력됩니다.
-> 이어서 `boj run`이 자동 실행되어 컴파일/테스트를 검증합니다.
+아래 `prompts/signature-review-template.md` 형식을 따라 생성:
+- 3역할(응시자/출제자/리뷰어) 관점 평가
+- 기준별 0-2점 채점
+- 종합 판정 (PASS/FAIL/WARN)
+- 판정 이유 및 개선 제안
 
 ---
 
@@ -148,5 +77,5 @@ solve() 서명을 3역할 관점에서 평가. 아래 기준으로 채점 (각 0
 1. **Solution**: 파싱 로직 없이 `solve(...)` 시그니처만. Parse가 파싱을 담당.
 2. **SUPPORTS_PARSE=false**: test/Parse.* 생성 안 함. Solution에서 stdin 직접 읽는 BOJ 표준 방식.
 3. **test_cases.json**: `testCases` 키 사용. `input`은 전체 입력(줄 구분 `\n`), `expected`는 기대 출력.
-4. **서명 검증**: 반드시 리뷰 루프를 통해 solve() 서명이 PASS인지 확인.
+4. **서명 검증**: 생성 전 solve() 파라미터가 금지 패턴에 해당하는지 반드시 확인.
 5. **Main 클래스 금지**: Main.java, Test.java, run.sh 생성 금지 (별도 템플릿 존재).

@@ -46,7 +46,7 @@
 | `src/lib/boj_client.py` | Problem Fetcher |
 | `src/lib/boj_normalizer.py` | Statement Normalizer |
 | `prompts/make-skeleton.md` | 스켈레톤 에이전트 프롬프트 |
-| `prompts/make-skeleton.md` | 스켈레톤 생성 프롬프트 (3역할 리뷰 기준 인라인) |
+| `prompts/signature-review-template.md` | 3역할 리뷰 템플릿 |
 | `tests/fixtures/boj_client/99999.html` | HTML 픽스처 |
 | `tests/fixtures/boj_client/99999-problem.json` | 기대 problem.json |
 | `tests/fixtures/boj_client/99999-readme.md` | 기대 README.md |

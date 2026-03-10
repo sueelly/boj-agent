@@ -38,8 +38,10 @@ boj-agent/
     cpp/, c/, kotlin/         # 스텁만 존재 (런타임 미지원)
     languages.json            # 언어 메타데이터
   prompts/
-    make-skeleton.md          # make용 스켈레톤 생성 프롬프트 (make.sh:181에서 사용)
-    review.md                 # review용 에이전트 프롬프트 (review.sh:29에서 사용)
+    make-environment.md       # make용 에이전트 지시문 (레거시)
+    make-skeleton.md          # make용 스켈레톤 생성 프롬프트
+    review.md                 # review용 에이전트 프롬프트
+    submit.md                 # submit 규칙
   tests/
     run_tests.sh              # 전체 테스트 실행
     fixtures/                 # 테스트 픽스처 (99999, 1000, 6588, 9495)
