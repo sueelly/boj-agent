@@ -206,17 +206,21 @@ def check_config() -> None:
     print(f"{BLUE}=== BOJ CLI 설정 상태 ==={NC}")
     print()
 
-    # solution_root
+    # solution_root (ok / missing / invalid 구분 — S7, CF10/CF11)
     sol_root = config_get("boj_solution_root", "")
     if sol_root and validate_path(sol_root):
         print(f"  solution_root: {GREEN}✓{NC} {sol_root}")
+    elif sol_root:
+        print(f"  solution_root: {RED}✗ 깨져 있습니다{NC} {sol_root} (boj setup 실행)")
     else:
         print(f"  solution_root: {RED}✗ 미설정{NC} (boj setup 실행)")
 
-    # agent_root
+    # agent_root (ok / missing / invalid 구분 — S7, CF10/CF11)
     agent_root = config_get("boj_agent_root", "")
     if agent_root and validate_path(agent_root):
         print(f"  agent_root:    {GREEN}✓{NC} {agent_root}")
+    elif agent_root:
+        print(f"  agent_root:    {RED}✗ 깨져 있습니다{NC} {agent_root} (boj setup 실행)")
     else:
         print(f"  agent_root:    {RED}✗ 미설정{NC} (boj setup 실행)")
 

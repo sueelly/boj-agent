@@ -305,6 +305,38 @@ class TestCheckConfig:
         # 아무것도 설정되지 않은 상태에서 missing/미설정 표시 확인
         assert "missing" in captured.out.lower() or "미설정" in captured.out
 
+    def test_check_config_shows_ok_when_root_paths_exist(self, config_env, tmp_path, capsys):
+        """CF10/CF11, S7: solution_root/agent_root가 존재하면 ✓ 로 표시한다 (경로검증 존재)."""
+        existing_dir = str(tmp_path)
+        config_set("boj_solution_root", existing_dir)
+        config_set("boj_agent_root", existing_dir)
+
+        check_config()
+
+        captured = capsys.readouterr()
+        assert existing_dir in captured.out
+        for line in captured.out.splitlines():
+            if "solution_root" in line or "agent_root" in line:
+                assert "✓" in line, f"root 라인에 ✓ 없음: {line}"
+                assert "미설정" not in line and "깨져 있습니다" not in line, f"root 라인에 ok 표시 필요: {line}"
+
+    def test_check_config_shows_invalid_path_as_broken(self, config_env, capsys):
+        """S7, CF10/CF11: 설정된 경로가 존재하지 않으면 '깨져 있습니다'로 구분한다."""
+        config_set("boj_solution_root", "/nonexistent/solution/path")
+        config_set("boj_agent_root", "/nonexistent/agent/path")
+
+        check_config()
+
+        captured = capsys.readouterr()
+        assert "깨져 있습니다" in captured.out
+        assert "/nonexistent/solution/path" in captured.out
+        assert "/nonexistent/agent/path" in captured.out
+        # invalid인 경우 '미설정'이 아님을 확인 (같은 줄에 미설정 없어야 함)
+        lines = captured.out.splitlines()
+        for line in lines:
+            if "깨져 있습니다" in line:
+                assert "미설정" not in line, "invalid 경로에는 '미설정'이 아닌 '깨져 있습니다' 표시"
+
 
 # ──────────────────────────────────────────────
 # BOJ_CONFIG_DIR 오버라이드 (CF21)

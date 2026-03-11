@@ -151,7 +151,7 @@
 | CF17 | git | `git config --global user.name/email` 설정됨 | 값 반환 | N/A | 아니오 |
 | CF18 | git | `git config --global user.name/email` 미설정 | 빈 문자열 반환 (호출자가 처리) | N/A | 아니오 |
 | CF19 | git | git 미설치 | `Error: git을 찾을 수 없습니다.` | 아니오 | 예 |
-| CF20 | check | `boj_check_config()` 호출 | 전체 설정 상태 포맷팅 출력 (key: value, ok/missing 표시) | N/A | 아니오 |
+| CF20 | check | `boj_check_config()` 호출 | 전체 설정 상태 포맷팅 출력 (key: value, ok/missing/invalid 구분, S7과 동일) | N/A | 아니오 |
 | CF21 | config | `BOJ_CONFIG_DIR` 환경변수로 디렉터리 오버라이드 | 해당 경로를 설정 디렉터리로 사용 | N/A | 아니오 |
 
 ---
