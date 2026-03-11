@@ -23,6 +23,7 @@ from src.core.config import (
     set_git_config,
     check_config,
     get_agent_command,
+    GIT_NOT_FOUND_MSG,
     AGENT_COMMANDS,
     AGENT_INSTALL,
     DEFAULTS,
@@ -261,10 +262,13 @@ class TestGitConfig:
             )
             assert get_git_config("user.name") == ""
 
-    def test_get_git_config_returns_empty_when_git_missing(self):
-        """CF19: git이 미설치면 빈 문자열을 반환한다."""
+    def test_get_git_config_raises_when_git_missing(self):
+        """CF19: git이 미설치면 Error 메시지와 함께 예외를 발생시킨다 (중단)."""
         with patch("subprocess.run", side_effect=FileNotFoundError):
-            assert get_git_config("user.name") == ""
+            with pytest.raises(RuntimeError) as exc_info:
+                get_git_config("user.name")
+            assert "git을 찾을 수 없습니다" in str(exc_info.value)
+            assert exc_info.value.args[0] == GIT_NOT_FOUND_MSG
 
     def test_set_git_config_calls_subprocess(self):
         """set_git_config가 git config --global을 호출한다."""

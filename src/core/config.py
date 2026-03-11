@@ -172,15 +172,24 @@ def get_agent_command(agent_name: str) -> str | None:
 # git config 연동
 # ──────────────────────────────────────────────
 
+GIT_NOT_FOUND_MSG = "Error: git을 찾을 수 없습니다."
+
+
 def get_git_config(key: str) -> str:
-    """git config --global 값을 읽는다. 미설정/에러 시 빈 문자열."""
+    """git config --global 값을 읽는다. 미설정 시 빈 문자열.
+
+    Raises:
+        RuntimeError: git이 PATH에 없을 때 (CF19 — 중단).
+    """
     try:
         result = subprocess.run(
             ["git", "config", "--global", key],
             capture_output=True, text=True, timeout=5,
         )
         return result.stdout.strip()
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+    except FileNotFoundError:
+        raise RuntimeError(GIT_NOT_FOUND_MSG)
+    except (subprocess.TimeoutExpired, OSError):
         return ""
 
 
