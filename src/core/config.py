@@ -255,14 +255,20 @@ def check_config() -> None:
     else:
         print(f"  username:      {YELLOW}미설정{NC}")
 
-    # git
+    # git (CF19: git 미설치 시 예외 잡아 상태만 표시, --check 흐름 유지)
     print()
-    git_name = get_git_config("user.name")
-    git_email = get_git_config("user.email")
-    if git_name and git_email:
-        print(f"  git:           {GREEN}✓{NC} {git_name} <{git_email}>")
-    else:
-        print(f"  git:           {YELLOW}미설정{NC} (git config --global user.name/email 필요)")
+    try:
+        git_name = get_git_config("user.name")
+        git_email = get_git_config("user.email")
+        if git_name and git_email:
+            print(f"  git:           {GREEN}✓{NC} {git_name} <{git_email}>")
+        else:
+            print(f"  git:           {YELLOW}미설정{NC} (git config --global user.name/email 필요)")
+    except RuntimeError as e:
+        if "git을 찾을 수 없습니다" in str(e):
+            print(f"  git:           {RED}✗{NC} git을 찾을 수 없습니다")
+        else:
+            raise
 
     # setup_done
     print()

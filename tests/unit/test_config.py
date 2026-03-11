@@ -341,6 +341,17 @@ class TestCheckConfig:
             if "깨져 있습니다" in line:
                 assert "미설정" not in line, "invalid 경로에는 '미설정'이 아닌 '깨져 있습니다' 표시"
 
+    def test_check_config_handles_git_missing_without_crash(self, config_env, capsys):
+        """git 미설치 시 check_config는 크래시하지 않고 git 상태만 '찾을 수 없습니다'로 표시한다."""
+        with patch("src.core.config.get_git_config", side_effect=RuntimeError(GIT_NOT_FOUND_MSG)):
+            check_config()
+
+        captured = capsys.readouterr()
+        assert "git을 찾을 수 없습니다" in captured.out
+        assert "setup:" in captured.out or "setup_done" in captured.out
+        assert "Traceback" not in captured.out
+        assert "RuntimeError" not in captured.out
+
 
 # ──────────────────────────────────────────────
 # BOJ_CONFIG_DIR 오버라이드 (CF21)
