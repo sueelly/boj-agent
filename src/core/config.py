@@ -35,10 +35,19 @@ _ENV_MAP: dict[str, str] = {
 
 AGENT_COMMANDS: dict[str, str] = {
     "claude": "claude -p --",
-    "cursor": "cursor --cli",
-    "copilot": "gh copilot",
-    "antigravity": "antigravity",
-    "opencode": "opencode",
+    "copilot": "copilot -p",
+    "cursor": "agent -p",
+    "gemini": "gemini -p",
+    "opencode": "opencode -p",
+}
+
+# 에이전트 설치 명령어 (macOS/Linux 기준)
+AGENT_INSTALL: dict[str, str] = {
+    "claude": "curl -fsSL https://claude.ai/install.sh | bash",
+    "copilot": "brew install copilot-cli",
+    "cursor": "brew install --cask cursor",
+    "gemini": "npm install -g @google/gemini-cli",
+    "opencode": "curl -fsSL https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/install | bash",
 }
 
 # 지원 언어 (현재 런타임 지원)

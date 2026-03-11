@@ -30,7 +30,7 @@
 | S6 | git | `gh` CLI 미설치 (새 repo 생성 선택 시) | `Error: gh CLI가 필요합니다. https://cli.github.com 에서 설치하세요.` | 아니오 | 부분 (git 단계만) |
 | S7 | config | `boj setup --check` 실행 | 현재 설정 상태 표시 (ok/missing/invalid 구분) | N/A | 아니오 |
 | S8 | config | 이미 설정 완료 후 재실행 | 현재 값 보여주고 "수정하시겠습니까? (y/N)" 확인 | N/A | 아니오 |
-| S9 | agent | agent 미설정 | "agent가 없으면 사용이 불가합니다. 무료 antigravity를 추천합니다." 안내 | N/A | 아니오 |
+| S9 | agent | agent 미설정 | "agent가 없으면 사용이 불가합니다. 무료 gemini를 추천합니다." 안내 | N/A | 아니오 |
 | S10 | config | 설정 완료 | `~/.config/boj/setup_done` 파일 생성 + 사용법/설정법 출력 | N/A | 아니오 |
 
 ---

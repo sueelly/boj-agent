@@ -24,6 +24,7 @@ from src.core.config import (
     check_config,
     get_agent_command,
     AGENT_COMMANDS,
+    AGENT_INSTALL,
     DEFAULTS,
 )
 
@@ -219,13 +220,22 @@ class TestAgentMapping:
         assert len(cmd) > 0
 
     def test_known_agents_include_expected(self):
-        """CF15: 최소한 claude, cursor, copilot, antigravity, opencode가 포함된다."""
-        for name in ("claude", "cursor", "copilot", "antigravity", "opencode"):
+        """CF15: 최소한 claude, copilot, cursor, gemini, opencode가 포함된다."""
+        for name in ("claude", "copilot", "cursor", "gemini", "opencode"):
             assert name in AGENT_COMMANDS, f"{name} not in AGENT_COMMANDS"
 
     def test_unknown_agent_returns_none(self):
         """CF16: 알 수 없는 agent 이름에 대해 None을 반환한다."""
         assert get_agent_command("unknown_agent_xyz") is None
+
+    def test_agent_install_has_same_keys_as_commands(self):
+        """AGENT_INSTALL과 AGENT_COMMANDS는 동일한 키를 가진다."""
+        assert set(AGENT_INSTALL.keys()) == set(AGENT_COMMANDS.keys())
+
+    def test_agent_install_values_are_nonempty(self):
+        """AGENT_INSTALL의 모든 값은 비어있지 않다."""
+        for name, cmd in AGENT_INSTALL.items():
+            assert cmd, f"AGENT_INSTALL[{name!r}] is empty"
 
 
 # ──────────────────────────────────────────────
