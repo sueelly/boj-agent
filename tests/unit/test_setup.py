@@ -387,9 +387,9 @@ class TestInteractiveGit:
             step_git(prompter)
 
     def test_gh_create_repo_without_gh(self, config_env, capsys):
-        """gh repo create 선택 (gh 미설치) → 설치 안내."""
+        """gh repo create 선택 (gh 미설치) → 설치 안내 후 선택만 재질문."""
         prompter = make_prompter(["3", "1"])  # 3=gh create, 1=이미연동으로 fallback
-        with patch("src.cli.boj_setup.get_git_config", side_effect=["User", "user@test.com"] * 2), \
+        with patch("src.cli.boj_setup.get_git_config", side_effect=["User", "user@test.com"]), \
              patch("shutil.which", return_value=None):
             step_git(prompter)
         captured = capsys.readouterr()
@@ -603,8 +603,8 @@ class TestEdgeCases:
 
     def test_s5_shows_error_when_clone_fails(self, config_env, capsys):
         """S5: git repo clone 실패 → 에러 메시지."""
-        prompter = make_prompter(["2", "https://invalid.example.com/repo.git", "1"])
-        with patch("src.cli.boj_setup.get_git_config", side_effect=["User", "user@test.com"] * 2), \
+        prompter = make_prompter(["2", "https://invalid.example.com/repo.git"])
+        with patch("src.cli.boj_setup.get_git_config", side_effect=["User", "user@test.com"]), \
              patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=128, stderr="fatal: repository not found")
             step_git(prompter)

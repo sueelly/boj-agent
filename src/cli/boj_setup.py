@@ -365,55 +365,56 @@ def step_git(prompter: Callable[[str], str]) -> None:
     if git_name and git_email:
         print(f"  {GREEN}✓{NC} {git_name} <{git_email}>")
 
-    # git 연동 옵션
-    print(f"\n  Git 레포 연동 방법을 선택하세요:")
-    print(f"    1) 이미 연동됨 (현재 디렉터리가 git repo)")
-    print(f"    2) repo URL clone")
-    print(f"    3) gh repo create (새 레포 생성)")
+    # git 연동 옵션 (gh 미설치 시 선택만 다시 묻기)
+    while True:
+        print(f"\n  Git 레포 연동 방법을 선택하세요:")
+        print(f"    1) 이미 연동됨 (현재 디렉터리가 git repo)")
+        print(f"    2) repo URL clone")
+        print(f"    3) gh repo create (새 레포 생성)")
 
-    choice = prompter(f"  선택 [1/2/3]: ").strip()
+        choice = prompter(f"  선택 [1/2/3]: ").strip()
 
-    if choice == "2":
-        url = prompter(f"  repo URL: ").strip()
-        if url:
-            try:
-                subprocess.run(
-                    ["git", "clone", url],
-                    check=True, timeout=60,
-                )
-                print(f"  {GREEN}✓ clone 완료{NC}")
-            except subprocess.CalledProcessError:
-                print(f"  {RED}clone 실패. URL을 확인하세요.{NC}")
-            except FileNotFoundError:
-                print(f"  {RED}git이 설치되어 있지 않습니다.{NC}")
+        if choice == "2":
+            url = prompter(f"  repo URL: ").strip()
+            if url:
+                try:
+                    subprocess.run(
+                        ["git", "clone", url],
+                        check=True, timeout=60,
+                    )
+                    print(f"  {GREEN}✓ clone 완료{NC}")
+                except subprocess.CalledProcessError:
+                    print(f"  {RED}clone 실패. URL을 확인하세요.{NC}")
+                except FileNotFoundError:
+                    print(f"  {RED}git이 설치되어 있지 않습니다.{NC}")
+            break
 
-    elif choice == "3":
-        gh_path = shutil.which("gh")
-        if not gh_path:
-            print(f"  {YELLOW}gh CLI가 설치되어 있지 않습니다.{NC}")
-            print(f"  설치 방법:")
-            print(f"    macOS: brew install gh")
-            print(f"    Linux: https://github.com/cli/cli/blob/trunk/docs/install_linux.md")
-            print(f"  설치 후 다시 실행하세요.")
-            # gh 없으면 다른 옵션으로 fallback
-            print(f"\n  다른 방법을 선택하세요:")
-            step_git(prompter)
-            return
+        if choice == "3":
+            gh_path = shutil.which("gh")
+            if not gh_path:
+                print(f"  {YELLOW}gh CLI가 설치되어 있지 않습니다.{NC}")
+                print(f"  설치 방법:")
+                print(f"    macOS: brew install gh")
+                print(f"    Linux: https://github.com/cli/cli/blob/trunk/docs/install_linux.md")
+                print(f"  설치 후 다시 실행하세요.")
+                # 선택만 다시 묻기 (step 전체 재실행 아님)
+                continue
 
-        repo_name = prompter(f"  레포 이름: ").strip()
-        if repo_name:
-            try:
-                subprocess.run(
-                    ["gh", "repo", "create", repo_name, "--public", "--clone"],
-                    check=True, timeout=30,
-                )
-                print(f"  {GREEN}✓ 레포 생성 및 clone 완료{NC}")
-            except subprocess.CalledProcessError:
-                print(f"  {RED}레포 생성 실패. gh auth login을 확인하세요.{NC}")
+            repo_name = prompter(f"  레포 이름: ").strip()
+            if repo_name:
+                try:
+                    subprocess.run(
+                        ["gh", "repo", "create", repo_name, "--public", "--clone"],
+                        check=True, timeout=30,
+                    )
+                    print(f"  {GREEN}✓ 레포 생성 및 clone 완료{NC}")
+                except subprocess.CalledProcessError:
+                    print(f"  {RED}레포 생성 실패. gh auth login을 확인하세요.{NC}")
+            break
 
-    else:
         # 1) 이미 연동됨 또는 기타
         print(f"  확인.")
+        break
 
 
 def step_username(prompter: Callable[[str], str]) -> str:
