@@ -14,6 +14,13 @@
 
 ---
 
+## [2026-03-12] feat(install): Python 설치 스크립트 구현 [#47]
+**변경 요약:** `scripts/install.py` 신규 생성. clone → `python3 scripts/install.py`로 설치 완료. `src/setup-boj-cli.sh` deprecated 처리.
+**의사결정:** standalone 스크립트로 구현 (내부 모듈 import 없음). 이유: 설치 시점에 모듈 경로 미확정. 순수 함수 + 명시적 path 파라미터로 테스트 용이성 확보. `~/.config/boj/root` 하위호환 유지.
+**검증 방법:** `python3 -m pytest tests/unit/test_install.py -v` → 32개 통과
+
+---
+
 ## [2026-03-12] feat(tests): Python 통합 테스트 러너 구현 [#50]
 **변경 요약:** `tests/run_tests.py` 신규 생성. pytest(.py)와 bash(.sh) 테스트를 함께 자동 발견·실행. CI(`ci.yml`)를 `run_tests.sh` → `run_tests.py`로 교체.
 **의사결정:** `run_tests.sh`는 `*.sh` 파일만 발견하므로 Python pytest 파일을 실행하지 못함. Python 러너는 두 종류를 모두 처리하며 --unit/--integration/--e2e 플래그를 동일하게 지원. 기존 `run_tests.sh`는 레거시로 유지.

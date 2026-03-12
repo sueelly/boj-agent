@@ -9,7 +9,7 @@
 boj-agent/
 ├── src/
 │   ├── boj                 # CLI 진입점
-│   ├── setup-boj-cli.sh    # 한 번 설치
+│   ├── setup-boj-cli.sh    # [deprecated] → scripts/install.py
 │   ├── lib/
 │   │   └── config.sh       # 공통 설정 라이브러리
 │   └── commands/           # setup, make, open, run, submit, review, commit
@@ -40,12 +40,23 @@ boj-agent/
 ## 설치
 
 ```bash
-cd <boj-agent 레포>
-./src/setup-boj-cli.sh
+git clone <boj-agent 레포 URL>
+cd boj-agent
+python3 scripts/install.py
 ```
 
-설치 후 `~/bin/boj`에 복사되고 레포 경로는 `~/.config/boj/root`에 저장됩니다.
-필요 시 PATH에 `$HOME/bin`을 추가하세요.
+설치 스크립트가 다음을 수행합니다:
+1. `boj-agent` 파일을 `~/.local/share/boj-agent/`로 복사
+2. `~/bin/boj`에 CLI 명령어 설치
+3. `~/.config/boj/`에 설정 저장
+4. PATH 확인 (필요 시 안내)
+5. `boj setup` 자동 실행
+
+옵션:
+```bash
+python3 scripts/install.py --force       # 기존 설치 덮어쓰기
+python3 scripts/install.py --skip-setup  # boj setup 자동 실행 건너뛰기
+```
 
 ## 초기 설정
 
