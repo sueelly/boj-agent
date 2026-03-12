@@ -224,6 +224,12 @@ class TestGenerateSpec:
             with pytest.raises(SpecError, match="-f"):
                 generate_spec(problem_dir, "echo MOCK")
 
+    def test_raises_when_agent_fails_and_no_spec(self, problem_dir):
+        """M10: 에이전트가 non-zero exit하고 spec 미생성 시 SpecError."""
+        with patch("src.core.make.run_agent", return_value=1):
+            with pytest.raises(SpecError, match="생성되지 않았습니다"):
+                generate_spec(problem_dir, "echo MOCK")
+
 
 # ──────────────────────────────────────────────
 # TestCleanupArtifacts — M13
@@ -361,6 +367,57 @@ class TestFetchProblem:
 
         # artifacts/ 디렉터리가 새로 생성되지 않았는지 확인
         assert not (existing_dir / "artifacts").exists()
+
+    def test_raises_on_permission_error(self, tmp_path):
+        """M4: 쓰기 권한 없으면 PermissionError가 전파된다."""
+        with (
+            patch("src.core.make.fetch_html", return_value="<html></html>"),
+            patch("src.core.make.parse_problem", return_value=SAMPLE_PROBLEM),
+            patch("pathlib.Path.mkdir", side_effect=PermissionError("permission denied")),
+        ):
+            with pytest.raises(PermissionError, match="permission denied"):
+                fetch_problem("99999", problem_dir=tmp_path / "99999-test")
+
+    def test_image_mode_reference_preserves_urls(self, tmp_path):
+        """M5: image_mode='reference'이면 이미지 URL을 원본 그대로 유지한다."""
+        problem_with_images = {
+            **SAMPLE_PROBLEM,
+            "description_html": '<p>설명 <img src="https://acmicpc.net/img.png"></p>',
+            "images": [{"url": "https://acmicpc.net/img.png", "alt": ""}],
+        }
+        with (
+            patch("src.core.make.fetch_html", return_value="<html></html>"),
+            patch("src.core.make.parse_problem", return_value=problem_with_images),
+        ):
+            result = fetch_problem(
+                "99999",
+                image_mode="reference",
+                problem_dir=tmp_path / "99999-test",
+            )
+
+        problem_json = result / "artifacts" / "problem.json"
+        data = json.loads(problem_json.read_text())
+        # reference 모드: description_html의 img src가 변경되지 않음
+        assert "https://acmicpc.net/img.png" in data["description_html"]
+
+    def test_image_download_error_propagates(self, tmp_path):
+        """M6: 이미지 다운로드 실패 시 예외가 전파된다."""
+        problem_with_images = {
+            **SAMPLE_PROBLEM,
+            "description_html": '<p><img src="https://acmicpc.net/img.png"></p>',
+            "images": [{"url": "https://acmicpc.net/img.png", "alt": ""}],
+        }
+        with (
+            patch("src.core.make.fetch_html", return_value="<html></html>"),
+            patch("src.core.make.parse_problem", return_value=problem_with_images),
+            patch("src.core.client.download_images", side_effect=OSError("download failed")),
+        ):
+            with pytest.raises(OSError, match="download failed"):
+                fetch_problem(
+                    "99999",
+                    image_mode="download",
+                    problem_dir=tmp_path / "99999-test",
+                )
 
 
 # ──────────────────────────────────────────────
