@@ -41,10 +41,11 @@ boj-agent/
     make-skeleton.md          # make용 스켈레톤 생성 프롬프트 (make.sh:181에서 사용)
     review.md                 # review용 에이전트 프롬프트 (review.sh:29에서 사용)
   tests/
-    run_tests.sh              # 전체 테스트 실행
+    run_tests.py              # 통합 테스트 러너 (pytest + bash 자동 발견)
+    run_tests.sh              # 레거시 Bash 러너 (전환 기간 유지)
     fixtures/                 # 테스트 픽스처 (99999, 1000, 6588, 9495)
-    unit/                     # Bash 단위 테스트 + test_boj_client.py
-    integration/              # Bash 통합 테스트
+    unit/                     # Bash 단위 테스트 + Python pytest
+    integration/              # Bash/Python 통합 테스트
     e2e/                      # E2E 테스트
   docs/                       # 문서
     ARCHITECTURE.md           # 프로젝트 구조 (현재 + 목표)
@@ -130,8 +131,10 @@ boj-agent/
     usecases/                 # 실제 사용 시 결과 예시
       java/                   # README, Solution, submit/, test/
   tests/
-    unit/                     # core 단위 테스트 (pytest)
-    integration/              # subprocess boj CLI 호출 테스트
+    run_tests.py              # 통합 테스트 러너 (pytest + bash 자동 발견)
+    unit/                     # core 단위 테스트 (pytest + bash)
+    integration/              # subprocess boj CLI 호출 테스트 (pytest + bash)
+    e2e/                      # E2E 테스트 (bash)
     fixtures/                 # 기존 픽스처 유지
   prompts/                    # 에이전트 지시문 (reference/와 같은 레벨)
   docs/                       # 문서

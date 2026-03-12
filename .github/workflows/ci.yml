@@ -27,9 +27,7 @@ jobs:
         run: python3 -m pip install -r requirements.txt
 
       - name: Run all tests
-        run: |
-          chmod +x tests/run_tests.sh
-          ./tests/run_tests.sh
+        run: python3 tests/run_tests.py
 
       - name: Check Java template compilation
         run: |

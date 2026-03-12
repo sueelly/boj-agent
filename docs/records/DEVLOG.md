@@ -14,6 +14,12 @@
 
 ---
 
+## [2026-03-12] feat(tests): Python 통합 테스트 러너 구현 [#50]
+**변경 요약:** `tests/run_tests.py` 신규 생성. pytest(.py)와 bash(.sh) 테스트를 함께 자동 발견·실행. CI(`ci.yml`)를 `run_tests.sh` → `run_tests.py`로 교체.
+**의사결정:** `run_tests.sh`는 `*.sh` 파일만 발견하므로 Python pytest 파일을 실행하지 못함. Python 러너는 두 종류를 모두 처리하며 --unit/--integration/--e2e 플래그를 동일하게 지원. 기존 `run_tests.sh`는 레거시로 유지.
+**검증 방법:** `python3 tests/run_tests.py --unit` → 24개 통과 0개 실패
+---
+
 ## [2026-03-12] feat(setup): Python setup 명령어 구현 [#46]
 **변경 요약:** `src/commands/setup.sh` (284줄 Bash)를 대체하는 Python `src/cli/boj_setup.py` 구현. 6단계 대화형 마법사 + 비대화형 옵션(--check, --root, --lang, --username, --editor, --agent). 세션 쿠키 로직은 이슈 스코프 외로 제외.
 **의사결정:** `prompter: Callable[[str], str]` 의존성 주입 패턴으로 대화형 로직 100% 단위 테스트 가능하게 설계. CLI 옵션은 이슈 기준(--root, --lang)으로 하되 내부적으로 config.py 키(boj_solution_root, prog_lang)를 사용. gh CLI 미설치 시 설치 안내 후 다른 옵션으로 fallback. agent 없음 선택 시 gemini 무료 추천 (config.py AGENT_COMMANDS 기준).

@@ -892,4 +892,46 @@ def test_keyboard_interrupt_exits_gracefully(config_env):
     assert exit_code == 130
 ```
 
+---
+
+## 15. Python 통합 테스트 러너 (`tests/run_tests.py`)
+
+### 15.1 배경
+
+`run_tests.sh`는 `*.sh` 파일만 발견하므로 Python pytest 파일(test_config.py, test_setup.py 등)을 자동으로 실행하지 못한다.
+`run_tests.py`는 두 종류를 모두 발견·실행하여 이 문제를 해결한다 (Issue #50).
+
+### 15.2 사용법
+
+```bash
+python3 tests/run_tests.py            # 전체 (단위 + 통합 + e2e)
+python3 tests/run_tests.py --unit     # 단위 테스트만
+python3 tests/run_tests.py --integration  # 통합 테스트만
+python3 tests/run_tests.py --e2e      # E2E 테스트만
+```
+
+### 15.3 발견 규칙
+
+| 경로 | 패턴 | 실행 방법 |
+|------|------|----------|
+| `tests/unit/` | `test_*.sh` | `bash <file>` |
+| `tests/unit/commands/` | `*.sh` | `bash <file>` |
+| `tests/unit/` | `test_*.py` | `pytest -v` (일괄) |
+| `tests/integration/` | `test_*.sh` | `bash <file>` |
+| `tests/integration/` | `test_*.py` | `pytest -v` (일괄) |
+| `tests/e2e/` | `test_*.sh` | `bash <file>` |
+| `tests/e2e/` | `test_*.py` | `pytest -v` (일괄) |
+
+- Python 파일은 같은 디렉터리 내에서 한 번의 `pytest` 호출로 묶어 실행한다.
+- 각 bash 스크립트는 독립적으로 실행되며 개별 pass/fail을 집계한다.
+
+### 15.4 CI 통합
+
+`.github/workflows/ci.yml`에서 `run_tests.sh` 대신 `run_tests.py`를 사용한다:
+
+```yaml
+- name: Run all tests
+  run: python3 tests/run_tests.py
+```
+
 *최종 업데이트: 2026-03-12*
