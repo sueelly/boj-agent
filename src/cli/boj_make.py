@@ -75,10 +75,12 @@ def main(argv: list[str] | None = None) -> int:
     ensure_setup()
 
     # 언어 결정
-    lang = args.lang or config_get("lang") or DEFAULTS["lang"]
+    lang = args.lang or config_get("prog_lang", DEFAULTS["prog_lang"])
 
     # solution_root 기반 problem_dir 결정
-    solution_root = config_get("solution_root")
+    # 신규 키 "boj_solution_root"를 우선 사용하고,
+    # 과거 설정과의 호환성을 위해 "solution_root"도 fallback으로 조회한다.
+    solution_root = config_get("boj_solution_root") or config_get("solution_root")
     if solution_root:
         base_dir = Path(solution_root)
     else:
@@ -89,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     problem_dir = fetch_problem(
         args.problem_id,
         image_mode=args.image_mode,
+        base_dir=base_dir,
     )
 
     # 기존 폴더 확인

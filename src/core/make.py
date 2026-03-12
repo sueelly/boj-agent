@@ -76,6 +76,7 @@ def fetch_problem(
     problem_id: str,
     image_mode: str = "download",
     problem_dir: Path | None = None,
+    base_dir: Path | None = None,
 ) -> Path:
     """Step 0: BOJ fetch → problem.json.
 
@@ -98,7 +99,8 @@ def fetch_problem(
     # problem_dir 결정 (미지정 시 제목 기반 자동 생성)
     if problem_dir is None:
         title_slug = problem["title"].replace(" ", "-")
-        problem_dir = Path.cwd() / f"{problem_id}-{title_slug}"
+        root_dir = base_dir or Path.cwd()
+        problem_dir = root_dir / f"{problem_id}-{title_slug}"
 
     # 디렉터리 생성
     artifacts_dir = problem_dir / "artifacts"

@@ -14,6 +14,13 @@
 
 ---
 
+## [2026-03-12] fix(make): respect solution_root in fetch_problem [#54]
+**변경 요약:** `base_dir`을 계산만 하고 쓰지 않던 버그 수정. `fetch_problem()`에 `base_dir` 인자 추가하고 CLI에서 `solution_root` 설정값을 전달해 문제 폴더가 설정된 solution root 아래 생성되도록 함. config 키 `prog_lang`/`boj_solution_root` 사용 및 `solution_root` fallback으로 호환 유지.
+**의사결정:** core/make.py에 `base_dir` 파라미터 추가(기본 None → cwd). CLI는 `boj_solution_root` 우선, `solution_root` fallback으로 읽어 Path로 넘김.
+**검증 방법:** 기존 단위/통합 테스트는 `problem_dir`를 명시해 호출하므로 회귀 없음. `solution_root` 설정 시 해당 경로 아래에 문제 폴더 생성되는지 수동 확인.
+
+---
+
 ## [2026-03-12] feat(make): fetch_problem, generate_readme 구현 + 모듈 정규화 [#54]
 **변경 요약:** `src/core/make.py`에 `fetch_problem`, `generate_readme`, `run_setup`, `run_agent` 구현. `src/core/client.py` (이미지 처리 포함), `src/core/normalizer.py` 독립 모듈 생성. `src/cli/boj_make.py` CLI 래퍼 생성. 라이브 테스트 4개 문제 (1516, 16957, 10799, 10951) + 이미지 다운로드 검증.
 **의사결정:** `src/lib/` 레거시는 그대로 두고 `src/core/`에 로직을 직접 복사 (re-export 없음). BOJ 403 방지를 위해 브라우저 수준 User-Agent + Accept 헤더 추가. `--run-live` / `--run-agent` conftest 마커로 네트워크/에이전트 테스트 격리.
