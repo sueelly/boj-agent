@@ -932,7 +932,7 @@ def make_prompter(responses: list[str]):
 ```python
 def test_s2_asks_only_missing_when_partial_config(config_env, tmp_path, monkeypatch, capsys):
     """S2: 부분 설정 → 기존 값 유지, 누락 항목만 물어봄."""
-    config_set("boj_solution_root", str(tmp_path))
+    config_set("solution_root", str(tmp_path))
     config_set("prog_lang", "java")
     # root와 lang은 N(유지), 나머지 입력
     responses = ["N", "N", "없음", "1", "user1", "code"]
@@ -941,7 +941,7 @@ def test_s2_asks_only_missing_when_partial_config(config_env, tmp_path, monkeypa
          patch("src.cli.boj_setup.set_git_config"):
         exit_code = main([], prompter=prompter)
     assert exit_code == 0
-    assert config_get("boj_solution_root", "") == str(tmp_path)
+    assert config_get("solution_root", "") == str(tmp_path)
 
 
 def test_keyboard_interrupt_exits_gracefully(config_env):

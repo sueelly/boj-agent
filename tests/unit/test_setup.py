@@ -192,7 +192,7 @@ class TestSetMode:
         args = parse_args(["--root", str(test_dir)])
         result = run_set_mode(args)
         assert result == 0
-        assert config_get("boj_solution_root", "") == str(test_dir)
+        assert config_get("solution_root", "") == str(test_dir)
 
     def test_set_root_invalid(self, config_env, capsys):
         """존재하지 않는 경로 → 에러."""
@@ -242,7 +242,7 @@ class TestInteractiveRoot:
         prompter = make_prompter(["1", "y"])
         result = step_root(prompter)
         assert result == str(tmp_path)
-        assert config_get("boj_solution_root", "") == str(tmp_path)
+        assert config_get("solution_root", "") == str(tmp_path)
 
     def test_enter_custom_path(self, config_env, tmp_path):
         """직접 경로 입력 (2 → 경로 → 확인 y)."""
@@ -261,7 +261,7 @@ class TestInteractiveRoot:
 
     def test_existing_root_keep(self, config_env, tmp_path):
         """기존 root가 있으면 유지 선택 가능 (N)."""
-        config_set("boj_solution_root", str(tmp_path))
+        config_set("solution_root", str(tmp_path))
         prompter = make_prompter(["N"])
         result = step_root(prompter)
         assert result == str(tmp_path)
@@ -272,7 +272,7 @@ class TestInteractiveRoot:
         old_root.mkdir()
         new_root = tmp_path / "new"
         new_root.mkdir()
-        config_set("boj_solution_root", str(old_root))
+        config_set("solution_root", str(old_root))
         monkeypatch.chdir(new_root)
         prompter = make_prompter(["y", "1", "y"])
         result = step_root(prompter)
@@ -580,7 +580,7 @@ class TestEdgeCases:
 
     def test_s2_asks_only_missing_when_partial_config(self, config_env, tmp_path, monkeypatch, capsys):
         """S2: 부분 설정 → 기존 값 유지, 누락 항목만 물어봄."""
-        config_set("boj_solution_root", str(tmp_path))
+        config_set("solution_root", str(tmp_path))
         config_set("prog_lang", "java")
         # root와 lang은 이미 있으므로 N(유지)
         # agent, git, username, editor은 누락 → 입력 필요
@@ -591,7 +591,7 @@ class TestEdgeCases:
             exit_code = main([], prompter=prompter)
         assert exit_code == 0
         # 기존 값 유지 확인
-        assert config_get("boj_solution_root", "") == str(tmp_path)
+        assert config_get("solution_root", "") == str(tmp_path)
         assert config_get("prog_lang", "") == "java"
 
     def test_s3_errors_when_config_dir_not_writable(self, config_env, monkeypatch):
@@ -620,7 +620,7 @@ class TestEdgeCases:
 
     def test_s8_shows_current_and_asks_change_when_rerun(self, config_env, tmp_path, monkeypatch, capsys):
         """S8: 재실행 → 현재 값 표시 + 변경 여부 질문."""
-        config_set("boj_solution_root", str(tmp_path))
+        config_set("solution_root", str(tmp_path))
         config_set("prog_lang", "java")
         mark_setup_done()
 

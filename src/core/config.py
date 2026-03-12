@@ -19,7 +19,9 @@ DEFAULTS: dict[str, str] = {
     "editor": "code",
     "agent": "",
     "username": "",
-    "boj_solution_root": "",
+    # 경로 계열 키 — solution_root는 Python 기준 표준 이름,
+    # 이전 버전의 boj_solution_root 파일명은 하위호환으로 지원한다.
+    "solution_root": "",
     "boj_agent_root": "",
 }
 
@@ -29,8 +31,14 @@ _ENV_MAP: dict[str, str] = {
     "editor": "BOJ_EDITOR",
     "agent": "BOJ_AGENT",
     "username": "BOJ_USERNAME",
-    "boj_solution_root": "BOJ_SOLUTION_ROOT",
+    "solution_root": "BOJ_SOLUTION_ROOT",
     "boj_agent_root": "BOJ_AGENT_ROOT",
+}
+
+# 과거 config 파일 이름 하위호환 매핑
+_LEGACY_FILE_KEYS: dict[str, str] = {
+    # 기존 ~/.config/boj/boj_solution_root 파일을 계속 인식하기 위함
+    "solution_root": "boj_solution_root",
 }
 
 AGENT_COMMANDS: dict[str, str] = {
@@ -100,6 +108,18 @@ def config_get(key: str, default: str = "") -> str:
                 return val
         except OSError:
             pass
+
+    # 2b. 레거시 파일 이름 하위호환 (예: boj_solution_root → solution_root)
+    legacy_key = _LEGACY_FILE_KEYS.get(key)
+    if legacy_key:
+        legacy_file = _config_dir() / legacy_key
+        if legacy_file.is_file():
+            try:
+                val = legacy_file.read_text().strip()
+                if val:
+                    return val
+            except OSError:
+                pass
 
     # 3. 기본값
     return default
@@ -216,7 +236,7 @@ def check_config() -> None:
     print()
 
     # solution_root (ok / missing / invalid 구분 — S7, CF10/CF11)
-    sol_root = config_get("boj_solution_root", "")
+    sol_root = config_get("solution_root", "")
     if sol_root and validate_path(sol_root):
         print(f"  solution_root: {GREEN}✓{NC} {sol_root}")
     elif sol_root:

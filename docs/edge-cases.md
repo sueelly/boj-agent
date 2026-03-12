@@ -11,10 +11,10 @@
 | # | 카테고리 | 케이스 | 기대 동작 | 자동복구 | 중단 |
 |---|---------|--------|-----------|---------|------|
 | C1 | config | `setup_done` 플래그 없음 | "설정이 완료되지 않았습니다. `boj setup`을 진행합니다." → setup 실행 | 아니오 | 예 |
-| C2 | config | `boj_solution_root` 경로가 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
+| C2 | config | `solution_root` 경로가 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
 | C3 | config | `boj_agent_root` 경로가 존재하지 않음 | "agent_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
 | C4 | git | git repo 아닌 디렉터리에서 실행 | git 관련 명령(commit) 시 `Error: git 저장소가 아닙니다.` | 아니오 | 예 (commit만) |
-| C5 | 파일시스템 | `boj_solution_root` 에 읽기 권한 없음 | `Error: 레포에 접근할 수 없습니다 (권한 부족).` | 아니오 | 예 |
+| C5 | 파일시스템 | `solution_root` 에 읽기 권한 없음 | `Error: 레포에 접근할 수 없습니다 (권한 부족).` | 아니오 | 예 |
 
 ---
 
@@ -48,7 +48,7 @@
 | M2 | 네트워크 | 네트워크 없음 (BOJ 접근 불가) | `Error: BOJ에 연결할 수 없습니다. 네트워크를 확인하세요.` | 아니오 | 예 |
 | M3 | 파일시스템 | 문제 폴더 이미 존재 (`-f` 없음) | `Error: '4949-괄호의-값' 폴더가 이미 존재합니다. 덮어쓰려면 -f 옵션을 사용하세요.` | 아니오 | 예 |
 | M3a | 파일시스템 | 문제 폴더 이미 존재 (`-f` 있음) | 기존 폴더 덮어쓰기 후 정상 진행 | 예 | 아니오 |
-| M4 | 파일시스템 | `boj_solution_root` 쓰기 권한 없음 | `Error: 문제 폴더를 생성할 수 없습니다 (권한 없음).` | 아니오 | 예 |
+| M4 | 파일시스템 | `solution_root` 쓰기 권한 없음 | `Error: 문제 폴더를 생성할 수 없습니다 (권한 없음).` | 아니오 | 예 |
 | M5 | 문제데이터 | 문제 본문에 이미지 있음 (`--image-mode reference`) | 이미지를 원본 URL 참조로 README에 포함 | N/A | 아니오 |
 | M6 | 문제데이터 | 이미지 다운로드 실패 (`--image-mode download`) | `Warning: 이미지 다운로드 실패 (URL). reference 모드로 대체.` | reference로 대체 | 아니오 |
 | M7 | 문제데이터 | 이미지 URL이 외부 도메인 | reference 모드: 원본 URL 사용. download 모드: 시도 후 실패 시 경고 | 경고 후 계속 | 아니오 |
@@ -149,7 +149,7 @@
 | CF8 | setup_done | `~/.config/boj/setup_done` 파일 존재 | 설정 완료로 판단 | N/A | 아니오 |
 | CF9 | setup_done | `~/.config/boj/setup_done` 파일 없음 | "설정이 완료되지 않았습니다. `boj setup`을 진행합니다." 안내 | 아니오 | 예 |
 | CF10 | 경로검증 | `boj_agent_root` 경로 존재하지 않음 | "agent_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
-| CF11 | 경로검증 | `boj_solution_root` 경로 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
+| CF11 | 경로검증 | `solution_root` 경로 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
 | CF12 | 언어검증 | 지원 언어 (`java`, `python`) | 검증 통과 | N/A | 아니오 |
 | CF13 | 언어검증 | 미지원 언어 (`fortran`) | `Error: 지원하지 않는 언어: fortran. 지원: java python` | 아니오 | 예 |
 | CF14 | 언어검증 | `languages.json` 파일 없음/파싱 실패 | `Error: languages.json을 읽을 수 없습니다.` | 아니오 | 예 |
