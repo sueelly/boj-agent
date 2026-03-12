@@ -14,6 +14,13 @@
 
 ---
 
+## [2026-03-12] feat(make): fetch_problem, generate_readme 구현 + 모듈 정규화 [#54]
+**변경 요약:** `src/core/make.py`에 `fetch_problem`, `generate_readme`, `run_setup`, `run_agent` 구현. `src/core/client.py` (이미지 처리 포함), `src/core/normalizer.py` 독립 모듈 생성. `src/cli/boj_make.py` CLI 래퍼 생성. 라이브 테스트 4개 문제 (1516, 16957, 10799, 10951) + 이미지 다운로드 검증.
+**의사결정:** `src/lib/` 레거시는 그대로 두고 `src/core/`에 로직을 직접 복사 (re-export 없음). BOJ 403 방지를 위해 브라우저 수준 User-Agent + Accept 헤더 추가. `--run-live` / `--run-agent` conftest 마커로 네트워크/에이전트 테스트 격리.
+**검증 방법:** `python3 -m pytest tests/unit/ -v` → 181 passed, 1 skipped. `python3 -m pytest tests/integration/test_make_py.py -v` → 7 passed. `python3 -m pytest tests/integration/test_live_fetch.py -v --run-live` → 22 passed.
+
+---
+
 ## [2026-03-12] feat(install): Python 설치 스크립트 구현 [#47]
 **변경 요약:** `scripts/install.py` 신규 생성. clone → `python3 scripts/install.py`로 설치 완료. `src/setup-boj-cli.sh` deprecated 처리.
 **의사결정:** standalone 스크립트로 구현 (내부 모듈 import 없음). 이유: 설치 시점에 모듈 경로 미확정. 순수 함수 + 명시적 path 파라미터로 테스트 용이성 확보. `~/.config/boj/root` 하위호환 유지.
