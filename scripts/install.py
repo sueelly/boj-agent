@@ -83,10 +83,16 @@ def copy_agent_files(src: Path, dest: Path, *, force: bool = False) -> Path:
         answer = input(f"  {dest} 가 이미 존재합니다. 덮어쓰시겠습니까? (y/N): ")
         if answer.strip().lower() != "y":
             raise SystemExit(1)
-        shutil.rmtree(dest)
+        if dest.is_symlink():
+            dest.unlink()
+        else:
+            shutil.rmtree(dest)
 
     if dest.exists() and force:
-        shutil.rmtree(dest)
+        if dest.is_symlink():
+            dest.unlink()
+        else:
+            shutil.rmtree(dest)
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(src, dest, ignore=IGNORE_PATTERNS)
