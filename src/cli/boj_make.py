@@ -17,6 +17,8 @@ from src.core.make import (
     fetch_problem,
     generate_readme,
     generate_spec,
+    generate_skeleton,
+    open_editor,
     cleanup_artifacts,
 )
 
@@ -71,23 +73,25 @@ def main(argv: list[str] | None = None) -> int:
     """
     args = parse_args(argv)
 
-    # Step 사전 조건
+    # Step 사전 조건 (COMMAND-SPEC: setup 완료 시 에이전트 필수, fallback 없음)
     ensure_setup()
+    agent_cmd = (config_get("agent") or DEFAULTS.get("agent", "") or "").strip()
+    if not agent_cmd:
+        print("Error: 에이전트가 설정되지 않았습니다. boj setup을 실행한 뒤 에이전트를 선택하세요.", file=sys.stderr)
+        return 1
 
     # 언어 결정
     lang = args.lang or config_get("prog_lang", DEFAULTS["prog_lang"])
 
     # solution_root 기반 problem_dir 결정
-    # 신규 키 "boj_solution_root"를 우선 사용하고,
-    # 과거 설정과의 호환성을 위해 "solution_root"도 fallback으로 조회한다.
-    solution_root = config_get("boj_solution_root") or config_get("solution_root")
+    solution_root = config_get("solution_root", "")
     if solution_root:
         base_dir = Path(solution_root)
     else:
         base_dir = Path.cwd()
 
     # Step 0: BOJ fetch → problem.json
-    print(f"[1/5] 문제 {args.problem_id} 가져오는 중...", file=sys.stderr)
+    print(f"[1/6] 문제 {args.problem_id} 가져오는 중...", file=sys.stderr)
     problem_dir = fetch_problem(
         args.problem_id,
         image_mode=args.image_mode,
@@ -96,20 +100,28 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # Step 1: README.md 생성
-    print("[2/5] README.md 생성 중...", file=sys.stderr)
+    print("[2/6] README.md 생성 중...", file=sys.stderr)
     problem_json = problem_dir / "artifacts" / "problem.json"
     generate_readme(problem_json)
 
-    # Step 2: spec 생성 (에이전트)
-    agent_cmd = config_get("agent") or DEFAULTS.get("agent", "")
-    if agent_cmd:
-        print("[3/5] problem.spec.json 생성 중...", file=sys.stderr)
-        generate_spec(problem_dir, agent_cmd)
-    else:
-        print("[3/5] 에이전트 미설정 — spec 생성 건너뜀", file=sys.stderr)
+    # Step 2: spec 생성 (에이전트 필수)
+    print("[3/6] problem.spec.json 생성 중...", file=sys.stderr)
+    generate_spec(problem_dir, agent_cmd)
+
+    # Step 3: Solution + Parse 생성 (에이전트)
+    print("[4/6] Solution/Parse 생성 중...", file=sys.stderr)
+    generate_skeleton(problem_dir, lang, agent_cmd)
+
+    # Step 4: 에디터 오픈
+    editor_cmd = config_get("editor", DEFAULTS.get("editor", "")) if not args.no_open else ""
+    if editor_cmd:
+        print("[5/6] 에디터 열기...", file=sys.stderr)
+        open_editor(problem_dir, editor_cmd)
+    elif not args.no_open:
+        print("[5/6] 에디터 미설정 — 스킵", file=sys.stderr)
 
     # Step 5: artifacts 정리
-    print("[5/5] 정리 중...", file=sys.stderr)
+    print("[6/6] 정리 중...", file=sys.stderr)
     cleanup_artifacts(problem_dir, keep=args.keep_artifacts)
 
     print(f"✓ {problem_dir.name} 생성 완료", file=sys.stderr)
