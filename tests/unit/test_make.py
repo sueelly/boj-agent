@@ -17,6 +17,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from src.core.exceptions import ProblemExistsError, SpecError
 from src.core.make import (
     ensure_setup,
     check_existing,
@@ -24,6 +25,8 @@ from src.core.make import (
     generate_readme,
     generate_spec,
     cleanup_artifacts,
+    _validate_problem_id,
+    _sanitize_title_slug,
 )
 from src.core.config import (
     config_get,
@@ -64,6 +67,67 @@ def problem_dir(tmp_path):
 
 
 # ──────────────────────────────────────────────
+# TestValidateProblemId — 입력 검증
+# ──────────────────────────────────────────────
+
+class TestValidateProblemId:
+    """problem_id 숫자 검증."""
+
+    def test_valid_id(self):
+        """양의 정수는 통과."""
+        _validate_problem_id("1000")  # 예외 없음
+        _validate_problem_id("99999")
+
+    def test_rejects_empty(self):
+        with pytest.raises(ValueError, match="유효하지 않은"):
+            _validate_problem_id("")
+
+    def test_rejects_non_numeric(self):
+        with pytest.raises(ValueError, match="유효하지 않은"):
+            _validate_problem_id("abc")
+
+    def test_rejects_zero(self):
+        with pytest.raises(ValueError, match="유효하지 않은"):
+            _validate_problem_id("0")
+
+    def test_rejects_negative(self):
+        with pytest.raises(ValueError, match="유효하지 않은"):
+            _validate_problem_id("-1")
+
+    def test_rejects_path_traversal(self):
+        with pytest.raises(ValueError, match="유효하지 않은"):
+            _validate_problem_id("../etc/passwd")
+
+
+# ──────────────────────────────────────────────
+# TestSanitizeTitleSlug — 디렉터리 이름 안전성
+# ──────────────────────────────────────────────
+
+class TestSanitizeTitleSlug:
+    """title_slug 생성 규칙."""
+
+    def test_basic_title(self):
+        assert _sanitize_title_slug("두 수의 합") == "두-수의-합"
+
+    def test_truncates_long_title(self):
+        long_title = "A" * 50
+        result = _sanitize_title_slug(long_title)
+        assert len(result) <= 30
+
+    def test_strips_special_chars(self):
+        result = _sanitize_title_slug("Hello! @World# (2024)")
+        assert result == "Hello-World-2024"
+
+    def test_preserves_korean(self):
+        result = _sanitize_title_slug("괄호의 값")
+        assert result == "괄호의-값"
+
+    def test_preserves_hyphens(self):
+        result = _sanitize_title_slug("A-B-C")
+        assert result == "A-B-C"
+
+
+# ──────────────────────────────────────────────
 # TestEnsureSetup — M9
 # ──────────────────────────────────────────────
 
@@ -93,12 +157,11 @@ class TestCheckExisting:
     """사전 조건: 기존 폴더 존재 시 -f 검증."""
 
     def test_raises_when_dir_exists_without_force(self, tmp_path):
-        """M3: 폴더 존재 + -f 없으면 SystemExit."""
+        """M3: 폴더 존재 + -f 없으면 ProblemExistsError."""
         prob_dir = tmp_path / "99999-test"
         prob_dir.mkdir()
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(ProblemExistsError, match="-f"):
             check_existing(prob_dir, force=False)
-        assert exc_info.value.code == 1
 
     def test_allows_overwrite_when_force(self, tmp_path):
         """M3a: 폴더 존재 + -f 있으면 정상 진행 (예외 없음)."""
@@ -111,15 +174,13 @@ class TestCheckExisting:
         prob_dir = tmp_path / "99999-test"
         check_existing(prob_dir, force=False)  # 예외 없음
 
-    def test_error_message_contains_folder_name(self, tmp_path, capsys):
+    def test_error_message_contains_folder_name(self, tmp_path):
         """에러 메시지에 폴더 이름과 -f 안내가 포함된다."""
         prob_dir = tmp_path / "4949-괄호의-값"
         prob_dir.mkdir()
-        with pytest.raises(SystemExit):
+        with pytest.raises(ProblemExistsError, match="4949") as exc_info:
             check_existing(prob_dir, force=False)
-        captured = capsys.readouterr()
-        assert "4949" in captured.err or "4949" in captured.out
-        assert "-f" in captured.err or "-f" in captured.out
+        assert "-f" in str(exc_info.value)
 
 
 # ──────────────────────────────────────────────
@@ -130,20 +191,18 @@ class TestGenerateSpec:
     """Step 2: problem.spec.json 생성."""
 
     def test_raises_when_spec_file_missing(self, problem_dir):
-        """M12: 에이전트 실행 후 spec 파일 없으면 SystemExit."""
+        """M12: 에이전트 실행 후 spec 파일 없으면 SpecError."""
         with patch("src.core.make.run_agent", return_value=0):
-            with pytest.raises(SystemExit) as exc_info:
+            with pytest.raises(SpecError, match="생성되지 않았습니다"):
                 generate_spec(problem_dir, "echo MOCK")
-            assert exc_info.value.code == 1
 
     def test_raises_when_spec_invalid_json(self, problem_dir):
-        """M12: spec 파일이 유효하지 않은 JSON이면 SystemExit."""
+        """M12: spec 파일이 유효하지 않은 JSON이면 SpecError."""
         spec_path = problem_dir / "artifacts" / "problem.spec.json"
         spec_path.write_text("NOT VALID JSON {{{")
         with patch("src.core.make.run_agent", return_value=0):
-            with pytest.raises(SystemExit) as exc_info:
+            with pytest.raises(SpecError, match="유효하지 않은 JSON"):
                 generate_spec(problem_dir, "echo MOCK")
-            assert exc_info.value.code == 1
 
     def test_succeeds_when_spec_valid(self, problem_dir):
         """유효한 spec 생성 시 정상 반환."""
@@ -158,13 +217,11 @@ class TestGenerateSpec:
             result = generate_spec(problem_dir, "echo MOCK")
         assert result is not None
 
-    def test_error_message_suggests_retry(self, problem_dir, capsys):
+    def test_error_message_suggests_retry(self, problem_dir):
         """에러 메시지에 '-f 로 재시도' 안내가 포함된다."""
         with patch("src.core.make.run_agent", return_value=0):
-            with pytest.raises(SystemExit):
+            with pytest.raises(SpecError, match="-f"):
                 generate_spec(problem_dir, "echo MOCK")
-        captured = capsys.readouterr()
-        assert "-f" in captured.err or "-f" in captured.out
 
 
 # ──────────────────────────────────────────────
@@ -263,11 +320,11 @@ class TestFetchProblem:
         assert data["title"] == "두 수의 합"
 
     def test_raises_when_html_fetch_fails(self, tmp_path):
-        """네트워크 실패 시 SystemExit."""
-        with patch("src.core.make.fetch_html", side_effect=SystemExit(1)):
-            with pytest.raises(SystemExit) as exc_info:
+        """네트워크 실패 시 FetchError."""
+        from src.core.exceptions import FetchError
+        with patch("src.core.make.fetch_html", side_effect=FetchError("network error")):
+            with pytest.raises(FetchError):
                 fetch_problem("99999", problem_dir=tmp_path / "99999-test")
-            assert exc_info.value.code == 1
 
     def test_passes_image_mode_to_processing(self, tmp_path):
         """image_mode 파라미터가 이미지 처리에 전달된다."""
@@ -283,8 +340,13 @@ class TestFetchProblem:
             # skip 모드: images 처리가 skip됨 (에러 없이 완료)
             assert result.exists()
 
+    def test_rejects_invalid_problem_id(self, tmp_path):
+        """유효하지 않은 problem_id는 ValueError."""
+        with pytest.raises(ValueError, match="유효하지 않은"):
+            fetch_problem("abc", problem_dir=tmp_path / "abc-test")
+
     def test_raises_when_dir_exists_without_force_before_creating_artifacts(self, tmp_path):
-        """기존 폴더 존재 시 artifacts 생성 전에 SystemExit."""
+        """기존 폴더 존재 시 artifacts 생성 전에 ProblemExistsError."""
         # SAMPLE_PROBLEM의 제목을 기반으로 생성될 디렉터리 이름과 동일하게 미리 생성
         existing_dir = tmp_path / "99999-두-수의-합"
         existing_dir.mkdir()
@@ -293,10 +355,9 @@ class TestFetchProblem:
             patch("src.core.make.fetch_html", return_value="<html></html>"),
             patch("src.core.make.parse_problem", return_value=SAMPLE_PROBLEM),
         ):
-            with pytest.raises(SystemExit) as exc_info:
+            with pytest.raises(ProblemExistsError):
                 fetch_problem("99999", base_dir=tmp_path)
 
-        assert exc_info.value.code == 1
         # artifacts/ 디렉터리가 새로 생성되지 않았는지 확인
         assert not (existing_dir / "artifacts").exists()
 
@@ -324,9 +385,9 @@ class TestGenerateReadme:
         assert "99999번: 두 수의 합" in content
 
     def test_raises_when_problem_json_missing(self, tmp_path):
-        """problem.json이 없으면 에러를 발생시킨다."""
+        """problem.json이 없으면 FileNotFoundError."""
         missing = tmp_path / "nonexistent" / "artifacts" / "problem.json"
-        with pytest.raises((SystemExit, FileNotFoundError)):
+        with pytest.raises(FileNotFoundError):
             generate_readme(missing)
 
     def test_readme_contains_problem_title(self, tmp_path):

@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
+from src.core.exceptions import ProblemExistsError
 from src.core.make import (
     ensure_setup,
     check_existing,
@@ -81,12 +82,11 @@ class TestMakePyIntegration:
         assert "예제 입력 1" in content
 
     def test_make_exits_when_dir_exists_without_force(self, tmp_path):
-        """M3: 폴더 존재 + -f 없음 → SystemExit."""
+        """M3: 폴더 존재 + -f 없음 → ProblemExistsError."""
         problem_dir = tmp_path / "99999-test"
         problem_dir.mkdir()
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(ProblemExistsError):
             check_existing(problem_dir, force=False)
-        assert exc_info.value.code == 1
 
     def test_make_allows_force_overwrite(self, tmp_path):
         """M3a: 폴더 존재 + -f → 정상 진행."""

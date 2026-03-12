@@ -154,37 +154,39 @@ class TestFetchWithLocalServer(unittest.TestCase):
         self.assertNotIn("OnlineJudge", cookie,
                          f"세션 없는데 Cookie 헤더가 전송됨: {cookie!r}")
 
-    def test_403_exits_with_error(self):
-        """서버가 403을 반환하면 exit(1)해야 한다."""
+    def test_403_raises_fetch_error(self):
+        """서버가 403을 반환하면 FetchError를 raise해야 한다."""
+        from src.core.exceptions import FetchError
         server, port = _start_server(_make_handler(403))
         with tempfile.TemporaryDirectory() as cfg_dir:
             os.environ["BOJ_BASE_URL_OVERRIDE"] = f"http://127.0.0.1:{port}"
             os.environ["BOJ_CONFIG_DIR"] = cfg_dir
             try:
-                with self.assertRaises(SystemExit) as cm:
+                with self.assertRaises(FetchError) as cm:
                     client.fetch_html("1000")
             finally:
                 _stop_server(server)
                 os.environ.pop("BOJ_BASE_URL_OVERRIDE", None)
                 os.environ.pop("BOJ_CONFIG_DIR", None)
 
-        self.assertEqual(cm.exception.code, 1, "403 응답 시 exit(1)이 아님")
+        self.assertIn("403", str(cm.exception))
 
-    def test_404_exits_with_error(self):
-        """서버가 404를 반환하면 exit(1)해야 한다."""
+    def test_404_raises_fetch_error(self):
+        """서버가 404를 반환하면 FetchError를 raise해야 한다."""
+        from src.core.exceptions import FetchError
         server, port = _start_server(_make_handler(404))
         with tempfile.TemporaryDirectory() as cfg_dir:
             os.environ["BOJ_BASE_URL_OVERRIDE"] = f"http://127.0.0.1:{port}"
             os.environ["BOJ_CONFIG_DIR"] = cfg_dir
             try:
-                with self.assertRaises(SystemExit) as cm:
+                with self.assertRaises(FetchError) as cm:
                     client.fetch_html("99999")
             finally:
                 _stop_server(server)
                 os.environ.pop("BOJ_BASE_URL_OVERRIDE", None)
                 os.environ.pop("BOJ_CONFIG_DIR", None)
 
-        self.assertEqual(cm.exception.code, 1, "404 응답 시 exit(1)이 아님")
+        self.assertIn("99999", str(cm.exception))
 
     def test_client_test_html_bypasses_http(self):
         """BOJ_CLIENT_TEST_HTML 설정 시 HTTP 호출 없이 로컬 파일을 읽어야 한다."""

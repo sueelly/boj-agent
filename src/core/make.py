@@ -4,16 +4,44 @@ Issue #54 — TDD Green 단계.
 """
 
 import json
+import re
+import shlex
 import subprocess
-import sys
 from pathlib import Path
 
 from src.core.client import fetch_html, parse_problem
 from src.core.config import is_setup_done
+from src.core.exceptions import ProblemExistsError, SpecError
 from src.core.normalizer import normalize
 
 # 삭제 대상 아티팩트 파일 이름
 _CLEANUP_TARGETS = ("problem.json", "problem.spec.json")
+
+# title_slug 생성 제약
+_MAX_SLUG_LENGTH = 30
+_SLUG_PATTERN = re.compile(r"[^a-zA-Z0-9가-힣\-]")
+
+
+def _validate_problem_id(problem_id: str) -> None:
+    """problem_id가 양의 정수인지 검증한다.
+
+    Raises:
+        ValueError: 유효하지 않은 problem_id일 때.
+    """
+    if not problem_id or not problem_id.isdigit() or int(problem_id) <= 0:
+        raise ValueError(f"유효하지 않은 문제 번호입니다: {problem_id!r}")
+
+
+def _sanitize_title_slug(title: str) -> str:
+    """제목을 안전한 디렉터리 이름으로 변환한다.
+
+    - 공백 → 하이픈
+    - 허용 문자: 영문, 숫자, 한글, 하이픈
+    - 최대 30자
+    """
+    slug = title.replace(" ", "-")
+    slug = _SLUG_PATTERN.sub("", slug)
+    return slug[:_MAX_SLUG_LENGTH]
 
 
 def run_setup() -> None:
@@ -39,9 +67,9 @@ def run_agent(problem_dir: Path, agent_cmd: str, prompt_name: str) -> int:
     prompts_dir = Path(__file__).resolve().parent.parent.parent / "prompts"
     prompt_file = prompts_dir / f"{prompt_name}.md"
 
-    cmd = f"{agent_cmd} {prompt_file} {problem_dir}"
+    cmd = [*shlex.split(agent_cmd), str(prompt_file), str(problem_dir)]
     result = subprocess.run(
-        cmd, shell=True, cwd=str(problem_dir),
+        cmd, cwd=str(problem_dir),
         capture_output=True, text=True,
     )
     return result.returncode
@@ -61,15 +89,13 @@ def check_existing(problem_dir: Path, force: bool) -> None:
         force: True면 기존 폴더 덮어쓰기 허용.
 
     Raises:
-        SystemExit: 폴더가 존재하고 force=False일 때.
+        ProblemExistsError: 폴더가 존재하고 force=False일 때.
     """
     if problem_dir.exists() and not force:
-        print(
-            f"Error: {problem_dir.name} 폴더가 이미 존재합니다. "
-            f"덮어쓰려면 -f 옵션을 사용하세요.",
-            file=sys.stderr,
+        raise ProblemExistsError(
+            f"{problem_dir.name} 폴더가 이미 존재합니다. "
+            f"덮어쓰려면 -f 옵션을 사용하세요."
         )
-        sys.exit(1)
 
 
 def fetch_problem(
@@ -92,14 +118,18 @@ def fetch_problem(
         생성된 문제 폴더 경로.
 
     Raises:
-        SystemExit: HTML fetch 또는 파싱 실패 시.
+        ValueError: 유효하지 않은 problem_id.
+        FetchError: HTML fetch 실패 시.
+        ProblemExistsError: 폴더 존재 + force=False일 때.
     """
+    _validate_problem_id(problem_id)
+
     html = fetch_html(problem_id)
     problem = parse_problem(html, problem_id)
 
     # problem_dir 결정 (미지정 시 제목 기반 자동 생성)
     if problem_dir is None:
-        title_slug = problem["title"].replace(" ", "-")
+        title_slug = _sanitize_title_slug(problem["title"])
         root_dir = base_dir or Path.cwd()
         problem_dir = root_dir / f"{problem_id}-{title_slug}"
 
@@ -131,17 +161,18 @@ def fetch_problem(
     return problem_dir
 
 
-def generate_readme(problem_json_path: Path) -> Path:
+def generate_readme(problem_json_path: Path, problem_dir: Path | None = None) -> Path:
     """Step 1: problem.json → README.md 생성.
 
     Args:
         problem_json_path: problem.json 파일 경로.
+        problem_dir: README.md를 생성할 디렉터리. None이면 problem_json_path의
+                     상위 디렉터리(artifacts/)의 부모를 사용한다.
 
     Returns:
         생성된 README.md 경로.
 
     Raises:
-        SystemExit: problem.json 파일이 없거나 파싱 실패 시.
         FileNotFoundError: problem.json 파일이 없을 때.
     """
     if not problem_json_path.exists():
@@ -150,8 +181,10 @@ def generate_readme(problem_json_path: Path) -> Path:
     problem = json.loads(problem_json_path.read_text(encoding="utf-8"))
     content = normalize(problem)
 
-    # README.md는 problem_dir 루트에 생성 (artifacts/ 상위)
-    readme_path = problem_json_path.parent.parent / "README.md"
+    # README.md는 problem_dir 루트에 생성
+    if problem_dir is None:
+        problem_dir = problem_json_path.parent.parent
+    readme_path = problem_dir / "README.md"
     readme_path.write_text(content, encoding="utf-8")
 
     return readme_path
@@ -170,36 +203,46 @@ def generate_spec(problem_dir: Path, agent_cmd: str) -> dict:
         파싱된 spec 딕셔너리.
 
     Raises:
-        SystemExit: spec 파일 미생성 또는 유효하지 않은 JSON일 때.
+        SpecError: spec 파일 미생성 또는 유효하지 않은 JSON일 때.
     """
     run_agent(problem_dir, agent_cmd, "make-spec")
 
     spec_path = problem_dir / "artifacts" / "problem.spec.json"
 
     if not spec_path.exists():
-        print(
-            "Error: problem.spec.json이 생성되지 않았습니다. "
-            "boj make <문제번호> -f 로 재시도하세요.",
-            file=sys.stderr,
+        raise SpecError(
+            "problem.spec.json이 생성되지 않았습니다. "
+            "boj make <문제번호> -f 로 재시도하세요."
         )
-        sys.exit(1)
 
     try:
         spec = json.loads(spec_path.read_text())
-    except (json.JSONDecodeError, ValueError):
-        print(
-            "Error: problem.spec.json이 유효하지 않은 JSON입니다. "
-            "boj make <문제번호> -f 로 재시도하세요.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    except (json.JSONDecodeError, ValueError) as e:
+        raise SpecError(
+            "problem.spec.json이 유효하지 않은 JSON입니다. "
+            "boj make <문제번호> -f 로 재시도하세요."
+        ) from e
 
     return spec
 
 
 def generate_skeleton(problem_dir: Path, lang: str, agent_cmd: str) -> None:
-    """Step 3: Solution + Parse 생성."""
-    raise NotImplementedError
+    """Step 3: Solution + Parse 생성.
+
+    에이전트에 make-skeleton 프롬프트를 전달해 Solution/Parse 및 test_cases.json 생성.
+    """
+    run_agent(problem_dir, agent_cmd, "make-skeleton")
+
+
+def open_editor(problem_dir: Path, editor_cmd: str | None) -> None:
+    """Step 4: 설정된 에디터로 문제 폴더를 연다.
+
+    editor_cmd가 비어 있으면 스킵 (COMMAND-SPEC: 설정된 editor 없으면 스킵).
+    """
+    if not (editor_cmd or "").strip():
+        return
+    cmd = [*shlex.split(editor_cmd.strip()), str(problem_dir)]
+    subprocess.run(cmd, cwd=str(problem_dir))
 
 
 def cleanup_artifacts(problem_dir: Path, keep: bool) -> None:

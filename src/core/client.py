@@ -18,6 +18,8 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+from src.core.exceptions import FetchError
+
 BOJ_BASE_URL = "https://www.acmicpc.net/problem"
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -86,15 +88,12 @@ def fetch_html(problem_num: str) -> str:
     try:
         resp = requests.get(url, headers=_DEFAULT_HEADERS, timeout=10)
     except requests.exceptions.RequestException as e:
-        print(f"Error: BOJ 페이지 가져오기 실패: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise FetchError(f"BOJ 페이지 가져오기 실패: {e}") from e
 
     if resp.status_code == 403:
-        print(f"Error: BOJ 접근 거부 (403): {url}", file=sys.stderr)
-        sys.exit(1)
+        raise FetchError(f"BOJ 접근 거부 (403): {url}")
     if resp.status_code == 404:
-        print(f"Error: 문제를 찾을 수 없습니다: {problem_num}", file=sys.stderr)
-        sys.exit(1)
+        raise FetchError(f"문제를 찾을 수 없습니다: {problem_num}")
     resp.raise_for_status()
     return resp.text
 

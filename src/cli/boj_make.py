@@ -11,9 +11,9 @@ import sys
 from pathlib import Path
 
 from src.core.config import config_get, DEFAULTS
+from src.core.exceptions import BojError
 from src.core.make import (
     ensure_setup,
-    check_existing,
     fetch_problem,
     generate_readme,
     generate_spec,
@@ -73,6 +73,19 @@ def main(argv: list[str] | None = None) -> int:
     """
     args = parse_args(argv)
 
+    try:
+        return _run_pipeline(args)
+    except BojError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
+def _run_pipeline(args: argparse.Namespace) -> int:
+    """파이프라인 실행 (예외는 main()에서 처리).
+
+    Returns:
+        종료 코드. 0=성공, 1=실패.
+    """
     # Step 사전 조건 (COMMAND-SPEC: setup 완료 시 에이전트 필수, fallback 없음)
     ensure_setup()
     agent_cmd = (config_get("agent") or DEFAULTS.get("agent", "") or "").strip()
