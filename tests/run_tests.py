@@ -12,33 +12,35 @@ Issue #50 — run_tests.sh 대체.
 import argparse
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 TESTS_DIR = Path(__file__).parent
 REPO_ROOT = TESTS_DIR.parent
 
-passed = 0
-failed = 0
+
+@dataclass
+class Results:
+    passed: int = 0
+    failed: int = 0
 
 
-def run_bash(path: Path) -> bool:
+def run_bash(path: Path, results: Results) -> bool:
     """bash 스크립트를 실행하고 성공 여부를 반환한다."""
-    global passed, failed
     print(f"--- {path.name} ---")
     result = subprocess.run(["bash", str(path)], cwd=REPO_ROOT)
     ok = result.returncode == 0
     if ok:
-        passed += 1
+        results.passed += 1
     else:
         print(f"FAILED: {path.name}")
-        failed += 1
+        results.failed += 1
     print()
     return ok
 
 
-def run_pytest(paths: list[Path], extra_args: list[str] | None = None) -> bool:
+def run_pytest(paths: list[Path], results: Results, extra_args: list[str] | None = None) -> bool:
     """pytest로 Python 테스트 파일들을 실행하고 성공 여부를 반환한다."""
-    global passed, failed
     if not paths:
         return True
 
@@ -48,22 +50,26 @@ def run_pytest(paths: list[Path], extra_args: list[str] | None = None) -> bool:
     result = subprocess.run(cmd, cwd=REPO_ROOT)
     ok = result.returncode == 0
     if ok:
-        passed += 1
+        results.passed += 1
     else:
-        failed += 1
+        results.failed += 1
     print()
     return ok
 
 
 def collect_bash(directory: Path, pattern: str = "*.sh") -> list[Path]:
+    if not directory.is_dir():
+        return []
     return sorted(f for f in directory.glob(pattern) if f.is_file())
 
 
 def collect_pytest(directory: Path, pattern: str = "test_*.py") -> list[Path]:
+    if not directory.is_dir():
+        return []
     return sorted(f for f in directory.glob(pattern) if f.is_file())
 
 
-def run_unit() -> None:
+def run_unit(results: Results) -> None:
     print("=== 단위 테스트 ===")
 
     unit_dir = TESTS_DIR / "unit"
@@ -71,42 +77,42 @@ def run_unit() -> None:
 
     # Bash 단위 테스트
     for f in collect_bash(unit_dir, "test_*.sh"):
-        run_bash(f)
+        run_bash(f, results)
     for f in collect_bash(cmd_dir, "*.sh"):
-        run_bash(f)
+        run_bash(f, results)
 
     # Python 단위 테스트
     py_files = collect_pytest(unit_dir, "test_*.py")
     if py_files:
-        run_pytest(py_files)
+        run_pytest(py_files, results)
 
 
-def run_integration() -> None:
+def run_integration(results: Results) -> None:
     print("=== 통합 테스트 ===")
 
     int_dir = TESTS_DIR / "integration"
 
     # Bash 통합 테스트
     for f in collect_bash(int_dir, "test_*.sh"):
-        run_bash(f)
+        run_bash(f, results)
 
     # Python 통합 테스트
     py_files = collect_pytest(int_dir, "test_*.py")
     if py_files:
-        run_pytest(py_files)
+        run_pytest(py_files, results)
 
 
-def run_e2e() -> None:
+def run_e2e(results: Results) -> None:
     print("=== E2E 테스트 ===")
 
     e2e_dir = TESTS_DIR / "e2e"
 
     for f in collect_bash(e2e_dir, "test_*.sh"):
-        run_bash(f)
+        run_bash(f, results)
 
     py_files = collect_pytest(e2e_dir, "test_*.py")
     if py_files:
-        run_pytest(py_files)
+        run_pytest(py_files, results)
 
 
 def main() -> int:
@@ -115,8 +121,10 @@ def main() -> int:
     group.add_argument("--unit", action="store_true", help="단위 테스트만")
     group.add_argument("--integration", action="store_true", help="통합 테스트만")
     group.add_argument("--e2e", action="store_true", help="E2E 테스트만")
-    group.add_argument("--all", action="store_true", default=True, help="전체 (기본)")
+    group.add_argument("--all", action="store_true", help="전체 (기본)")
     args = parser.parse_args()
+
+    results = Results()
 
     print("==========================================")
     print("BOJ CLI 테스트 실행")
@@ -124,22 +132,22 @@ def main() -> int:
     print()
 
     if args.unit:
-        run_unit()
+        run_unit(results)
     elif args.integration:
-        run_integration()
+        run_integration(results)
     elif args.e2e:
-        run_e2e()
+        run_e2e(results)
     else:
-        run_unit()
-        run_integration()
-        run_e2e()
+        run_unit(results)
+        run_integration(results)
+        run_e2e(results)
 
     print()
     print("==========================================")
-    print(f"최종 결과: {passed}개 통과, {failed}개 실패")
+    print(f"최종 결과: {results.passed}개 통과, {results.failed}개 실패")
     print("==========================================")
 
-    return 1 if failed > 0 else 0
+    return 1 if results.failed > 0 else 0
 
 
 if __name__ == "__main__":
