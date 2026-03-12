@@ -86,16 +86,19 @@ boj setup --editor vim         # 에디터 설정
 ### `boj make <문제번호>` — 환경 생성
 
 에이전트를 통해 문제 폴더 전체를 자동 생성합니다.
+`boj setup`이 완료되지 않은 상태에서 실행하면 자동으로 setup을 먼저 실행합니다.
 
 ```bash
 boj make 4949                     # 기본 (설정된 언어 사용)
 boj make 4949 --lang python       # 언어 지정
 boj make 4949 --image-mode skip   # 문제 이미지 처리 방식 (download|reference|skip)
-boj make 4949 --output ~/problems # 저장 위치 지정 (기본: BOJ_ROOT)
 boj make 4949 --no-open           # 에디터 자동 오픈 없이
+boj make 4949 --keep-artifacts    # 중간 산출물(problem.json, problem.spec.json) 유지
+boj make 4949 -f                  # 이미 존재하는 문제 폴더 덮어쓰기
 ```
 
-에이전트(`boj_agent_cmd`) 미설정 시: 프롬프트를 클립보드에 복사하고 에디터를 엽니다.
+> **참고**: 이미 존재하는 문제 폴더에 `boj make`를 실행하면 안내 메시지와 함께 중단됩니다.
+> 덮어쓰려면 `-f` 옵션을 사용하세요.
 
 ### `boj open <문제번호>` — 에디터로 열기
 
