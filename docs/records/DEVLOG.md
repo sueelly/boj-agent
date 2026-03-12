@@ -14,6 +14,14 @@
 
 ---
 
+## [2026-03-12] feat(setup): Python setup 명령어 구현 [#46]
+**변경 요약:** `src/commands/setup.sh` (284줄 Bash)를 대체하는 Python `src/cli/boj_setup.py` 구현. 6단계 대화형 마법사 + 비대화형 옵션(--check, --root, --lang, --username, --editor, --agent). 세션 쿠키 로직은 이슈 스코프 외로 제외.
+**의사결정:** `prompter: Callable[[str], str]` 의존성 주입 패턴으로 대화형 로직 100% 단위 테스트 가능하게 설계. CLI 옵션은 이슈 기준(--root, --lang)으로 하되 내부적으로 config.py 키(boj_solution_root, prog_lang)를 사용. gh CLI 미설치 시 설치 안내 후 다른 옵션으로 fallback. agent 없음 선택 시 gemini 무료 추천 (config.py AGENT_COMMANDS 기준).
+**검증 방법:** `PYTHONPATH=. python3 -m pytest tests/unit/test_setup.py -v`, `PYTHONPATH=. python3 -m src.cli.boj_setup --check`, `PYTHONPATH=. python3 -m src.cli.boj_setup --lang python`
+
+---
+
+
 ## [2026-03-10] refactor(config): Python config 모듈 구현 [#45]
 **변경 요약:** Bash `config.sh`를 대체하는 Python `src/core/config.py` 구현. config key 구조 변경(root 분리, session 제거, key 이름 변경), setup_done flag, agent 커맨드 매핑, git config 연동 추가.
 **의사결정:** Option C 구조(src/core/)에 배치. 기존 config.sh는 Bash 명령어 전환 완료까지 병행 유지. 환경변수 매핑은 BOJ_PROG_LANG, BOJ_SOLUTION_ROOT 등 새 이름으로 통일하되 레거시(BOJ_ROOT, BOJ_LANG)는 Bash 측에서만 사용. 지원 언어는 런타임 지원 기준 java/python만.

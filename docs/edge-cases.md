@@ -27,11 +27,16 @@
 | S3 | config | `~/.config/boj/` 쓰기 권한 없음 | `Error: 설정 디렉터리에 쓸 수 없습니다: ~/.config/boj/` | 아니오 | 예 |
 | S4 | git | git 미설치 환경 | `Warning: git을 찾을 수 없습니다. git 설치 후 다시 실행하세요.` | 아니오 | 부분 (git 단계만) |
 | S5 | git | git repo URL clone 실패 | `Error: 저장소 clone에 실패했습니다. URL을 확인하세요.` | 아니오 | 부분 (git 단계만) |
-| S6 | git | `gh` CLI 미설치 (새 repo 생성 선택 시) | `Error: gh CLI가 필요합니다. https://cli.github.com 에서 설치하세요.` | 아니오 | 부분 (git 단계만) |
+| S6 | git | `gh` CLI 미설치 (새 repo 생성 선택 시) | gh 설치 안내 + 다른 옵션으로 fallback | 아니오 | 부분 (git 단계만) |
 | S7 | config | `boj setup --check` 실행 | 현재 설정 상태 표시 (ok/missing/invalid 구분) | N/A | 아니오 |
 | S8 | config | 이미 설정 완료 후 재실행 | 현재 값 보여주고 "수정하시겠습니까? (y/N)" 확인 | N/A | 아니오 |
 | S9 | agent | agent 미설정 | "agent가 없으면 사용이 불가합니다. 무료 gemini를 추천합니다." 안내 | N/A | 아니오 |
 | S10 | config | 설정 완료 | `~/.config/boj/setup_done` 파일 생성 + 사용법/설정법 출력 | N/A | 아니오 |
+| S11 | input | Ctrl+C (KeyboardInterrupt) | 정상 종료 (exit code 130), "설정이 중단되었습니다." 메시지 | N/A | 예 |
+| S12 | agent | 알려진 agent 선택 (claude 등) | AGENT_COMMANDS 자동 매핑 + AGENT_INSTALL 설치 안내 | N/A | 아니오 |
+| S13 | agent | 기타 agent 선택 | 직접 명령어 입력 → 그대로 저장 | N/A | 아니오 |
+| S14 | editor | 에디터 미입력 | "boj open 명령어를 사용할 수 없습니다" 안내 후 계속 | N/A | 아니오 |
+| S15 | lang | 미지원 언어 입력 | "미지원" 경고 + 재입력 요청 | N/A | 아니오 |
 
 ---
 
@@ -172,4 +177,4 @@
 - **id/description 없음**: 자동 보완 후 실행
 - **submit/ 폴더 없음**: 자동 생성
 
-*최종 업데이트: 2026-03-10*
+*최종 업데이트: 2026-03-12*
