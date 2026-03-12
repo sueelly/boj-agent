@@ -80,7 +80,7 @@ JAVA
         BOJ_AGENT_CMD="echo MOCK_AGENT" \
         bash -c "echo y | '$tmp/src/boj' make 99999 --no-open" 2>&1) || true
 
-  assert_output_not_contains "gate_check_pass_no_warning: Gate Check Warning 없음" "$out" "Gate Check"
+  assert_output_not_contains "gate_check_pass_no_warning: Gate Check Warning 없음" "$out" "Warning: Gate Check"
 
   teardown_tmp "$tmp"
 }
