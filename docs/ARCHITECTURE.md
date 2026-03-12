@@ -10,7 +10,7 @@
 boj-agent/
   src/
     boj                       # CLI 진입점 (Bash 디스패처)
-    setup-boj-cli.sh          # ~/bin/boj 설치 스크립트
+    setup-boj-cli.sh          # [deprecated] → scripts/install.py
     commands/                 # 서브커맨드 (각각 독립 Bash 스크립트)
       make.sh     (254줄)    # [A]Fetch → [B]Normalize → [C]Agent skeleton
       run.sh      (168줄)    # test_cases.json 기반 테스트 실행
@@ -47,6 +47,8 @@ boj-agent/
     unit/                     # Bash 단위 테스트 + Python pytest
     integration/              # Bash/Python 통합 테스트
     e2e/                      # E2E 테스트
+  scripts/
+    install.py                # Python 설치 스크립트 (clone → 설치 완료)
   docs/                       # 문서
     ARCHITECTURE.md           # 프로젝트 구조 (현재 + 목표)
     COMMAND-SPEC.md           # 명령어별 로직 정의서
