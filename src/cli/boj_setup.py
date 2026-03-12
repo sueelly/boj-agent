@@ -117,8 +117,6 @@ def run_set_mode(args: argparse.Namespace) -> int:
     Returns:
         종료 코드. 0=성공, 1=실패.
     """
-    had_error = False
-
     if args.root is not None:
         if not validate_path(args.root):
             print(
