@@ -53,15 +53,21 @@ cd <boj-agent 레포>
 boj setup
 ```
 
-대화형으로 다음을 설정합니다:
-- BOJ_ROOT (문제 풀이 루트 경로, 현재 디렉터리 기본)
-- 기본 언어 (java/python/cpp/c/kotlin/go 등)
-- BOJ 세션 쿠키 (`JSESSIONID` — commit 통계, 자동 확인용)
-- BOJ 사용자 ID (commit 통계용)
-- 에이전트 명령 (make/review 시 호출할 CLI, 예: `claude -p --`)
+대화형 6단계 설정 마법사:
+1. 레포 루트 경로 (BOJ_SOLUTION_ROOT)
+2. 기본 언어 (java/python)
+3. 에이전트 (claude/copilot/cursor/gemini/opencode/기타)
+4. Git 연동 (user.name/email + repo 설정)
+5. BOJ 사용자 ID (commit 통계용)
+6. 에디터 명령 (boj open에 사용)
 
 ```bash
-boj setup --check   # 현재 설정 상태 한눈에 확인
+boj setup --check              # 현재 설정 상태 한눈에 확인
+boj setup --lang python        # 기본 언어만 변경
+boj setup --root ~/solutions   # 루트 경로만 변경
+boj setup --agent claude       # 에이전트 설정 (자동 매핑)
+boj setup --username myid      # BOJ 사용자 ID 설정
+boj setup --editor vim         # 에디터 설정
 ```
 
 ## 명령어 상세

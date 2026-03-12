@@ -271,7 +271,7 @@ def test_creates_readme_when_valid_problem(boj_env, fixture_path):
 | `submit` | Submit.java 생성 + 컴파일 | 솔루션 없음, 미지원 언어 | Parse 없는 경우, --force | SB1-SB10 |
 | `open` | 에디터 호출 | 폴더 없음 | --editor 플래그 | O1-O4 |
 | `review` | 에이전트 호출 | 폴더 없음 | 에이전트 미설정 fallback | RV1-RV4 |
-| `setup` | 설정 저장 | 잘못된 언어, 잘못된 경로 | --check, 부분 설정 | S1-S8 |
+| `setup` | 설정 저장 | 잘못된 언어, 잘못된 경로 | --check, 부분 설정, Ctrl+C, agent/editor 미설정 | S1-S15 |
 
 ### 6.2 파라미터라이즈드 패턴
 
@@ -632,6 +632,8 @@ def test_review_outputs_feedback(boj_env, fixture_path):
 대화형 명령은 `input_text` 파라미터로 stdin을 제공한다.
 `BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 모킹한다.
 
+Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section 14** 참조.
+
 ---
 
 ## 11. 기존 Bash 테스트와의 관계
@@ -794,4 +796,100 @@ def test_get_git_user_name_when_not_configured():
         assert get_git_config("user.name") == ""
 ```
 
-*최종 업데이트: 2026-03-10*
+---
+
+## 14. Python setup 모듈 테스트 (`src/cli/boj_setup.py`)
+
+> Issue #46 — Bash `setup.sh`를 대체하는 Python setup 모듈의 단위 테스트 전략.
+
+### 14.1 테스트 위치
+
+```
+tests/unit/test_setup.py    # Python setup 모듈 단위 테스트
+```
+
+기존 `tests/unit/commands/test_setup.sh`(Bash)와 병행 유지. Python 전환 완료 후 Bash 테스트 제거.
+
+### 14.2 격리 전략
+
+setup 모듈은 **파일시스템 + 환경변수 + git subprocess + 사용자 입력**에 의존한다.
+`config_env` fixture(Section 13.2와 동일)로 파일/환경변수를 격리하고,
+**`prompter` 의존성 주입**으로 대화형 입력을 격리한다.
+
+```python
+def make_prompter(responses: list[str]):
+    """미리 정의된 응답 리스트를 순서대로 반환하는 prompter."""
+    it = iter(responses)
+    def prompter(prompt: str = "") -> str:
+        return next(it)
+    return prompter
+```
+
+- 프로덕션: `main(argv, prompter=input)` — 실제 `input()` 사용
+- 테스트: `main(argv, prompter=make_prompter([...]))` — 응답 미리 정의
+- git 호출: `unittest.mock.patch`로 `get_git_config`, `set_git_config` 모킹
+
+### 14.3 테스트 매트릭스
+
+| 범주 | 테스트 클래스 | edge-cases 참조 |
+|------|-------------|----------------|
+| **옵션 파싱** | TestParseArgs | — |
+| **--check 모드** | TestCheckMode | S7 |
+| **비대화형 set** | TestSetMode | CF12, CF13 (lang), CF10, CF11 (path) |
+| **대화형 root** | TestInteractiveRoot | S1, S2, S8 |
+| **대화형 lang** | TestInteractiveLang | S15 |
+| **대화형 agent** | TestInteractiveAgent | S9, S12, S13 |
+| **대화형 git** | TestInteractiveGit | S4, S5, S6 |
+| **대화형 username** | TestInteractiveUsername | — |
+| **대화형 editor** | TestInteractiveEditor | S14 |
+| **완료 처리** | TestFinishSetup | S10 |
+| **사용법 출력** | TestPrintUsageGuide | — |
+| **통합 (main)** | TestMainIntegration | S1, S11 |
+| **엣지케이스** | TestEdgeCases | S1, S2, S3, S5, S7, S8, S10 |
+
+### 14.4 엣지케이스 커버리지 매핑 (S1~S15)
+
+| Edge Case | 테스트 위치 | 설명 |
+|-----------|-----------|------|
+| S1 | TestEdgeCases + TestMainIntegration | 최초 실행, config 없음 |
+| S2 | TestEdgeCases | 부분 설정 — 기존 값 유지 |
+| S3 | TestEdgeCases | config 디렉터리 쓰기 권한 없음 |
+| S4 | TestInteractiveGit.test_git_not_installed | git 미설치 |
+| S5 | TestEdgeCases | clone 실패 |
+| S6 | TestInteractiveGit.test_gh_create_repo_without_gh | gh 미설치 |
+| S7 | TestEdgeCases + TestCheckMode | --check 상태 표시 |
+| S8 | TestEdgeCases | 재실행 시 현재 값 + 변경 확인 |
+| S9 | TestInteractiveAgent.test_no_agent_recommends_gemini | agent 미설정 → gemini 추천 |
+| S10 | TestEdgeCases + TestFinishSetup | setup_done 플래그 생성 |
+| S11 | TestMainIntegration.test_keyboard_interrupt_exits_gracefully | Ctrl+C → exit 130 |
+| S12 | TestInteractiveAgent.test_select_known_agent | 알려진 agent → 명령어 매핑 |
+| S13 | TestInteractiveAgent.test_select_custom_agent | 기타 agent → 직접 입력 |
+| S14 | TestInteractiveEditor.test_empty_editor_warns | 에디터 미입력 경고 |
+| S15 | TestInteractiveLang.test_unsupported_lang_shows_warning | 미지원 언어 → 재입력 |
+
+### 14.5 테스트 예시
+
+```python
+def test_s2_asks_only_missing_when_partial_config(config_env, tmp_path, monkeypatch, capsys):
+    """S2: 부분 설정 → 기존 값 유지, 누락 항목만 물어봄."""
+    config_set("boj_solution_root", str(tmp_path))
+    config_set("prog_lang", "java")
+    # root와 lang은 N(유지), 나머지 입력
+    responses = ["N", "N", "없음", "1", "user1", "code"]
+    prompter = make_prompter(responses)
+    with patch("src.cli.boj_setup.get_git_config", return_value="User"), \
+         patch("src.cli.boj_setup.set_git_config"):
+        exit_code = main([], prompter=prompter)
+    assert exit_code == 0
+    assert config_get("boj_solution_root", "") == str(tmp_path)
+
+
+def test_keyboard_interrupt_exits_gracefully(config_env):
+    """S11: Ctrl+C → 정상 종료 (exit code 130)."""
+    def interrupt_prompter(prompt=""):
+        raise KeyboardInterrupt()
+    exit_code = main([], prompter=interrupt_prompter)
+    assert exit_code == 130
+```
+
+*최종 업데이트: 2026-03-12*
