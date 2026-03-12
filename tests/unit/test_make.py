@@ -20,6 +20,8 @@ import pytest
 from src.core.make import (
     ensure_setup,
     check_existing,
+    fetch_problem,
+    generate_readme,
     generate_spec,
     cleanup_artifacts,
 )
@@ -214,3 +216,125 @@ class TestCleanupArtifacts:
         assert not (artifacts / "problem.json").exists()
         assert not (artifacts / "problem.spec.json").exists()
         assert (artifacts / "other_data.json").exists()
+
+
+# ──────────────────────────────────────────────
+# Fixtures — fetch/readme 테스트용
+# ──────────────────────────────────────────────
+
+FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
+
+SAMPLE_PROBLEM = {
+    "problem_num": "99999",
+    "title": "두 수의 합",
+    "time_limit": "1 초",
+    "memory_limit": "256 MB",
+    "description_html": "<p>두 정수 A와 B를 입력받은 다음, A+B를 출력하는 프로그램을 작성하시오.</p>",
+    "input_html": "<p>첫째 줄에 A와 B가 주어진다.</p>",
+    "output_html": "<p>첫째 줄에 A+B를 출력한다.</p>",
+    "samples": [
+        {"id": 1, "input": "1 2", "output": "3"},
+        {"id": 2, "input": "3 4", "output": "7"},
+    ],
+    "images": [],
+}
+
+
+# ──────────────────────────────────────────────
+# TestFetchProblem — Step 0
+# ──────────────────────────────────────────────
+
+class TestFetchProblem:
+    """Step 0: BOJ fetch → problem.json."""
+
+    def test_creates_problem_json_in_artifacts(self, tmp_path):
+        """정상 동작: problem.json이 artifacts/에 생성된다."""
+        with (
+            patch("src.core.make.fetch_html", return_value="<html></html>") as mock_fetch,
+            patch("src.core.make.parse_problem", return_value=SAMPLE_PROBLEM) as mock_parse,
+        ):
+            result = fetch_problem("99999", problem_dir=tmp_path / "99999-두-수의-합")
+
+        assert result.exists()
+        problem_json = result / "artifacts" / "problem.json"
+        assert problem_json.exists()
+        data = json.loads(problem_json.read_text())
+        assert data["problem_num"] == "99999"
+        assert data["title"] == "두 수의 합"
+
+    def test_raises_when_html_fetch_fails(self, tmp_path):
+        """네트워크 실패 시 SystemExit."""
+        with patch("src.core.make.fetch_html", side_effect=SystemExit(1)):
+            with pytest.raises(SystemExit) as exc_info:
+                fetch_problem("99999", problem_dir=tmp_path / "99999-test")
+            assert exc_info.value.code == 1
+
+    def test_passes_image_mode_to_processing(self, tmp_path):
+        """image_mode 파라미터가 이미지 처리에 전달된다."""
+        with (
+            patch("src.core.make.fetch_html", return_value="<html></html>"),
+            patch("src.core.make.parse_problem", return_value=SAMPLE_PROBLEM),
+        ):
+            result = fetch_problem(
+                "99999",
+                image_mode="skip",
+                problem_dir=tmp_path / "99999-test",
+            )
+            # skip 모드: images 처리가 skip됨 (에러 없이 완료)
+            assert result.exists()
+
+
+# ──────────────────────────────────────────────
+# TestGenerateReadme — Step 1
+# ──────────────────────────────────────────────
+
+class TestGenerateReadme:
+    """Step 1: problem.json → README.md 생성."""
+
+    def test_creates_readme_from_problem_json(self, tmp_path):
+        """정상 동작: problem.json에서 README.md를 생성한다."""
+        problem_dir = tmp_path / "99999-test"
+        problem_dir.mkdir()
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir()
+        problem_json = artifacts / "problem.json"
+        problem_json.write_text(json.dumps(SAMPLE_PROBLEM, ensure_ascii=False))
+
+        readme_path = generate_readme(problem_json)
+
+        assert readme_path.exists()
+        content = readme_path.read_text()
+        assert "99999번: 두 수의 합" in content
+
+    def test_raises_when_problem_json_missing(self, tmp_path):
+        """problem.json이 없으면 에러를 발생시킨다."""
+        missing = tmp_path / "nonexistent" / "artifacts" / "problem.json"
+        with pytest.raises((SystemExit, FileNotFoundError)):
+            generate_readme(missing)
+
+    def test_readme_contains_problem_title(self, tmp_path):
+        """README에 문제 제목이 포함된다."""
+        problem_dir = tmp_path / "99999-test"
+        problem_dir.mkdir()
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir()
+        problem_json = artifacts / "problem.json"
+        problem_json.write_text(json.dumps(SAMPLE_PROBLEM, ensure_ascii=False))
+
+        readme_path = generate_readme(problem_json)
+        content = readme_path.read_text()
+
+        assert "두 수의 합" in content
+        assert "예제 입력 1" in content
+        assert "예제 출력 1" in content
+
+    def test_readme_matches_fixture_snapshot(self):
+        """fixture 99999의 problem.json → readme.md 스냅샷과 일치한다."""
+        fixture_dir = FIXTURES_DIR / "99999"
+        problem_json = fixture_dir / "problem.json"
+        expected = (fixture_dir / "readme.md").read_text(encoding="utf-8")
+
+        readme_path = generate_readme(problem_json)
+        result = readme_path.read_text()
+
+        assert result == expected

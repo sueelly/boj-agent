@@ -4,23 +4,47 @@ Issue #54 — TDD Green 단계.
 """
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
+from src.core.client import fetch_html, parse_problem
 from src.core.config import is_setup_done
+from src.core.normalizer import normalize
 
 # 삭제 대상 아티팩트 파일 이름
 _CLEANUP_TARGETS = ("problem.json", "problem.spec.json")
 
 
 def run_setup() -> None:
-    """boj setup을 실행한다. ensure_setup에서 호출."""
-    raise NotImplementedError
+    """boj setup을 실행한다. ensure_setup에서 호출.
+
+    src.cli.boj_setup.main()을 직접 호출한다.
+    """
+    from src.cli.boj_setup import main as setup_main
+    setup_main([])
 
 
 def run_agent(problem_dir: Path, agent_cmd: str, prompt_name: str) -> int:
-    """에이전트를 실행한다. generate_spec/generate_skeleton에서 호출."""
-    raise NotImplementedError
+    """에이전트를 subprocess로 실행한다.
+
+    Args:
+        problem_dir: 문제 폴더 경로.
+        agent_cmd: 에이전트 실행 명령어 (예: "claude", "gemini").
+        prompt_name: 프롬프트 이름 (예: "make-spec", "make-skeleton").
+
+    Returns:
+        프로세스 종료 코드.
+    """
+    prompts_dir = Path(__file__).resolve().parent.parent.parent / "prompts"
+    prompt_file = prompts_dir / f"{prompt_name}.md"
+
+    cmd = f"{agent_cmd} {prompt_file} {problem_dir}"
+    result = subprocess.run(
+        cmd, shell=True, cwd=str(problem_dir),
+        capture_output=True, text=True,
+    )
+    return result.returncode
 
 
 def ensure_setup() -> None:
@@ -48,14 +72,83 @@ def check_existing(problem_dir: Path, force: bool) -> None:
         sys.exit(1)
 
 
-def fetch_problem(problem_id: str, image_mode: str = "download") -> Path:
-    """Step 0: BOJ fetch → problem.json."""
-    raise NotImplementedError
+def fetch_problem(
+    problem_id: str,
+    image_mode: str = "download",
+    problem_dir: Path | None = None,
+) -> Path:
+    """Step 0: BOJ fetch → problem.json.
+
+    BOJ HTML을 가져와 파싱하고 problem.json을 artifacts/에 저장한다.
+
+    Args:
+        problem_id: BOJ 문제 번호 (예: "99999").
+        image_mode: 이미지 처리 모드 ("download", "reference", "skip").
+        problem_dir: 문제 폴더 경로. None이면 자동 생성.
+
+    Returns:
+        생성된 문제 폴더 경로.
+
+    Raises:
+        SystemExit: HTML fetch 또는 파싱 실패 시.
+    """
+    html = fetch_html(problem_id)
+    problem = parse_problem(html, problem_id)
+
+    # problem_dir 결정 (미지정 시 제목 기반 자동 생성)
+    if problem_dir is None:
+        title_slug = problem["title"].replace(" ", "-")
+        problem_dir = Path.cwd() / f"{problem_id}-{title_slug}"
+
+    # 디렉터리 생성
+    artifacts_dir = problem_dir / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    # image_mode 처리
+    if image_mode == "skip":
+        from src.core.client import strip_images
+        problem["description_html"] = strip_images(problem.get("description_html", ""))
+    elif image_mode == "download" and problem.get("images"):
+        from src.core.client import download_images, rewrite_image_urls
+        image_results = download_images(problem["images"], artifacts_dir)
+        problem["description_html"] = rewrite_image_urls(
+            problem.get("description_html", ""), image_results,
+        )
+
+    # problem.json 저장
+    problem_json_path = artifacts_dir / "problem.json"
+    problem_json_path.write_text(
+        json.dumps(problem, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    return problem_dir
 
 
 def generate_readme(problem_json_path: Path) -> Path:
-    """Step 1: README.md 생성."""
-    raise NotImplementedError
+    """Step 1: problem.json → README.md 생성.
+
+    Args:
+        problem_json_path: problem.json 파일 경로.
+
+    Returns:
+        생성된 README.md 경로.
+
+    Raises:
+        SystemExit: problem.json 파일이 없거나 파싱 실패 시.
+        FileNotFoundError: problem.json 파일이 없을 때.
+    """
+    if not problem_json_path.exists():
+        raise FileNotFoundError(f"problem.json을 찾을 수 없습니다: {problem_json_path}")
+
+    problem = json.loads(problem_json_path.read_text(encoding="utf-8"))
+    content = normalize(problem)
+
+    # README.md는 problem_dir 루트에 생성 (artifacts/ 상위)
+    readme_path = problem_json_path.parent.parent / "README.md"
+    readme_path.write_text(content, encoding="utf-8")
+
+    return readme_path
 
 
 def generate_spec(problem_dir: Path, agent_cmd: str) -> dict:
