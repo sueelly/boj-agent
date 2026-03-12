@@ -15,7 +15,6 @@ docs/edge-cases.md IN1~IN8 + 각 함수 happy/error path 커버.
 """
 
 import os
-import stat
 import subprocess
 from pathlib import Path
 from unittest.mock import patch, MagicMock

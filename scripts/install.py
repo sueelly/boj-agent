@@ -75,7 +75,7 @@ def copy_agent_files(src: Path, dest: Path, *, force: bool = False) -> Path:
 
     # self-move 방지
     if src_resolved == dest_resolved:
-        print(f"  이미 설치 위치에서 실행 중입니다. 복사를 스킵합니다.")
+        print("  이미 설치 위치에서 실행 중입니다. 복사를 스킵합니다.")
         return src
 
     # dest 이미 존재 시 확인
