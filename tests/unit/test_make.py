@@ -283,6 +283,23 @@ class TestFetchProblem:
             # skip 모드: images 처리가 skip됨 (에러 없이 완료)
             assert result.exists()
 
+    def test_raises_when_dir_exists_without_force_before_creating_artifacts(self, tmp_path):
+        """기존 폴더 존재 시 artifacts 생성 전에 SystemExit."""
+        # SAMPLE_PROBLEM의 제목을 기반으로 생성될 디렉터리 이름과 동일하게 미리 생성
+        existing_dir = tmp_path / "99999-두-수의-합"
+        existing_dir.mkdir()
+
+        with (
+            patch("src.core.make.fetch_html", return_value="<html></html>"),
+            patch("src.core.make.parse_problem", return_value=SAMPLE_PROBLEM),
+        ):
+            with pytest.raises(SystemExit) as exc_info:
+                fetch_problem("99999", base_dir=tmp_path)
+
+        assert exc_info.value.code == 1
+        # artifacts/ 디렉터리가 새로 생성되지 않았는지 확인
+        assert not (existing_dir / "artifacts").exists()
+
 
 # ──────────────────────────────────────────────
 # TestGenerateReadme — Step 1

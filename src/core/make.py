@@ -77,6 +77,7 @@ def fetch_problem(
     image_mode: str = "download",
     problem_dir: Path | None = None,
     base_dir: Path | None = None,
+    force: bool = False,
 ) -> Path:
     """Step 0: BOJ fetch → problem.json.
 
@@ -101,6 +102,9 @@ def fetch_problem(
         title_slug = problem["title"].replace(" ", "-")
         root_dir = base_dir or Path.cwd()
         problem_dir = root_dir / f"{problem_id}-{title_slug}"
+
+    # 기존 폴더 존재 여부를 먼저 검사하여 부분 수정 방지
+    check_existing(problem_dir, force=force)
 
     # 디렉터리 생성
     artifacts_dir = problem_dir / "artifacts"

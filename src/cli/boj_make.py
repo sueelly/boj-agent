@@ -92,10 +92,8 @@ def main(argv: list[str] | None = None) -> int:
         args.problem_id,
         image_mode=args.image_mode,
         base_dir=base_dir,
+        force=args.force,
     )
-
-    # 기존 폴더 확인
-    check_existing(problem_dir, force=args.force)
 
     # Step 1: README.md 생성
     print("[2/5] README.md 생성 중...", file=sys.stderr)
