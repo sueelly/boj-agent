@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # ======================================
-# boj CLI 설치 — 한 번 실행 후 어디서든 boj 사용
+# [DEPRECATED] 이 스크립트는 scripts/install.py로 대체되었습니다.
+# 새 설치: python3 scripts/install.py
 # ======================================
-# 실행: cd <boj-agent 레포> && ./src/setup-boj-cli.sh
+# 기존 사용법: cd <boj-agent 레포> && ./src/setup-boj-cli.sh
 # ======================================
+
+echo "⚠️  이 스크립트는 deprecated 되었습니다."
+echo "   새 설치 스크립트를 사용하세요: python3 scripts/install.py"
+echo ""
+echo "계속 진행하려면 Enter, 중단하려면 Ctrl+C"
+read -r _
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
