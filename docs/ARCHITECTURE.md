@@ -38,8 +38,16 @@ boj-agent/
     cpp/, c/, kotlin/         # 스텁만 존재 (런타임 미지원) → 삭제 예정
     languages.json            # 언어 메타데이터
   prompts/
-    make-skeleton.md          # make용 스켈레톤 생성 프롬프트 (make.sh:181에서 사용)
+    make-spec.md              # make Step 2: spec 생성 (make.py generate_spec)
+    make-skeleton.md          # make Step 3: 스켈레톤 생성 (make.sh:181, make.py generate_skeleton)
+    make-parse-and-tests.md   # [deprecated] make 파이프라인 미사용, make-skeleton으로 통합
     review.md                 # review용 에이전트 프롬프트 (review.sh:29에서 사용)
+  reference/
+    spec/                     # boj-spec-kit 레퍼런스 (problem.spec.json 생성용)
+      problem-spec-format.md, boj-spec-rules.md, spec-levels.md
+      boj-input-pattern-catalog.md, boj-output-pattern-catalog.md, boj-spec-fewshots.md
+      problem-spec-contract.md, spec-to-parse-rules.md, parse-pattern-catalog.md
+      output-format-catalog.md, spec-to-parse-fewshots.md
   tests/
     run_tests.py              # 통합 테스트 러너 (pytest + bash 자동 발견)
     run_tests.sh              # 레거시 Bash 러너 (전환 기간 유지)

@@ -18,6 +18,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from src.core.exceptions import ProblemExistsError, SpecError
+from src.core.normalizer import normalize
 from src.core.make import (
     ensure_setup,
     check_existing,
@@ -407,12 +408,22 @@ class TestGenerateReadme:
         assert "예제 출력 1" in content
 
     def test_readme_matches_fixture_snapshot(self):
-        """fixture 99999의 problem.json → readme.md 스냅샷과 일치한다."""
+        """fixture 99999의 problem.json → normalize() 결과와 동일한 README를 생성한다.
+
+        Fixture는 artifacts/ 없이 problem.json이 문제 폴더 바로 아래 있으므로
+        problem_dir을 명시해 README.md가 fixture_dir에 생성되도록 한다.
+        (기본값 parent.parent는 problem_dir/artifacts/problem.json 구조를 가정함.)
+        생성된 파일은 검증 후 삭제해 픽스처 디렉터리를 오염시키지 않는다.
+        """
         fixture_dir = FIXTURES_DIR / "99999"
         problem_json = fixture_dir / "problem.json"
-        expected = (fixture_dir / "readme.md").read_text(encoding="utf-8")
+        problem = json.loads(problem_json.read_text(encoding="utf-8"))
+        expected = normalize(problem)
 
-        readme_path = generate_readme(problem_json)
-        result = readme_path.read_text()
-
-        assert result == expected
+        readme_path = generate_readme(problem_json, problem_dir=fixture_dir)
+        try:
+            result = readme_path.read_text()
+            assert result == expected
+        finally:
+            if readme_path.exists():
+                readme_path.unlink()

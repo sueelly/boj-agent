@@ -19,18 +19,18 @@ Do NOT rewrite `Solution.java` except when the user explicitly asks for a stub.
 
 Read these in order:
 
-1. `reference/problem-spec-contract.md`
-2. `reference/spec-to-parse-rules.md`
-3. `reference/parse-pattern-catalog.md`
-4. `reference/output-format-catalog.md`
-5. `reference/spec-to-parse-fewshots.md`
+1. `reference/spec/problem-spec-contract.md`
+2. `reference/spec/spec-to-parse-rules.md`
+3. `reference/spec/parse-pattern-catalog.md`
+4. `reference/spec/output-format-catalog.md`
+5. `reference/spec/spec-to-parse-fewshots.md`
 6. the target `problem.spec.json`
 7. existing `Solution.java` if present
 
 Priority order when conflicts happen:
 - explicit user instruction
 - `problem.spec.json`
-- `reference/spec-to-parse-rules.md`
+- `reference/spec/spec-to-parse-rules.md`
 - catalogs
 - fewshots
 

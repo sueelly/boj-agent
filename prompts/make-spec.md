@@ -19,12 +19,12 @@ Return JSON only.
 
 Read these files before generating output:
 
-1. `reference/spec-levels.md`
-2. `reference/problem-spec-format.md`
-3. `reference/boj-spec-rules.md`
-4. `reference/boj-input-pattern-catalog.md`
-5. `reference/boj-output-pattern-catalog.md`
-6. `reference/boj-spec-fewshots.md`
+1. `reference/spec/spec-levels.md`
+2. `reference/spec/problem-spec-format.md`
+3. `reference/spec/boj-spec-rules.md`
+4. `reference/spec/boj-input-pattern-catalog.md`
+5. `reference/spec/boj-output-pattern-catalog.md`
+6. `reference/spec/boj-spec-fewshots.md`
 
 If there is a conflict:
 - `problem-spec-format.md` wins over everything else
@@ -59,7 +59,7 @@ From the problem statement and I/O shape, choose one:
 - **Level 2**: Multiple lines, arrays/matrices, testcases/sentinel/eof, one output format. Full stream/model/presentation; Parse from spec without a heavy shared InputReader.
 - **Level 3**: Query/command streams, graph/tree, multi-section or boolean-mapped output. Full spec and rules; Parse may add minimal helpers only when needed.
 
-Emit `"specLevel": 1` (or 2 or 3) at the top level of the JSON. Then follow the required fields for that level (see `reference/spec-levels.md`).
+Emit `"specLevel": 1` (or 2 or 3) at the top level of the JSON. Then follow the required fields for that level (see `reference/spec/spec-levels.md`).
 
 ---
 
@@ -118,8 +118,8 @@ General rule:
 
 ### Step 7. Final check
 Before returning JSON, verify:
-- `specLevel` is set (1, 2, or 3) and the spec content matches that level’s required/optional fields (`reference/spec-levels.md`).
-- JSON shape matches `reference/problem-spec-format.md` for the chosen level.
+- `specLevel` is set (1, 2, or 3) and the spec content matches that level’s required/optional fields (`reference/spec/spec-levels.md`).
+- JSON shape matches `reference/spec/problem-spec-format.md` for the chosen level.
 - no `Object` in user-facing API
 - no unnecessary count-only leakage
 - no unnecessary helper-heavy BOJ representation
@@ -151,4 +151,4 @@ Do not use markdown fences.
 Do not add comments.
 Do not add explanation before or after the JSON.
 
-The JSON must follow the structure described in `reference/problem-spec-format.md`. Include top-level `"specLevel": 1|2|3`. For Level 1 and 2, fields not required by `reference/spec-levels.md` may be omitted.
+The JSON must follow the structure described in `reference/spec/problem-spec-format.md`. Include top-level `"specLevel": 1|2|3`. For Level 1 and 2, fields not required by `reference/spec/spec-levels.md` may be omitted.

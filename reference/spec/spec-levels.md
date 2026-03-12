@@ -6,7 +6,7 @@ spec 생성 시 **level**을 두어, 문제 복잡도에 따라 채울 필드와
 
 ## 전제
 
-- **제거 대상**: `prompts/spec-to-parse-and-tests.md`, `reference/parse/*` (spec-to-parse-rules, output-format-catalog, parse-pattern-catalog, fewshots 등).
+- **제거 대상**: `prompts/make-parse-and-tests.md` (make 파이프라인 미사용, make-skeleton으로 통합), `reference/spec/` 내 parse 관련 (spec-to-parse-rules, output-format-catalog, parse-pattern-catalog, spec-to-parse-fewshots 등).
 - **Parse 생성**: spec과 Solution의 `solve(...)` 시그니처만 보고 생성. 공통 InputReader 없이, **해당 문제에 필요한 최소한의 파싱만** 작성한다. (예: 1000번 → `split("\\s+")` + `parseInt` 두 번.)
 - **테스트**: `Test.java`가 `Parse.parseAndCallSolve(sol, input)` 호출. Parse는 `ParseAndCallSolve` 구현 유지.
 
@@ -52,7 +52,7 @@ spec 생성 시 **level**을 두어, 문제 복잡도에 따라 채울 필드와
 
 | 구분 | 내용 |
 |------|------|
-| **spec 필수** | `reference/problem-spec-format.md` 및 기존 spec 규칙 전부 |
+| **spec 필수** | `reference/spec/problem-spec-format.md` 및 기존 spec 규칙 전부 |
 | **input** | stream, locals, model, 필요 시 normalization |
 | **output** | model, presentation(boolean_mapping, fixed_precision_scalar, multi_section 등) |
 | **userApi** | input_record, tagged_union 등 포함 |

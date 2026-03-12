@@ -30,7 +30,7 @@
 - `userApi`
 
 ### Optional fields
-- `specLevel`: `1` | `2` | `3`. Spec 복잡도 단계. 있으면 Parse 생성 시 참고하며, 해당 level에서 요구하는 필드만 채우면 됨. 자세한 건 `reference/spec-levels.md`.
+- `specLevel`: `1` | `2` | `3`. Spec 복잡도 단계. 있으면 Parse 생성 시 참고하며, 해당 level에서 요구하는 필드만 채우면 됨. 자세한 건 `reference/spec/spec-levels.md`.
 - `notes`
 
 ---
