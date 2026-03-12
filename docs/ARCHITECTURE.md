@@ -35,7 +35,7 @@ boj-agent/
     python/
       test_runner.py          # 테스트 러너 (런타임 인프라)
       solution.py             # 풀이 스텁 (참고용)
-    cpp/, c/, kotlin/         # 스텁만 존재 (런타임 미지원)
+    cpp/, c/, kotlin/         # 스텁만 존재 (런타임 미지원) → 삭제 예정
     languages.json            # 언어 메타데이터
   prompts/
     make-skeleton.md          # make용 스켈레톤 생성 프롬프트 (make.sh:181에서 사용)
@@ -96,6 +96,7 @@ boj-agent/
       config.py               # 설정 로더 (env > 파일 > 기본값), config.sh 대체
       client.py               # BOJ HTML fetcher (src/lib/boj_client.py에서 이동)
       normalizer.py           # problem.json → README.md (src/lib/boj_normalizer.py에서 이동)
+      make.py                 # boj make 핵심 로직 (5단계 파이프라인)
       runners/                # 언어별 테스트 실행 로직
         __init__.py
         java/
@@ -130,8 +131,27 @@ boj-agent/
       python/solution.py, parse.py
     schemas/                  # JSON 스키마 예시
       test_cases.json
+    spec/                     # boj-spec-kit 레퍼런스 (problem.spec.json 생성용)
+      problem-spec-format.md      # JSON 스키마 규격
+      boj-spec-rules.md           # spec 생성 상위 규칙
+      boj-input-pattern-catalog.md
+      boj-output-pattern-catalog.md
+      boj-spec-fewshots.md        # few-shot 예시
+      spec-levels.md              # Level 1/2/3 복잡도 분류
     usecases/                 # 실제 사용 시 결과 예시
-      java/                   # README, Solution, submit/, test/
+      java/
+        README.md
+        Solution.java
+        artifacts/                # make 중간 산출물
+          problem.json
+          problem.spec.json
+          images/                 # 문제 이미지 파일
+        test/
+          test_cases.json
+          Parse.java
+        submit/
+          Submit.java
+          REVIEW.md
   tests/
     run_tests.py              # 통합 테스트 러너 (pytest + bash 자동 발견)
     unit/                     # core 단위 테스트 (pytest + bash)
@@ -162,13 +182,25 @@ boj-agent/
 
 ### 마이그레이션 순서
 
-1. `boj run` (Java only) — 첫 수직 슬라이스
-2. `boj make` — client + normalizer 이미 Python
-3. `boj submit` — sed/grep 접합을 Python 문자열 처리로 개선
-4. `boj commit`, `boj open`, `boj setup`, `boj review` — 순차
+1. ~~`boj setup`~~ — ✅ 완료 (#46)
+2. ~~`scripts/install.py`~~ — ✅ 완료 (#47)
+3. `boj make` — spec 기반 파이프라인으로 재설계 (#54, 진행 중)
+4. `boj run` (Java only) — 테스트 러너 Python 래퍼
+5. `boj submit` — sed/grep 접합을 Python 문자열 처리로 개선
+6. `boj commit`, `boj open`, `boj review` — 순차
 
 명령어마다 별도 PR. 한 번에 전부 재구성하지 않음.
 
+### templates/ 정리 계획 (#54)
+
+- **삭제**: `c/`, `cpp/`, `kotlin/` (런타임 미지원, 스텁만 존재)
+- **이동**: `java/{Test,ParseAndCallSolve}.java` → `core/runners/java/java_runtime/`
+- **이동**: `python/test_runner.py` → `core/runners/python/python_runtime/`
+- **이동**: `_common/test_cases.json` → `reference/schemas/`
+- **이동**: `java/{Solution,Parse}.java` → `reference/stubs/java/`
+- **이동**: `python/solution.py` → `reference/stubs/python/`
+- **이동**: `languages.json` → 프로젝트 루트
+
 ---
 
-*최종 업데이트: 2026-03-09*
+*최종 업데이트: 2026-03-12*
