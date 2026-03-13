@@ -300,12 +300,21 @@ class TestAddToPath:
         assert added is False
 
     def test_skips_when_home_bin_pattern_present(self, tmp_path):
-        """$HOME/bin 패턴 있으면 스킵 (중복 추가 방지)."""
+        """export PATH="$HOME/bin:$PATH" 가 있으면 스킵 (중복 추가 방지)."""
         rc = tmp_path / ".zshrc"
         rc.write_text('export PATH="$HOME/bin:$PATH"\n')
         bin_dir = tmp_path / "bin"
         added = add_to_path(bin_dir, rc)
         assert added is False
+
+    def test_adds_when_only_comment_mentions_home_bin(self, tmp_path):
+        """주석에만 $HOME/bin 있으면 추가 (과도 스킵 방지)."""
+        rc = tmp_path / ".zshrc"
+        rc.write_text("# see also $HOME/bin for local tools\n")
+        bin_dir = tmp_path / "bin"
+        added = add_to_path(bin_dir, rc)
+        assert added is True
+        assert str(bin_dir) in rc.read_text()
 
     def test_creates_rc_when_missing(self, tmp_path):
         """rc 파일 없으면 새로 생성."""

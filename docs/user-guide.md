@@ -49,14 +49,20 @@ python3 scripts/install.py
 1. `boj-agent` 파일을 `~/.local/share/boj-agent/`로 복사
 2. `~/bin/boj`에 CLI 명령어 설치
 3. `~/.config/boj/`에 설정 저장
-4. PATH 자동 추가 (`~/.zshrc` 등에 `export PATH` 기록, 이미 있으면 스킵)
-5. `boj setup` 자동 실행
+4. PATH 자동 추가 (`~/.zshrc` 등에 `export PATH="$HOME/bin:$PATH"` **한 줄**이 없을 때만 추가. 주석에만 `$HOME/bin`이 있는 경우는 예전에 스킵 버그가 있었음 — 재설치 또는 아래 한 줄 수동 추가 권장)
+5. `boj setup` 자동 실행 (`~/bin/boj` **절대 경로**로 호출 — PATH와 무관)
 
 옵션:
 ```bash
 python3 scripts/install.py --force       # 기존 설치 덮어쓰기
 python3 scripts/install.py --skip-setup  # boj setup 자동 실행 건너뛰기
 ```
+
+설치 후에도 `boj: command not found` 이면:
+
+1. `grep -n 'export PATH' ~/.zshrc` 로 **`export PATH="…/bin:$PATH"`** 형태가 **맨 앞에 bin이 오는 줄**이 있는지 확인한다. 없으면 한 줄 추가: `export PATH="$HOME/bin:$PATH"`
+2. `source ~/.zshrc` 또는 새 터미널
+3. 그래도 안 되면 `~/bin/boj setup --check` 로 동작 확인 후, `echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc`
 
 ## 초기 설정
 

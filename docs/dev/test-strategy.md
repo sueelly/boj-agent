@@ -43,7 +43,9 @@ tests/
     test_boj_setup_py.py    # Python setup 통합 테스트
     test_make_py.py         # Python make 통합 테스트
     test_live_fetch.py      # 라이브 네트워크 테스트 (@pytest.mark.network)
-  e2e/                      # E2E 테스트 (미구현)
+  e2e/                      # E2E (설치→PATH→boj 이름으로 make/run 등)
+    test_full_workflow.sh   # src/boj 직접 + make/run/submit/commit
+    test_install_cli.py     # install.py → ~/bin/boj → boj make/run (pytest)
 ```
 
 ---
@@ -707,7 +709,7 @@ Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section
 | 단위 (install) | — | `tests/unit/test_install.py` | ✅ Python 구현 완료 |
 | 단위 (normalizer) | — | `tests/unit/test_normalizer.py` | ✅ Python 구현 완료 |
 | 통합 | `tests/integration/*.sh` | `tests/integration/test_*.py` | 병행 운영 중 |
-| E2E | — | `tests/e2e/` | 미구현 |
+| E2E | — | `tests/e2e/` | `test_full_workflow.sh`, `test_install_cli.py` |
 | 픽스처 | — | `tests/fixtures/99999/` 등 | ✅ 정리 완료 |
 
 **전환 전략:**
@@ -1038,4 +1040,48 @@ python3 tests/run_tests.py --e2e      # E2E 테스트만
 | 9 | reference 모드 원본 유지 | 10799 |
 | 10 | skip 모드 img 태그 제거 | 10799 |
 
-*최종 업데이트: 2026-03-12*
+---
+
+## 19. E2E: 설치 → `boj` 명령 → make/run (`tests/e2e/test_install_cli.py`)
+
+### 19.1 목적
+
+- **단위/기존 통합 테스트가 놓치는 것**: `install.py`는 `boj setup`을 **절대 경로**(`~/bin/boj`)로 호출하므로, 설치 직후에도 셸 PATH에 `boj`가 없을 수 있다. 기존 통합 테스트는 거의 항상 `"$REPO_ROOT/src/boj"`만 호출해 **`boj`라는 이름으로 잡히는지**를 검증하지 않는다.
+- **PATH 스킵 버그**: 예전 `add_to_path`는 `.zshrc` 안에 `$HOME/bin` 문자열이 **주석 등 어디에든** 있으면 export를 생략해, `source ~/.zshrc` 후에도 `command not found: boj`가 날 수 있었다. (스크립트는 **실제 `export PATH="…bin…:$PATH"` 선행 줄**이 있을 때만 스킵하도록 수정.)
+
+### 19.2 E2E 시나리오 (test_install_cli.py)
+
+| 단계 | 내용 |
+|------|------|
+| 격리 | `HOME=$(mktemp -d)` — 실제 `~/.config`/`~/bin` 미사용 |
+| 설치 | `python3 scripts/install.py --force --skip-setup` |
+| PATH | `export PATH="$HOME/bin:$PATH"` (새 로그인과 동일) |
+| 검증1 | `command -v boj` 가 설치된 `~/bin/boj` 를 가리킴 |
+| 검증2 | `BOJ_ROOT` = 에이전트 루트, `solution_root` 등 config 시드 후 `boj make 99999` (픽스처 HTML) |
+| 검증3 | 픽스처 `Solution.java` + `test/` 복사 후 `boj run 99999` → stdout 에 `2/2` |
+
+의존성: make 과정에서 Python(bs4 등)이 필요하므로 스크립트가 `pip install -r requirements.txt --target $HOME/py` 로 임시 site-packages를 둔 뒤 `PYTHONPATH`로 연결한다. CI/로컬 모두 동일하게 동작하도록 한다.
+
+### 19.3 실행
+
+```bash
+python3 tests/run_tests.py --e2e
+# 또는
+python3 -m pytest tests/e2e/test_install_cli.py -v -m slow
+```
+
+---
+
+## 20. Python 통합 테스트 (`tests/integration/test_*.py`) 요약
+
+| 파일 | 방식 | 검증 내용 |
+|------|------|-----------|
+| **test_boj_setup_py.py** | `python -m src.cli.boj_setup` subprocess | `--check`, `--lang`, `--root`, `--agent` 등 비대화형 setup 플래그가 config 파일에 반영되는지 (IP1–IP11) |
+| **test_make_py.py** | `unittest.mock` + `src.core.make` 직접 호출 | fetch/readme/cleanup/ensure_setup 등 **코어 파이프라인** (네트워크 없음). subprocess로 전체 Bash `boj make`를 돌리지 않음 |
+| **test_live_fetch.py** | `@pytest.mark.network` | 실제 BOJ HTML fetch·파싱·README (기본 pytest에서 제외) |
+
+공통점: **레포의 `src/boj` 디스패처를 “이름 boj”로 부르지 않는다.** setup_py는 Python 모듈 직행, make_py는 라이브러리 단위, Bash 통합(`test_boj_make.sh` 등)은 `"$REPO_ROOT/src/boj"` 고정 경로다. 그래서 **설치 후 PATH 상의 `boj`** 는 `test_install_cli.py` E2E로만 커버한다.
+
+---
+
+*최종 업데이트: 2026-03-14*

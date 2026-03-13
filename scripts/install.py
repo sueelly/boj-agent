@@ -17,6 +17,7 @@ src/setup-boj-cli.sh를 대체하는 Python 구현 (Issue #47).
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -171,8 +172,31 @@ def detect_shell_rc(home: Path) -> Path | None:
     return None
 
 
+def _rc_already_prepends_bin(content: str, bin_dir: Path) -> bool:
+    """rc에 이미 «~/bin이 PATH 앞에 붙는» export가 있는지 본다.
+
+    예전 구현은 \"$HOME/bin\" 문자열이 주석/문서에만 있어도 스킵해,
+    실제 PATH에는 ~/bin이 없는데도 export를 안 넣는 버그가 있었다.
+    """
+    bin_s = str(bin_dir.resolve()) if bin_dir.exists() else str(bin_dir)
+    for line in content.splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if not re.match(r"export\s+PATH\s*=", s):
+            continue
+        rhs = s.split("=", 1)[1].strip()
+        rhs = rhs.strip("\"'")
+        first = rhs.split(":")[0].strip("\"'")
+        if first == bin_s:
+            return True
+        if first in ("$HOME/bin", "${HOME}/bin"):
+            return True
+    return False
+
+
 def add_to_path(bin_dir: Path, shell_rc: Path) -> bool:
-    """shell rc에 PATH export를 추가한다. 이미 있으면 스킵한다.
+    """shell rc에 PATH export를 추가한다. 이미 앞에 붙이는 줄이 있으면 스킵.
 
     Args:
         bin_dir: PATH에 추가할 디렉터리.
@@ -183,7 +207,7 @@ def add_to_path(bin_dir: Path, shell_rc: Path) -> bool:
     """
     export_line = f'export PATH="{bin_dir}:$PATH"'
     content = shell_rc.read_text() if shell_rc.exists() else ""
-    if str(bin_dir) in content or "$HOME/bin" in content:
+    if _rc_already_prepends_bin(content, bin_dir):
         return False
     with open(shell_rc, "a") as f:
         f.write(f"\n{export_line}\n")
