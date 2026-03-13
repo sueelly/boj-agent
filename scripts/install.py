@@ -17,6 +17,7 @@ src/setup-boj-cli.sh를 대체하는 Python 구현 (Issue #47).
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -171,6 +172,48 @@ def detect_shell_rc(home: Path) -> Path | None:
     return None
 
 
+def _rc_already_prepends_bin(content: str, bin_dir: Path) -> bool:
+    """rc에 이미 «~/bin이 PATH 앞에 붙는» export가 있는지 본다.
+
+    예전 구현은 \"$HOME/bin\" 문자열이 주석/문서에만 있어도 스킵해,
+    실제 PATH에는 ~/bin이 없는데도 export를 안 넣는 버그가 있었다.
+    """
+    bin_s = str(bin_dir.resolve()) if bin_dir.exists() else str(bin_dir)
+    for line in content.splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if not re.match(r"export\s+PATH\s*=", s):
+            continue
+        rhs = s.split("=", 1)[1].strip()
+        rhs = rhs.strip("\"'")
+        first = rhs.split(":")[0].strip("\"'")
+        if first == bin_s:
+            return True
+        if first in ("$HOME/bin", "${HOME}/bin"):
+            return True
+    return False
+
+
+def add_to_path(bin_dir: Path, shell_rc: Path) -> bool:
+    """shell rc에 PATH export를 추가한다. 이미 앞에 붙이는 줄이 있으면 스킵.
+
+    Args:
+        bin_dir: PATH에 추가할 디렉터리.
+        shell_rc: 셸 설정 파일 경로.
+
+    Returns:
+        True면 추가됨, False면 이미 있어서 스킵.
+    """
+    export_line = f'export PATH="{bin_dir}:$PATH"'
+    content = shell_rc.read_text() if shell_rc.exists() else ""
+    if _rc_already_prepends_bin(content, bin_dir):
+        return False
+    with open(shell_rc, "a") as f:
+        f.write(f"\n{export_line}\n")
+    return True
+
+
 def print_path_advice(bin_dir: Path, shell_rc: Path | None) -> None:
     """PATH 설정 안내 메시지를 출력한다.
 
@@ -184,25 +227,68 @@ def print_path_advice(bin_dir: Path, shell_rc: Path | None) -> None:
         print(f"  위 내용을 {shell_rc.name}에 추가하면 됩니다.")
 
 
-def run_setup(boj_cmd: Path) -> int:
-    """boj setup을 subprocess로 실행한다.
+def _shell_exe_for_rc(shell_rc: Path) -> str:
+    """rc 파일명에 맞는 zsh/bash 실행 파일."""
+    if shell_rc.name == ".zshrc":
+        return shutil.which("zsh") or "/bin/zsh"
+    return shutil.which("bash") or "/bin/bash"
 
-    Args:
-        boj_cmd: boj 명령어 경로.
 
-    Returns:
-        종료 코드 (0이면 성공).
+def prepend_path(bin_dir: Path) -> None:
+    """현재 프로세스·이후 subprocess PATH 맨 앞에 bin_dir."""
+    os.environ["PATH"] = f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+
+
+def run_setup(boj_cmd: Path, *, bin_dir: Path, shell_rc: Path | None, home: Path) -> int:
+    """boj setup 실행. 가능하면 zsh/bash로 rc를 source한 뒤 실행한다.
+
+    부모 셸의 PATH는 바꿀 수 없으나, setup 서브프로세스는 사용자 rc를 source한
+    환경에 가깝게 맞춘다. rc source 실패 시에도 PATH 선행으로 boj는 동작한다.
     """
+    prepend_path(bin_dir)
+    env = {**os.environ, "HOME": str(home)}
+    if shell_rc and shell_rc.is_file():
+        sh = _shell_exe_for_rc(shell_rc)
+        inner = (
+            f'export PATH="{bin_dir}:$PATH"; '
+            f'. "{shell_rc}" 2>/dev/null || true; '
+            f'export PATH="{bin_dir}:$PATH"; '
+            f'exec "{boj_cmd}" setup'
+        )
+        try:
+            return subprocess.run(
+                [sh, "-c", inner],
+                stdin=sys.stdin,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
+                env=env,
+            ).returncode
+        except OSError:
+            pass
     try:
-        result = subprocess.run(
+        return subprocess.run(
             [str(boj_cmd), "setup"],
             stdin=sys.stdin,
             stdout=sys.stdout,
             stderr=sys.stderr,
-        )
-        return result.returncode
+            env=env,
+        ).returncode
     except (FileNotFoundError, OSError):
         return 1
+
+
+def print_apply_path_hint(bin_dir: Path, shell_rc: Path | None) -> None:
+    """부모 터미널에 즉시 반영하는 방법 (export + source)."""
+    sh_name = "zsh"
+    if shell_rc and shell_rc.name in (".bashrc", ".bash_profile"):
+        sh_name = "bash"
+    elif shell_rc is None:
+        sh_name = "zsh" if "zsh" in os.environ.get("SHELL", "") else "bash"
+    print()
+    print("  이 터미널에서 바로 `boj` 쓰려면:")
+    print(f'    export PATH="{bin_dir}:$PATH"')
+    if shell_rc and shell_rc.is_file():
+        print(f"    source {shell_rc}   # {sh_name}, 영구 설정 반영")
 
 
 def main(argv: list[str] | None = None, *, script_path: Path | None = None) -> int:
@@ -272,27 +358,40 @@ def main(argv: list[str] | None = None, *, script_path: Path | None = None) -> i
     print(f"  → {config_dir}")
     print()
 
-    # 5. PATH 확인
+    # 5. PATH 확인 + rc 결정 (없으면 ~/.zshrc에 추가)
     print("[4/4] PATH 확인...")
+    shell_rc: Path | None = None
     if check_path(bin_dir):
         print("  PATH에 포함되어 있습니다.")
+        shell_rc = detect_shell_rc(home)
     else:
         shell_rc = detect_shell_rc(home)
-        print_path_advice(bin_dir, shell_rc)
+        if shell_rc is None:
+            shell_rc = home / ".zshrc"
+            shell_rc.touch(exist_ok=True)
+            print(f"  셸 설정 파일이 없어 {shell_rc.name} 을 만들었습니다.")
+        added = add_to_path(bin_dir, shell_rc)
+        if added:
+            print(f"  PATH 설정을 {shell_rc} 에 추가했습니다.")
+        else:
+            print(f"  {shell_rc.name} 에 PATH 선행 export 가 이미 있습니다.")
+        print(f"  setup 은 {shell_rc.name} 을 source 한 zsh/bash 서브프로세스에서 실행합니다.")
+    prepend_path(bin_dir)
+    print_apply_path_hint(bin_dir, shell_rc)
     print()
 
-    # 6. boj setup 실행
+    # 6. boj setup (PATH 반영 + 가능 시 source rc 후 실행)
     if not args.skip_setup:
-        print("boj setup을 실행합니다...")
+        print("boj setup을 실행합니다 (PATH 적용 · rc source 시도)...")
         print()
-        rc = run_setup(boj_cmd)
+        rc = run_setup(boj_cmd, bin_dir=bin_dir, shell_rc=shell_rc, home=home)
         if rc != 0:
             print()
             print("Warning: boj setup이 완료되지 않았습니다. 수동으로 실행하세요:")
-            print(f"  {boj_cmd} setup")
+            print(f'  export PATH="{bin_dir}:$PATH" && {boj_cmd} setup')
     else:
         print("설치 완료! 다음 명령어로 초기 설정을 진행하세요:")
-        print("  boj setup")
+        print(f'  export PATH="{bin_dir}:$PATH" && boj setup')
 
     print()
     return 0

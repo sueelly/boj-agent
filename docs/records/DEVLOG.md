@@ -14,6 +14,18 @@
 
 ---
 
+## [2026-03-13] feat(install,dispatcher): auto-add PATH and dispatch setup to Python [#57]
+**변경 요약:** `src/boj`의 setup 디스패치를 `setup.sh` → `boj_setup.py`(PYTHONPATH 설정 포함)로 교체; `install.py`에 `add_to_path()` 추가하여 터미널 재시작 없이 `boj` 전역 사용 가능; `setup_branches.sh` 테스트의 lang 키 `lang` → `prog_lang` 수정.
+**의사결정:** ARCHITECTURE.md Option C 전환 계획의 setup 단계 완료. `exec python3 "$SETUP_PY"` 방식으로 `setup.sh` 의존성 제거. PATH 자동 추가는 rc 파일이 있으면 직접 쓰고, 없으면 안내만 출력.
+**검증 방법:** `python3 -m pytest tests/unit/test_install.py` 37개 통과; `bash tests/unit/commands/setup_*.sh` 전체 통과.
+---
+
+## [2026-03-13] docs(test): update test-strategy and setup coverage for Python implementation [#57]
+**변경 요약:** `test-strategy.md` §1·§11·§12 실제 구현 구조 반영 (`tests/characterization/` → `tests/unit/test_*.py`); `test-coverage/setup.md` Bash ST1-ST6 → Python S1-S15 분기 매트릭스로 전면 재작성.
+**의사결정:** 이전 세션에서 `tests/characterization/`를 계획했으나 실제 구현은 `tests/unit/test_*.py`에 직접 추가됨 — 문서가 구현과 일치하도록 정정.
+**검증 방법:** 문서와 `tests/unit/test_setup.py` 테스트 클래스명 대조 확인.
+---
+
 ## [2026-03-12] fix(make): require agent after ensure_setup, remove skip branches [#54]
 **변경 요약:** COMMAND-SPEC(에이전트 필수, fallback 없음)에 맞춰 ensure_setup() 직후 에이전트 미설정 시 Error 후 exit 1. spec/skeleton 단계의 "에이전트 미설정 — 건너뜀" else 분기 제거하여 파이프라인이 항상 Step 2·3를 실행하도록 함.
 **의사결정:** setup 완료 시점에 에이전트가 반드시 있다는 계약을 코드로 강제. agent_cmd는 진입 시 한 번만 조회하고, 비어 있으면 즉시 종료.

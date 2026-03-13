@@ -66,11 +66,11 @@ if [[ "$SUBCOMMAND" == "setup" ]]; then
   ROOT=""
   ROOT="$(find_boj_root 2>/dev/null)" || ROOT="${BOJ_ROOT:-$(pwd)}"
   shift
-  SETUP_SCRIPT="$ROOT/src/commands/setup.sh"
-  if [[ -x "$SETUP_SCRIPT" ]]; then
-    exec "$SETUP_SCRIPT" "$ROOT" "$@"
+  SETUP_PY="$ROOT/src/cli/boj_setup.py"
+  if [[ -f "$SETUP_PY" ]]; then
+    PYTHONPATH="$ROOT" exec python3 "$SETUP_PY" "$@"
   else
-    echo "Error: setup.sh를 찾을 수 없습니다: $SETUP_SCRIPT" >&2
+    echo "Error: boj_setup.py를 찾을 수 없습니다: $SETUP_PY" >&2
     exit 1
   fi
 fi
