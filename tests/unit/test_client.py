@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""boj_client.py HTTP fetch / login 테스트
+"""src.core.client HTTP fetch / login 테스트
 
 실제 HTTP 연결을 사용:
   A) 로컬 Python HTTP 서버 — 네트워크 불필요, Cookie/403/404/bypass/login 검증
@@ -8,18 +8,13 @@
 
 import http.server
 import os
-import sys
 import tempfile
 import threading
 import unittest
 from pathlib import Path
 from urllib.parse import parse_qs
 
-# src/lib를 임포트 경로에 추가
-_SRC_LIB = Path(__file__).resolve().parent.parent.parent / "src" / "lib"
-sys.path.insert(0, str(_SRC_LIB))
-
-import boj_client  # noqa: E402
+from src.core import client
 
 
 # ── 로컬 HTTP 서버 헬퍼 ──────────────────────────────────────────────────────
@@ -123,7 +118,7 @@ class TestFetchWithLocalServer(unittest.TestCase):
                 os.environ["BOJ_BASE_URL_OVERRIDE"] = f"http://127.0.0.1:{port}"
                 os.environ["BOJ_CONFIG_DIR"] = cfg_dir
                 try:
-                    boj_client._fetch_html("1000")
+                    client.fetch_html("1000")
                 finally:
                     os.environ.pop("BOJ_BASE_URL_OVERRIDE", None)
                     os.environ.pop("BOJ_CONFIG_DIR", None)
@@ -147,7 +142,7 @@ class TestFetchWithLocalServer(unittest.TestCase):
                 os.environ["BOJ_BASE_URL_OVERRIDE"] = f"http://127.0.0.1:{port}"
                 os.environ["BOJ_CONFIG_DIR"] = cfg_dir
                 try:
-                    boj_client._fetch_html("1000")
+                    client.fetch_html("1000")
                 finally:
                     os.environ.pop("BOJ_BASE_URL_OVERRIDE", None)
                     os.environ.pop("BOJ_CONFIG_DIR", None)
@@ -159,39 +154,41 @@ class TestFetchWithLocalServer(unittest.TestCase):
         self.assertNotIn("OnlineJudge", cookie,
                          f"세션 없는데 Cookie 헤더가 전송됨: {cookie!r}")
 
-    def test_403_exits_with_error(self):
-        """서버가 403을 반환하면 exit(1)해야 한다."""
+    def test_403_raises_fetch_error(self):
+        """서버가 403을 반환하면 FetchError를 raise해야 한다."""
+        from src.core.exceptions import FetchError
         server, port = _start_server(_make_handler(403))
         with tempfile.TemporaryDirectory() as cfg_dir:
             os.environ["BOJ_BASE_URL_OVERRIDE"] = f"http://127.0.0.1:{port}"
             os.environ["BOJ_CONFIG_DIR"] = cfg_dir
             try:
-                with self.assertRaises(SystemExit) as cm:
-                    boj_client._fetch_html("1000")
+                with self.assertRaises(FetchError) as cm:
+                    client.fetch_html("1000")
             finally:
                 _stop_server(server)
                 os.environ.pop("BOJ_BASE_URL_OVERRIDE", None)
                 os.environ.pop("BOJ_CONFIG_DIR", None)
 
-        self.assertEqual(cm.exception.code, 1, "403 응답 시 exit(1)이 아님")
+        self.assertIn("403", str(cm.exception))
 
-    def test_404_exits_with_error(self):
-        """서버가 404를 반환하면 exit(1)해야 한다."""
+    def test_404_raises_fetch_error(self):
+        """서버가 404를 반환하면 FetchError를 raise해야 한다."""
+        from src.core.exceptions import FetchError
         server, port = _start_server(_make_handler(404))
         with tempfile.TemporaryDirectory() as cfg_dir:
             os.environ["BOJ_BASE_URL_OVERRIDE"] = f"http://127.0.0.1:{port}"
             os.environ["BOJ_CONFIG_DIR"] = cfg_dir
             try:
-                with self.assertRaises(SystemExit) as cm:
-                    boj_client._fetch_html("99999")
+                with self.assertRaises(FetchError) as cm:
+                    client.fetch_html("99999")
             finally:
                 _stop_server(server)
                 os.environ.pop("BOJ_BASE_URL_OVERRIDE", None)
                 os.environ.pop("BOJ_CONFIG_DIR", None)
 
-        self.assertEqual(cm.exception.code, 1, "404 응답 시 exit(1)이 아님")
+        self.assertIn("99999", str(cm.exception))
 
-    def test_boj_client_test_html_bypasses_http(self):
+    def test_client_test_html_bypasses_http(self):
         """BOJ_CLIENT_TEST_HTML 설정 시 HTTP 호출 없이 로컬 파일을 읽어야 한다."""
         with tempfile.NamedTemporaryFile(
             suffix=".html", mode="w", delete=False, encoding="utf-8"
@@ -202,7 +199,7 @@ class TestFetchWithLocalServer(unittest.TestCase):
         # HTTP 서버 없이도 성공해야 한다 (서버를 시작하지 않음)
         os.environ["BOJ_CLIENT_TEST_HTML"] = html_path
         try:
-            result = boj_client._fetch_html("1000")
+            result = client.fetch_html("1000")
         finally:
             os.environ.pop("BOJ_CLIENT_TEST_HTML", None)
             Path(html_path).unlink(missing_ok=True)
@@ -221,7 +218,7 @@ class TestLoginWithLocalServer(unittest.TestCase):
         try:
             os.environ["BOJ_LOGIN_URL_OVERRIDE"] = f"http://127.0.0.1:{port}/signin"
             try:
-                result = boj_client.boj_login("testuser", "testpass")
+                result = client.boj_login("testuser", "testpass")
             finally:
                 os.environ.pop("BOJ_LOGIN_URL_OVERRIDE", None)
         finally:
@@ -237,7 +234,7 @@ class TestLoginWithLocalServer(unittest.TestCase):
             os.environ["BOJ_LOGIN_URL_OVERRIDE"] = f"http://127.0.0.1:{port}/signin"
             try:
                 with self.assertRaises(ValueError):
-                    boj_client.boj_login("wronguser", "wrongpass")
+                    client.boj_login("wronguser", "wrongpass")
             finally:
                 os.environ.pop("BOJ_LOGIN_URL_OVERRIDE", None)
         finally:
@@ -257,7 +254,7 @@ class TestFetchLiveBOJ(unittest.TestCase):
             password = os.environ.get("BOJ_PASSWORD", "")
             if username and password:
                 try:
-                    cls.session = boj_client.boj_login(username, password)
+                    cls.session = client.boj_login(username, password)
                 except Exception as e:
                     raise AssertionError(
                         f"BOJ 자동 로그인 실패: {e}\n"
@@ -277,11 +274,11 @@ class TestFetchLiveBOJ(unittest.TestCase):
             Path(cfg_dir, "session").write_text(self.session, encoding="utf-8")
             os.environ["BOJ_CONFIG_DIR"] = cfg_dir
             try:
-                html = boj_client._fetch_html("1000")
+                html = client.fetch_html("1000")
             finally:
                 os.environ.pop("BOJ_CONFIG_DIR", None)
 
-        problem = boj_client.parse_problem(html, "1000")
+        problem = client.parse_problem(html, "1000")
         self.assertEqual(problem["problem_num"], "1000")
         self.assertIn("A+B", problem["title"],
                       f"문제 1000 제목에 'A+B'가 없습니다: {problem['title']!r}")

@@ -299,7 +299,7 @@ class TestCheckConfig:
         captured = capsys.readouterr()
         assert "prog_lang" in captured.out
         assert "editor" in captured.out
-        assert "solution_root" in captured.out or "boj_solution_root" in captured.out
+        assert "solution_root" in captured.out
 
     def test_check_config_shows_missing_indicator(self, config_env, capsys):
         """CF20: 미설정 키에 대해 missing 표시를 한다."""
@@ -312,7 +312,7 @@ class TestCheckConfig:
     def test_check_config_shows_ok_when_root_paths_exist(self, config_env, tmp_path, capsys):
         """CF10/CF11, S7: solution_root/agent_root가 존재하면 ✓ 로 표시한다 (경로검증 존재)."""
         existing_dir = str(tmp_path)
-        config_set("boj_solution_root", existing_dir)
+        config_set("solution_root", existing_dir)
         config_set("boj_agent_root", existing_dir)
 
         check_config()
@@ -326,7 +326,7 @@ class TestCheckConfig:
 
     def test_check_config_shows_invalid_path_as_broken(self, config_env, capsys):
         """S7, CF10/CF11: 설정된 경로가 존재하지 않으면 '깨져 있습니다'로 구분한다."""
-        config_set("boj_solution_root", "/nonexistent/solution/path")
+        config_set("solution_root", "/nonexistent/solution/path")
         config_set("boj_agent_root", "/nonexistent/agent/path")
 
         check_config()
@@ -382,7 +382,7 @@ class TestDefaults:
     def test_defaults_has_required_keys(self):
         """DEFAULTS에 모든 config key가 정의되어 있다."""
         required = {"prog_lang", "editor", "agent", "username",
-                     "boj_solution_root", "boj_agent_root"}
+                     "solution_root", "boj_agent_root"}
         assert required.issubset(set(DEFAULTS.keys()))
 
     def test_default_lang_is_java(self):

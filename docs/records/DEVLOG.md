@@ -14,6 +14,34 @@
 
 ---
 
+## [2026-03-12] fix(make): require agent after ensure_setup, remove skip branches [#54]
+**변경 요약:** COMMAND-SPEC(에이전트 필수, fallback 없음)에 맞춰 ensure_setup() 직후 에이전트 미설정 시 Error 후 exit 1. spec/skeleton 단계의 "에이전트 미설정 — 건너뜀" else 분기 제거하여 파이프라인이 항상 Step 2·3를 실행하도록 함.
+**의사결정:** setup 완료 시점에 에이전트가 반드시 있다는 계약을 코드로 강제. agent_cmd는 진입 시 한 번만 조회하고, 비어 있으면 즉시 종료.
+**검증 방법:** 에이전트 미설정 상태에서 `boj make 1000` → "에이전트가 설정되지 않았습니다" 메시지 및 exit 1.
+
+---
+
+## [2026-03-12] fix(make): add Step 3 (skeleton) and Step 4 (open) to pipeline [#54]
+**변경 요약:** boj make가 Step 2(spec) 다음에 Step 5(cleanup)만 호출하던 문제 수정. Step 3 `generate_skeleton()`(run_agent make-skeleton), Step 4 `open_editor()` 호출 추가. 진행 메시지를 [1/6]~[6/6]으로 통일.
+**의사결정:** `generate_skeleton`은 `run_agent(..., "make-skeleton")`으로 구현(에이전트가 Solution/Parse 생성). `open_editor(problem_dir, editor_cmd)`를 make.py에 추가해 설정된 editor로 폴더 오픈. --no-open이거나 editor 미설정 시 Step 4 스킵.
+**검증 방법:** `python3 -m pytest tests/unit/test_make.py -v` 및 기존 통합 테스트. 수동: `boj make <N>` 후 Solution/Parse 생성 및 에디터 오픈 여부 확인.
+
+---
+
+## [2026-03-12] fix(make): respect solution_root in fetch_problem [#54]
+**변경 요약:** `base_dir`을 계산만 하고 쓰지 않던 버그 수정. `fetch_problem()`에 `base_dir` 인자 추가하고 CLI에서 `solution_root` 설정값을 전달해 문제 폴더가 설정된 solution root 아래 생성되도록 함. config 키 `solution_root`/`prog_lang`으로 통일.
+**의사결정:** core/make.py에 `base_dir` 파라미터 추가(기본 None → cwd). CLI는 `solution_root` 키를 사용하고, config 모듈에서 예전 `boj_solution_root` 파일명을 하위호환으로 처리.
+**검증 방법:** 기존 단위/통합 테스트는 `problem_dir`를 명시해 호출하므로 회귀 없음. `solution_root` 설정 시 해당 경로 아래에 문제 폴더 생성되는지 수동 확인.
+
+---
+
+## [2026-03-12] feat(make): fetch_problem, generate_readme 구현 + 모듈 정규화 [#54]
+**변경 요약:** `src/core/make.py`에 `fetch_problem`, `generate_readme`, `run_setup`, `run_agent` 구현. `src/core/client.py` (이미지 처리 포함), `src/core/normalizer.py` 독립 모듈 생성. `src/cli/boj_make.py` CLI 래퍼 생성. 라이브 테스트 4개 문제 (1516, 16957, 10799, 10951) + 이미지 다운로드 검증.
+**의사결정:** `src/lib/` 레거시는 그대로 두고 `src/core/`에 로직을 직접 복사 (re-export 없음). BOJ 403 방지를 위해 브라우저 수준 User-Agent + Accept 헤더 추가. `--run-live` / `--run-agent` conftest 마커로 네트워크/에이전트 테스트 격리.
+**검증 방법:** `python3 -m pytest tests/unit/ -v` → 181 passed, 1 skipped. `python3 -m pytest tests/integration/test_make_py.py -v` → 7 passed. `python3 -m pytest tests/integration/test_live_fetch.py -v --run-live` → 22 passed.
+
+---
+
 ## [2026-03-12] feat(install): Python 설치 스크립트 구현 [#47]
 **변경 요약:** `scripts/install.py` 신규 생성. clone → `python3 scripts/install.py`로 설치 완료. `src/setup-boj-cli.sh` deprecated 처리.
 **의사결정:** standalone 스크립트로 구현 (내부 모듈 import 없음). 이유: 설치 시점에 모듈 경로 미확정. 순수 함수 + 명시적 path 파라미터로 테스트 용이성 확보. `~/.config/boj/root` 하위호환 유지.

@@ -125,7 +125,7 @@ def run_set_mode(args: argparse.Namespace) -> int:
             )
             return 1
         try:
-            config_set("boj_solution_root", args.root)
+            config_set("solution_root", args.root)
             print(f"{GREEN}✓ root 저장됨: {args.root}{NC}")
         except (PermissionError, OSError) as e:
             print(f"{RED}Error: 설정 저장 실패 — {e}{NC}", file=sys.stderr)
@@ -192,7 +192,7 @@ def step_root(prompter: Callable[[str], str]) -> str:
     """
     print(f"\n{YELLOW}[1/6] 레포 루트 경로 (BOJ_SOLUTION_ROOT){NC}")
 
-    current = config_get("boj_solution_root", "")
+    current = config_get("solution_root", "")
     if current and validate_path(current):
         print(f"  현재: {current}")
         change = prompter(f"  변경하시겠습니까? (y/N): ")
@@ -221,7 +221,7 @@ def step_root(prompter: Callable[[str], str]) -> str:
 
         confirm = prompter(f"  '{path}'(으)로 설정하시겠습니까? (y/N): ")
         if confirm.strip().lower().startswith("y"):
-            config_set("boj_solution_root", path)
+            config_set("solution_root", path)
             print(f"  {GREEN}✓ 저장: {path}{NC}")
             return path
 

@@ -22,7 +22,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-IGNORE_PATTERNS = shutil.ignore_patterns(".git", "__pycache__", ".claude")
+IGNORE_PATTERNS = shutil.ignore_patterns(".git", "__pycache__", ".claude", ".venv")
 
 
 def resolve_repo_root(script_path: Path | None = None) -> Path:

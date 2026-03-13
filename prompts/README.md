@@ -11,15 +11,17 @@
 
 | 파일 | 사용처 | 용도 |
 |------|--------|------|
-| **make-skeleton.md** | `src/commands/make.sh` | problem.json 기반 스켈레톤(Solution, Parse, test_cases.json) 생성 + 서명 리뷰 루프 |
-| **review.md** | `src/commands/review.sh` | Solution 분석 → submit/REVIEW.md 생성 (내 코드 분석, 대표 풀이, 다음 단계) |
+| **make-spec.md** | `boj make` Step 2 | README + problem.json → problem.spec.json 생성. 에이전트 실행 시 전달되며 `reference/spec/` 참조. |
+| **make-skeleton.md** | `boj make` Step 3, `src/commands/make.sh` | problem.spec.json 기반 Solution·Parse·test_cases.json 생성. |
+| **make-parse-and-tests.md** | (미사용) | **[deprecated]** make 파이프라인에서 사용하지 않음. Parse·테스트 생성은 make-skeleton으로 통합됨. 참고용으로만 유지. |
+| **review.md** | `src/commands/review.sh` | Solution 분석 → submit/REVIEW.md 생성 (내 코드 분석, 대표 풀이, 다음 단계). |
 
 ## 사용 방법
 
-- **CLI(boj)**: `boj make 4949` 시 make.sh가 problem.json을 가져오고 README.md를 생성한 뒤, make-skeleton.md에 변수를 치환하여 에이전트에 전달. `boj review 4949` 시 review.md를 에이전트에 전달.
+- **CLI(boj)**: `boj make <문제번호>` 시 Step 2에서 make-spec.md, Step 3에서 make-skeleton.md가 에이전트에 전달됨. `boj review <문제번호>` 시 review.md를 에이전트에 전달.
 - **수동**: 사용 중인 에이전트의 시스템 프롬프트에 해당 md 내용을 붙여넣어 사용.
 
 ## 규칙
 
 - 지시문은 **플랫폼 중립**으로 작성 (특정 에이전트 이름 회피).
-- make-skeleton / review 역할이 섞이지 않도록 파일별로 유지.
+- make-spec / make-skeleton / review 역할이 섞이지 않도록 파일별로 유지.

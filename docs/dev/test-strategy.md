@@ -111,12 +111,14 @@ BOJ HTML 구조가 바뀌면 새 픽스처를 추가하고, 기존 것은 회귀
 | 격리 수준 | 대상 커맨드 | BOJ fetch | Agent | Marker |
 |-----------|------------|-----------|-------|--------|
 | **full** | run, commit, open, setup, submit | 우회 | 모킹 (`echo MOCK`) | 없음 |
-| **agent** | make, review | 우회 | **실제 실행** (`BOJ_AGENT_CMD` 필요) | `@pytest.mark.agent` |
+| **unit** | make (core/make.py 단위) | 우회 | 모킹 (`unittest.mock`) | 없음 |
+| **agent** | make (통합), review | 우회 | **실제 실행** (`BOJ_AGENT_CMD` 필요) | `@pytest.mark.agent` |
 
 - **full 격리**: `BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 우회. 폴더 구조, JSON 생성, exit code 등 구조적 동작만 검증.
-- **agent 격리**: `BOJ_AGENT_CMD`를 설정하지 않아 실제 에이전트가 실행됨. signature_review.md 생성, 코드 리뷰 피드백 등 에이전트 동작을 검증.
+- **unit 격리**: `core/make.py`의 각 함수를 독립 테스트. 에이전트 호출은 `unittest.mock.patch`로 모킹.
+- **agent 격리**: `BOJ_AGENT_CMD`를 설정하지 않아 실제 에이전트가 실행됨. spec 생성, Solution/Parse 생성 등 에이전트 동작을 검증.
 - `@pytest.mark.agent` 테스트는 CI에서 기본 제외 (credential + 비용). 로컬 `/verify` 단계에서만 실행.
-- `BOJ_AGENT_CMD`는 setup 커맨드에서 설정하며, 미설정 시 기본값을 사용한다.
+- `BOJ_AGENT_CMD`는 setup 커맨드에서 반드시 설정됨 (에이전트 필수).
 
 ### 3.2 conftest.py 공통 fixture
 
@@ -265,7 +267,7 @@ def test_creates_readme_when_valid_problem(boj_env, fixture_path):
 
 | 커맨드 | Happy Path | Error Path | Edge Case | 참조 |
 |--------|-----------|-----------|-----------|------|
-| `make` | 문제 폴더·JSON·README 생성 | 404, 네트워크 실패, 잘못된 언어 | 기존 폴더 덮어쓰기, 에이전트 미설정 | M1-M12 |
+| `make` | 문제 폴더·JSON·README·spec 생성 | 404, 네트워크 실패, 잘못된 언어, spec 실패 | setup_done 체크, -f 덮어쓰기, --keep-artifacts | M1-M13 |
 | `run` | Java 2/2 통과, Python 2/2 통과 | 폴더·솔루션·테스트 없음, 컴파일 오류 | id 없는 케이스 자동 보완, 부분 통과 | R1-R12 |
 | `commit` | 커밋 생성 | git 아님, 폴더 없음, email 미설정 | 변경사항 없음, --no-stats | CT1-CT9 |
 | `submit` | Submit.java 생성 + 컴파일 | 솔루션 없음, 미지원 언어 | Parse 없는 경우, --force | SB1-SB10 |
@@ -465,46 +467,104 @@ markers = [
 
 ### 10.1 boj make
 
-make는 두 가지 테스트 전략을 사용한다:
+make는 **단위 테스트 (core/make.py)** + **에이전트 통합 테스트** 두 계층으로 검증한다.
 
-#### A. 모킹 테스트 (fast, CI용)
+> **에이전트 필수**: setup에서 에이전트가 반드시 설정되므로 에이전트 미설정 fallback 테스트 없음.
 
-`BOJ_AGENT_CMD=echo MOCK`으로 에이전트를 우회. 폴더 구조, JSON 생성, README 생성 등 구조적 동작만 검증한다.
+#### A. 단위 테스트 (core/make.py — fast, CI용)
+
+각 함수를 독립적으로 테스트. 에이전트 호출은 mock 처리.
 
 ```python
-def test_make_creates_structure(boj_env, fixture_path):
-    """make 실행 시 폴더·JSON·README가 생성된다."""
-    tmp_path, env = boj_env
-    env["BOJ_CLIENT_TEST_HTML"] = str(fixture_path(99999) / "raw.html")
-    env["BOJ_AGENT_CMD"] = "echo MOCK"
+def test_ensure_setup_runs_setup_when_no_flag(config_env):
+    """setup_done 플래그 없으면 boj setup을 실행한다."""
+    assert not is_setup_done()
+    with patch("src.core.make.run_setup") as mock:
+        ensure_setup()
+        mock.assert_called_once()
 
-    result = run_boj(env, "make", "99999", "--no-open")
 
-    assert result.returncode == 0
-    prob_dir = next(tmp_path.glob("99999*"))
-    assert (prob_dir / "artifacts" / "problem.json").exists()
-    assert (prob_dir / "README.md").exists()
+def test_ensure_setup_skips_when_flag_exists(config_env):
+    """setup_done 플래그 있으면 setup을 실행하지 않는다."""
+    mark_setup_done()
+    with patch("src.core.make.run_setup") as mock:
+        ensure_setup()
+        mock.assert_not_called()
+
+
+def test_check_existing_raises_when_dir_exists_without_force(tmp_path):
+    """폴더 존재 + -f 없으면 SystemExit(1)."""
+    prob_dir = tmp_path / "99999-test"
+    prob_dir.mkdir()
+    with pytest.raises(SystemExit):
+        check_existing(prob_dir, force=False)
+
+
+def test_check_existing_allows_when_force(tmp_path):
+    """폴더 존재 + -f 있으면 정상 진행."""
+    prob_dir = tmp_path / "99999-test"
+    prob_dir.mkdir()
+    check_existing(prob_dir, force=True)  # 예외 없음
+
+
+def test_generate_spec_raises_when_spec_missing(tmp_path):
+    """에이전트 실행 후 spec 파일이 없으면 에러."""
+    prob_dir = tmp_path / "99999-test"
+    prob_dir.mkdir()
+    (prob_dir / "artifacts").mkdir()
+    with patch("src.core.make.run_agent") as mock:
+        mock.return_value = 0  # 에이전트 성공했지만 파일 미생성
+        with pytest.raises(SystemExit):
+            generate_spec(prob_dir, "echo MOCK")
+
+
+def test_cleanup_artifacts_removes_json_keeps_images(tmp_path):
+    """cleanup은 JSON만 삭제하고 이미지는 유지한다."""
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    (artifacts / "problem.json").write_text("{}")
+    (artifacts / "problem.spec.json").write_text("{}")
+    (artifacts / "image.png").write_bytes(b"PNG")
+
+    cleanup_artifacts(tmp_path, keep=False)
+
+    assert not (artifacts / "problem.json").exists()
+    assert not (artifacts / "problem.spec.json").exists()
+    assert (artifacts / "image.png").exists()
+
+
+def test_cleanup_artifacts_keeps_all_when_flag(tmp_path):
+    """--keep-artifacts 시 모든 파일 유지."""
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    (artifacts / "problem.json").write_text("{}")
+    (artifacts / "problem.spec.json").write_text("{}")
+
+    cleanup_artifacts(tmp_path, keep=True)
+
+    assert (artifacts / "problem.json").exists()
+    assert (artifacts / "problem.spec.json").exists()
 ```
 
-#### B. 에이전트 테스트 (`@pytest.mark.agent`)
+#### B. 에이전트 통합 테스트 (`@pytest.mark.agent`)
 
-실제 에이전트가 실행되어 signature_review.md 생성, 점수 PASS 확인, 기준 미달 시 재생성 루프를 검증한다.
+실제 에이전트가 실행되어 spec + Solution + Parse가 정상 생성되는지 검증한다.
 
 ```python
 @pytest.mark.agent
-def test_make_generates_signature_review(boj_env, fixture_path):
-    """make 실행 후 signature_review.md가 생성되고 PASS 판정이다."""
+def test_make_generates_spec_and_skeleton(boj_env, fixture_path):
+    """make 실행 후 problem.spec.json, Solution.java, Parse.java가 생성된다."""
     tmp_path, env = boj_env
     env["BOJ_CLIENT_TEST_HTML"] = str(fixture_path(99999) / "raw.html")
-    # BOJ_AGENT_CMD를 설정하지 않아 실제 에이전트 실행
 
-    result = run_boj(env, "make", "99999", "--no-open")
+    result = run_boj(env, "make", "99999", "--no-open", "--keep-artifacts")
 
     assert result.returncode == 0
     prob_dir = next(tmp_path.glob("99999*"))
-    review = prob_dir / "artifacts" / "signature_review.md"
-    assert review.exists(), "signature_review.md 미생성"
-    assert "PASS" in review.read_text(), "signature_review.md에서 PASS 판정 없음"
+    assert (prob_dir / "artifacts" / "problem.spec.json").exists()
+    assert (prob_dir / "Solution.java").exists()
+    assert (prob_dir / "test" / "Parse.java").exists()
+    assert (prob_dir / "test" / "test_cases.json").exists()
 ```
 
 ### 10.2 boj run
@@ -872,7 +932,7 @@ def make_prompter(responses: list[str]):
 ```python
 def test_s2_asks_only_missing_when_partial_config(config_env, tmp_path, monkeypatch, capsys):
     """S2: 부분 설정 → 기존 값 유지, 누락 항목만 물어봄."""
-    config_set("boj_solution_root", str(tmp_path))
+    config_set("solution_root", str(tmp_path))
     config_set("prog_lang", "java")
     # root와 lang은 N(유지), 나머지 입력
     responses = ["N", "N", "없음", "1", "user1", "code"]
@@ -881,7 +941,7 @@ def test_s2_asks_only_missing_when_partial_config(config_env, tmp_path, monkeypa
          patch("src.cli.boj_setup.set_git_config"):
         exit_code = main([], prompter=prompter)
     assert exit_code == 0
-    assert config_get("boj_solution_root", "") == str(tmp_path)
+    assert config_get("solution_root", "") == str(tmp_path)
 
 
 def test_keyboard_interrupt_exits_gracefully(config_env):
@@ -933,5 +993,45 @@ python3 tests/run_tests.py --e2e      # E2E 테스트만
 - name: Run all tests
   run: python3 tests/run_tests.py
 ```
+
+## 16. client (`tests/unit/test_client.py`)
+
+| # | 테스트 | 커버리지 |
+|---|--------|----------|
+| 1 | 세션 파일 있어도 Cookie 미전송 | CL1 |
+| 2 | 세션 없으면 Cookie 미전송 | CL1 |
+| 3 | 403 → exit(1) | CL3 |
+| 4 | 404 → exit(1) | CL2 |
+| 5 | BOJ_CLIENT_TEST_HTML bypass | CL5 |
+| 6 | 로그인 성공 → 쿠키 반환 | - |
+| 7 | 로그인 실패 → ValueError | - |
+
+## 17. normalizer (`tests/unit/test_normalizer.py`)
+
+| # | 테스트 | 커버리지 |
+|---|--------|----------|
+| 1 | fixture 스냅샷 비교 (4개) | NR1 |
+| 2 | 제목/번호/링크/샘플/제한 포함 (4×5) | NR1 |
+| 3 | 빈 samples | NR2 |
+| 4 | 선택 필드 없음 | NR3 |
+| 5 | HTML 엔티티 보존 | NR5 |
+| 6 | 이미지 태그 보존 | NR4 |
+
+## 18. 라이브 테스트 (`tests/integration/test_live_fetch.py`)
+
+`--run-live` 옵션으로 활성화. 실제 BOJ 서버에 연결하여 검증.
+
+| # | 테스트 | 대상 문제 |
+|---|--------|-----------|
+| 1 | problem.json 필수 필드 검증 | 1516, 16957, 10799, 10951 |
+| 2 | README에 제목 포함 | 1516, 16957, 10799, 10951 |
+| 3 | README에 문제 설명 포함 | 1516, 16957, 10799, 10951 |
+| 4 | README에 예제 입출력 포함 | 1516, 16957, 10799, 10951 |
+| 5 | 이미지 추출 (10799) | 10799 |
+| 6 | 이미지 다운로드 + 저장 | 10799 |
+| 7 | 이미지 매직바이트 검증 | 10799 |
+| 8 | URL → 로컬 경로 치환 | 10799 |
+| 9 | reference 모드 원본 유지 | 10799 |
+| 10 | skip 모드 img 태그 제거 | 10799 |
 
 *최종 업데이트: 2026-03-12*

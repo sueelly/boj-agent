@@ -96,7 +96,7 @@ class TestSetRoot:
         valid_dir.mkdir()
         result = run_setup(["--root", str(valid_dir)], config_dir)
         assert result.returncode == 0
-        assert (config_dir / "boj_solution_root").read_text().strip() == str(valid_dir)
+        assert (config_dir / "solution_root").read_text().strip() == str(valid_dir)
 
     def test_ip5_invalid_root_exits_nonzero(self, config_dir):
         """IP5: --root <존재하지 않는 경로> → exit != 0."""

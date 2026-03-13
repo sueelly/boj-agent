@@ -11,10 +11,10 @@
 | # | 카테고리 | 케이스 | 기대 동작 | 자동복구 | 중단 |
 |---|---------|--------|-----------|---------|------|
 | C1 | config | `setup_done` 플래그 없음 | "설정이 완료되지 않았습니다. `boj setup`을 진행합니다." → setup 실행 | 아니오 | 예 |
-| C2 | config | `boj_solution_root` 경로가 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
+| C2 | config | `solution_root` 경로가 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
 | C3 | config | `boj_agent_root` 경로가 존재하지 않음 | "agent_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
 | C4 | git | git repo 아닌 디렉터리에서 실행 | git 관련 명령(commit) 시 `Error: git 저장소가 아닙니다.` | 아니오 | 예 (commit만) |
-| C5 | 파일시스템 | `boj_solution_root` 에 읽기 권한 없음 | `Error: 레포에 접근할 수 없습니다 (권한 부족).` | 아니오 | 예 |
+| C5 | 파일시스템 | `solution_root` 에 읽기 권한 없음 | `Error: 레포에 접근할 수 없습니다 (권한 부족).` | 아니오 | 예 |
 
 ---
 
@@ -46,16 +46,18 @@
 |---|---------|--------|-----------|---------|------|
 | M1 | 문제데이터 | 문제 번호가 존재하지 않음 (BOJ 404) | `Error: 문제 번호 99999를 찾을 수 없습니다. (HTTP 404)` | 아니오 | 예 |
 | M2 | 네트워크 | 네트워크 없음 (BOJ 접근 불가) | `Error: BOJ에 연결할 수 없습니다. 네트워크를 확인하세요.` | 아니오 | 예 |
-| M3 | 파일시스템 | 문제 폴더 이미 존재 | `Warning: '4949-괄호의-값' 폴더가 이미 있습니다. 덮어쓰시겠습니까? (y/N)` | 사용자 확인 | 사용자 선택 |
-| M4 | 파일시스템 | `boj_solution_root` 쓰기 권한 없음 | `Error: 문제 폴더를 생성할 수 없습니다 (권한 없음).` | 아니오 | 예 |
+| M3 | 파일시스템 | 문제 폴더 이미 존재 (`-f` 없음) | `Error: '4949-괄호의-값' 폴더가 이미 존재합니다. 덮어쓰려면 -f 옵션을 사용하세요.` | 아니오 | 예 |
+| M3a | 파일시스템 | 문제 폴더 이미 존재 (`-f` 있음) | 기존 폴더 덮어쓰기 후 정상 진행 | 예 | 아니오 |
+| M4 | 파일시스템 | `solution_root` 쓰기 권한 없음 | `Error: 문제 폴더를 생성할 수 없습니다 (권한 없음).` | 아니오 | 예 |
 | M5 | 문제데이터 | 문제 본문에 이미지 있음 (`--image-mode reference`) | 이미지를 원본 URL 참조로 README에 포함 | N/A | 아니오 |
 | M6 | 문제데이터 | 이미지 다운로드 실패 (`--image-mode download`) | `Warning: 이미지 다운로드 실패 (URL). reference 모드로 대체.` | reference로 대체 | 아니오 |
 | M7 | 문제데이터 | 이미지 URL이 외부 도메인 | reference 모드: 원본 URL 사용. download 모드: 시도 후 실패 시 경고 | 경고 후 계속 | 아니오 |
-| M8 | 템플릿 | 요청 언어 템플릿 없음 (`--lang rust`) | `Error: 'rust' 템플릿이 없습니다. 지원 언어: java python cpp c` | 아니오 | 예 |
-| M9 | config | 에이전트 설정 없음 (BOJ_AGENT_CMD 없음) | 에디터 열기 + 클립보드 복사 fallback | 예 | 아니오 |
+| M8 | 템플릿 | 요청 언어 템플릿 없음 (`--lang rust`) | `Error: 'rust' 템플릿이 없습니다. 지원 언어: java python` | 아니오 | 예 |
+| M9 | config | `setup_done` 플래그 없음 | "설정이 필요합니다" 안내 후 `boj setup` 자동 실행 → setup 완료 후 make 진행 | 예 | 아니오 |
 | M10 | 문제데이터 | 에이전트 timeout/오류 | `Error: 에이전트 실행 실패. 수동으로 진행하세요.` + URL 출력 | 아니오 | 예 |
 | M11 | 문제데이터 | 생성 후 자체검증: README ↔ 문제 불일치 | `Warning: README 내용이 문제와 다를 수 있습니다. 확인하세요.` | 아니오 | 아니오 |
-| M12 | 파일시스템 | `--output` 경로가 존재하지 않음 | `Error: 출력 경로가 존재하지 않습니다: /invalid/path` | 아니오 | 예 |
+| M12 | spec | `problem.spec.json` 생성 실패 (파일 없음 / JSON 파싱 에러) | `Error: spec 생성에 실패했습니다. boj make <N> -f 로 재시도하세요.` | 아니오 | 예 |
+| M13 | 파일시스템 | `--keep-artifacts` 사용 | `artifacts/problem.json`, `problem.spec.json` 삭제하지 않고 유지 | N/A | 아니오 |
 
 ---
 
@@ -147,7 +149,7 @@
 | CF8 | setup_done | `~/.config/boj/setup_done` 파일 존재 | 설정 완료로 판단 | N/A | 아니오 |
 | CF9 | setup_done | `~/.config/boj/setup_done` 파일 없음 | "설정이 완료되지 않았습니다. `boj setup`을 진행합니다." 안내 | 아니오 | 예 |
 | CF10 | 경로검증 | `boj_agent_root` 경로 존재하지 않음 | "agent_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
-| CF11 | 경로검증 | `boj_solution_root` 경로 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
+| CF11 | 경로검증 | `solution_root` 경로 존재하지 않음 | "solutions_root가 비어(또는 깨져) 있습니다. `boj setup`을 실행하거나 설정을 확인하세요." | 아니오 | 예 |
 | CF12 | 언어검증 | 지원 언어 (`java`, `python`) | 검증 통과 | N/A | 아니오 |
 | CF13 | 언어검증 | 미지원 언어 (`fortran`) | `Error: 지원하지 않는 언어: fortran. 지원: java python` | 아니오 | 예 |
 | CF14 | 언어검증 | `languages.json` 파일 없음/파싱 실패 | `Error: languages.json을 읽을 수 없습니다.` | 아니오 | 예 |
@@ -174,6 +176,26 @@
 | IN7 | subprocess | `boj setup` 실패 | `Warning: setup 실패. 수동 실행하세요.` | 아니오 | 아니오 |
 | IN8 | 파일시스템 | `src/boj` 없음 (깨진 clone) | `Error: boj-agent 저장소가 아닙니다.` | 아니오 | 예 |
 
+## client (CL1-CL5)
+
+| # | 카테고리 | 케이스 | 기대 동작 | 복구 가능 | 비정상 종료 |
+|---|----------|--------|-----------|-----------|------------|
+| CL1 | HTTP | 정상 HTML 파싱 | problem dict 반환 | 예 | 아니오 |
+| CL2 | HTTP | 404 응답 | `Error: 문제를 찾을 수 없습니다` + exit(1) | 아니오 | 예 |
+| CL3 | HTTP | 403 응답 | `Error: BOJ 접근 거부` + exit(1) | 아니오 | 예 |
+| CL4 | HTTP | 네트워크 타임아웃 | `Error: BOJ 페이지 가져오기 실패` + exit(1) | 아니오 | 예 |
+| CL5 | 테스트 | BOJ_CLIENT_TEST_HTML 설정 | 로컬 파일에서 읽기, HTTP 미사용 | 예 | 아니오 |
+
+## normalizer (NR1-NR5)
+
+| # | 카테고리 | 케이스 | 기대 동작 | 복구 가능 | 비정상 종료 |
+|---|----------|--------|-----------|-----------|------------|
+| NR1 | 입력 | 정상 problem dict | HTML README 문자열 반환 | 예 | 아니오 |
+| NR2 | 입력 | samples 빈 배열 | 예제 섹션 없는 README | 예 | 아니오 |
+| NR3 | 입력 | input_html/output_html 없음 | 빈 섹션으로 생성 | 예 | 아니오 |
+| NR4 | 입력 | 이미지 포함 HTML | img 태그 그대로 유지 | 예 | 아니오 |
+| NR5 | 입력 | 특수문자 제목 | HTML 엔티티 보존 | 예 | 아니오 |
+
 ---
 
 ## 요약: 에러 메시지 규칙
@@ -186,11 +208,12 @@
 
 ## 자동복구 정책
 
-- **에이전트 없음**: 에디터 + 클립보드 fallback
+- **setup_done 없음**: `boj setup` 자동 실행 후 make 재개
 - **BOJ 통계 실패**: commit은 진행, 메시지에 실패 이유 포함
 - **이미지 다운로드 실패**: reference 모드로 대체
 - **id/description 없음**: 자동 보완 후 실행
 - **submit/ 폴더 없음**: 자동 생성
+- **폴더 이미 존재**: `-f` 옵션으로 덮어쓰기 (미지정 시 에러)
 
 *최종 업데이트: 2026-03-12*
 
