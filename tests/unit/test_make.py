@@ -464,23 +464,23 @@ class TestGenerateReadme:
         assert "예제 입력 1" in content
         assert "예제 출력 1" in content
 
-    def test_readme_matches_fixture_snapshot(self):
+    def test_readme_matches_fixture_snapshot(self, tmp_path):
         """fixture 99999의 problem.json → normalize() 결과와 동일한 README를 생성한다.
 
-        Fixture는 artifacts/ 없이 problem.json이 문제 폴더 바로 아래 있으므로
-        problem_dir을 명시해 README.md가 fixture_dir에 생성되도록 한다.
-        (기본값 parent.parent는 problem_dir/artifacts/problem.json 구조를 가정함.)
-        생성된 파일은 검증 후 삭제해 픽스처 디렉터리를 오염시키지 않는다.
+        problem.json을 tmp_path에 복사해 generate_readme()를 실행한다.
+        fixture 디렉터리의 readme.md를 오염/삭제하지 않도록 tmp_path를 사용한다.
         """
         fixture_dir = FIXTURES_DIR / "99999"
-        problem_json = fixture_dir / "problem.json"
-        problem = json.loads(problem_json.read_text(encoding="utf-8"))
+        problem_json_src = fixture_dir / "problem.json"
+        problem = json.loads(problem_json_src.read_text(encoding="utf-8"))
         expected = normalize(problem)
 
-        readme_path = generate_readme(problem_json, problem_dir=fixture_dir)
-        try:
-            result = readme_path.read_text()
-            assert result == expected
-        finally:
-            if readme_path.exists():
-                readme_path.unlink()
+        # tmp_path에 problem.json 복사 후 거기서 생성
+        tmp_problem_json = tmp_path / "problem.json"
+        tmp_problem_json.write_text(
+            problem_json_src.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+
+        readme_path = generate_readme(tmp_problem_json, problem_dir=tmp_path)
+        result = readme_path.read_text()
+        assert result == expected
