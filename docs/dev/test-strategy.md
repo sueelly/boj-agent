@@ -1,6 +1,6 @@
-# pytest Characterization Test Strategy
+# pytest Test Strategy
 
-> Python 재작성(`docs/dev/rewrite-plan.md`) 전에 현재 Bash CLI의 동작을 pytest로 고정(freeze)하는 특성화 테스트 전략.
+> Python 재작성(`docs/dev/rewrite-plan.md`) 진행 중 현재 구현의 동작을 pytest로 고정(freeze)하는 테스트 전략.
 > 이 문서만 읽으면 누구든 일관된 스타일로 테스트를 작성할 수 있어야 한다.
 
 ---
@@ -9,42 +9,41 @@
 
 ```
 tests/
-  characterization/           # Python 재작성용 특성화 테스트 (신규)
-    conftest.py               # 공통 fixture, marker 정의
-    test_make.py              # boj make 동작 고정
-    test_run.py               # boj run 동작 고정
-    test_commit.py            # boj commit 동작 고정
-    test_submit.py            # boj submit 동작 고정
-    test_open.py              # boj open 동작 고정
-    test_review.py            # boj review 동작 고정
-    test_setup.py             # boj setup 동작 고정
-  fixtures/                   # 공유 픽스처 데이터
-    99999/                    # 기본 A+B (네트워크 불필요)
-    1000/                     # 이미지 없는 문제
-    6588/                     # 파싱 어려운 문제
-    9495/                     # 파싱 어려운 문제
-    <N>/                      # 추가 시 동일 구조
-      raw.html                # BOJ HTML 원본 (record_fixture.sh로 캡처)
-      problem.json            # boj_client.py 파싱 결과
-      readme.md               # boj_normalizer.py 생성 결과
-      Solution.java           # Java 풀이 (run/submit 검증용)
-      solution.py             # Python 풀이
+  run_tests.py              # 통합 테스트 러너 — pytest + bash 자동 발견 [#50]
+  run_tests.sh              # 레거시 Bash 러너 (전환 기간 유지)
+  fixtures/                 # 공유 픽스처 데이터
+    99999/                  # 기본 A+B (네트워크 불필요)
+    1000/                   # 이미지 없는 문제
+    6588/                   # 파싱 어려운 문제
+    9495/                   # 파싱 어려운 문제
+    <N>/                    # 추가 시 동일 구조
+      raw.html              # BOJ HTML 원본 (record_fixture.sh로 캡처)
+      problem.json          # boj_client.py 파싱 결과
+      readme.md             # boj_normalizer.py 생성 결과
+      Solution.java         # Java 풀이 (run/submit 검증용)
+      solution.py           # Python 풀이
       test/
-        Parse.java            # Java IO 어댑터
-        parse.py              # Python IO 어댑터
-        test_cases.json       # 테스트 케이스
-    boj_client/               # boj_client.py 단위 테스트용 (99999.html, problem.json 등)
-  unit/                       # 기존 Bash 단위 테스트 (전환 기간 유지)
-    test_boj_client.py        # Python 단위 테스트 (유지)
-    test_boj_client.sh        # Bash 단위 테스트 (전환 후 제거)
-    test_config.sh            # config 단위 테스트 (전환 후 제거)
-    commands/                 # 커맨드별 Bash 단위 테스트 (전환 후 제거)
-    lib/                      # 테스트 헬퍼 (test_helper.sh)
-  integration/                # 기존 Bash 통합 테스트 (전환 기간 유지)
-  e2e/                        # 기존 E2E (전환 기간 유지)
-  harness/                    # 다언어 매트릭스 하네스 (Phase 1 범위 외)
-  lib/                        # 테스트 유틸리티 (matrix_helpers.sh)
-  run_tests.sh                # 전체 테스트 실행 스크립트
+        Parse.java          # Java IO 어댑터
+        parse.py            # Python IO 어댑터
+        test_cases.json     # 테스트 케이스
+    boj_client/             # boj_client.py 단위 테스트용 (99999.html 등)
+  unit/                     # 단위 테스트 (Python pytest + Bash)
+    test_client.py          # BOJ client 단위 테스트
+    test_config.py          # config 단위 테스트 (CF1-CF21)
+    test_make.py            # make 단위 테스트 (M1-M13)
+    test_setup.py           # setup 단위 테스트 (S1-S15)
+    test_normalizer.py      # normalizer 단위 테스트 (NR1-NR5)
+    test_install.py         # install 단위 테스트 (IN1-IN8)
+    test_client.sh          # Bash client 단위 테스트 (전환 후 제거)
+    test_config.sh          # Bash config 단위 테스트 (전환 후 제거)
+    commands/               # 커맨드별 Bash 단위 테스트 (전환 후 제거)
+    lib/                    # 테스트 헬퍼 (test_helper.sh)
+  integration/              # 통합 테스트 (Bash + Python)
+    test_boj_*.sh           # 커맨드별 Bash 통합 테스트
+    test_boj_setup_py.py    # Python setup 통합 테스트
+    test_make_py.py         # Python make 통합 테스트
+    test_live_fetch.py      # 라이브 네트워크 테스트 (@pytest.mark.network)
+  e2e/                      # E2E 테스트 (미구현)
 ```
 
 ---
@@ -698,38 +697,43 @@ Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section
 
 ## 11. 기존 Bash 테스트와의 관계
 
-| 계층 | 현재 (Bash) | 목표 (Python) |
-|------|------------|--------------|
-| 단위 | `tests/unit/commands/*.sh` | `tests/characterization/test_*.py` |
-| 단위 (설정) | `tests/unit/test_config.sh` | `tests/characterization/test_setup.py` |
-| 단위 (헬퍼) | `tests/unit/lib/test_helper.sh` | pytest fixture로 대체 (`conftest.py`) |
-| 통합 | `tests/integration/*.sh` | 동일 파일에 통합 (subprocess 호출) |
-| E2E | `tests/e2e/test_full_workflow.sh` | `tests/e2e/test_full_workflow.py` (Python 전환) |
-| 하네스 | `tests/harness/*.sh` | Phase 1 범위 외 (다언어 지원 시 재구성) |
-| Python 단위 | `tests/unit/test_boj_client.py` | 유지 (그대로) |
-| 레거시 픽스처 | `tests/fixtures/99999-fixture/` | 제거 완료 (`tests/fixtures/99999/`로 통합됨) |
+| 계층 | Bash (레거시) | Python (현재/목표) | 상태 |
+|------|-------------|------------------|------|
+| 단위 (커맨드) | `tests/unit/commands/*.sh` | `tests/unit/test_*.py` | Bash 유지, Python 병행 |
+| 단위 (config) | `tests/unit/test_config.sh` | `tests/unit/test_config.py` | ✅ Python 구현 완료 |
+| 단위 (setup) | `tests/unit/commands/setup_*.sh` | `tests/unit/test_setup.py` | ✅ Python 구현 완료 |
+| 단위 (make) | — | `tests/unit/test_make.py` | ✅ Python 구현 완료 |
+| 단위 (client) | `tests/unit/test_client.sh` | `tests/unit/test_client.py` | ✅ Python 구현 완료 |
+| 단위 (install) | — | `tests/unit/test_install.py` | ✅ Python 구현 완료 |
+| 단위 (normalizer) | — | `tests/unit/test_normalizer.py` | ✅ Python 구현 완료 |
+| 통합 | `tests/integration/*.sh` | `tests/integration/test_*.py` | 병행 운영 중 |
+| E2E | — | `tests/e2e/` | 미구현 |
+| 픽스처 | — | `tests/fixtures/99999/` 등 | ✅ 정리 완료 |
 
 **전환 전략:**
 
-1. `tests/characterization/` 테스트를 먼저 작성 (현재 Bash CLI 동작 고정)
-2. Python 재작성 시 동일 테스트가 새 Python 코드를 검증
-3. 모든 characterization 테스트가 Python 구현으로 통과하면 Bash 테스트 제거
+1. Python 단위 테스트(`tests/unit/test_*.py`)가 각 core/cli 모듈의 동작을 고정
+2. Bash 단위 테스트는 Bash 명령어가 남아 있는 동안 병행 유지
+3. 명령어가 Python으로 전환되면 해당 Bash 테스트 제거
 
-기존 Bash 테스트는 전환이 완료될 때까지 `tests/run_tests.sh`에서 계속 실행된다.
+테스트 실행은 `tests/run_tests.py`로 통합 (Bash + Python 모두 발견·실행).
 
 ---
 
 ## 12. CI 설정
 
 ```yaml
-# .github/workflows/ci.yml 에 추가
-- name: Run characterization tests
-  run: |
-    python3 -m pytest tests/characterization/ -v --tb=short
+# .github/workflows/ci.yml (현재 설정)
+- name: Install Python dependencies
+  run: python3 -m pip install -r requirements.txt
+
+- name: Run all tests
+  run: python3 tests/run_tests.py
 ```
 
-CI에서는 `not network and not agent` marker로 네트워크 테스트와 에이전트 테스트를 자동 제외한다.
-네트워크 테스트는 수동 트리거 또는 별도 워크플로우로만 실행한다.
+`tests/run_tests.py`가 unit/integration/e2e 전체를 발견하여 실행한다.
+pytest 실행 시 `not network and not agent` marker로 네트워크/에이전트 테스트를 자동 제외한다.
+네트워크 테스트(`@pytest.mark.network`)는 수동 트리거 또는 별도 워크플로우로만 실행한다.
 
 ---
 
