@@ -49,7 +49,7 @@ python3 scripts/install.py
 1. `boj-agent` 파일을 `~/.local/share/boj-agent/`로 복사
 2. `~/bin/boj`에 CLI 명령어 설치
 3. `~/.config/boj/`에 설정 저장
-4. PATH 확인 (필요 시 안내)
+4. PATH 자동 추가 (`~/.zshrc` 등에 `export PATH` 기록, 이미 있으면 스킵)
 5. `boj setup` 자동 실행
 
 옵션:
