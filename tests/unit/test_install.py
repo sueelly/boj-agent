@@ -27,6 +27,7 @@ from scripts.install import (
     install_cli,
     save_config,
     check_path,
+    add_to_path,
     detect_shell_rc,
     print_path_advice,
     run_setup,
@@ -275,6 +276,48 @@ class TestDetectShellRc:
 # ──────────────────────────────────────────────
 # TestPrintPathAdvice
 # ──────────────────────────────────────────────
+# TestAddToPath
+# ──────────────────────────────────────────────
+
+class TestAddToPath:
+    """add_to_path()가 shell rc에 PATH export를 추가한다."""
+
+    def test_adds_export_when_not_present(self, tmp_path):
+        """rc 파일에 bin_dir 없을 때 export 라인 추가."""
+        rc = tmp_path / ".zshrc"
+        rc.write_text("# existing content\n")
+        bin_dir = tmp_path / "bin"
+        added = add_to_path(bin_dir, rc)
+        assert added is True
+        assert str(bin_dir) in rc.read_text()
+
+    def test_skips_when_bin_dir_already_present(self, tmp_path):
+        """rc 파일에 bin_dir 이미 있으면 스킵."""
+        bin_dir = tmp_path / "bin"
+        rc = tmp_path / ".zshrc"
+        rc.write_text(f'export PATH="{bin_dir}:$PATH"\n')
+        added = add_to_path(bin_dir, rc)
+        assert added is False
+
+    def test_skips_when_home_bin_pattern_present(self, tmp_path):
+        """$HOME/bin 패턴 있으면 스킵 (중복 추가 방지)."""
+        rc = tmp_path / ".zshrc"
+        rc.write_text('export PATH="$HOME/bin:$PATH"\n')
+        bin_dir = tmp_path / "bin"
+        added = add_to_path(bin_dir, rc)
+        assert added is False
+
+    def test_creates_rc_when_missing(self, tmp_path):
+        """rc 파일 없으면 새로 생성."""
+        rc = tmp_path / ".zshrc"
+        bin_dir = tmp_path / "bin"
+        added = add_to_path(bin_dir, rc)
+        assert added is True
+        assert rc.exists()
+        assert str(bin_dir) in rc.read_text()
+
+
+# ──────────────────────────────────────────────
 
 class TestPrintPathAdvice:
     """print_path_advice()가 PATH 설정 안내를 출력한다."""
@@ -394,10 +437,29 @@ class TestMain:
         assert exit_code == 0
         assert (dest / "src" / "boj").exists()
 
-    def test_prints_path_advice_when_not_in_path(self, install_env, monkeypatch, capsys):
-        """PATH에 ~/bin 없을 때 안내 출력. (IN6)"""
+    def test_adds_to_path_when_rc_exists(self, install_env, monkeypatch, capsys):
+        """PATH에 ~/bin 없고 rc 파일 있으면 자동 추가. (IN6)"""
         repo, home = install_env
         monkeypatch.setenv("PATH", "/usr/bin")
+        rc = home / ".zshrc"
+        rc.write_text("# existing\n")
+
+        with patch("scripts.install.run_setup", return_value=0):
+            main(["--skip-setup"], script_path=repo / "scripts" / "install.py")
+
+        captured = capsys.readouterr()
+        assert ".zshrc" in captured.out
+        assert str(home / "bin") in rc.read_text()
+
+    def test_prints_advice_when_no_rc(self, install_env, monkeypatch, capsys):
+        """PATH에 ~/bin 없고 rc 파일도 없으면 수동 안내. (IN6)"""
+        repo, home = install_env
+        monkeypatch.setenv("PATH", "/usr/bin")
+        # rc 파일 없음 보장
+        for name in (".zshrc", ".bashrc", ".bash_profile"):
+            rc = home / name
+            if rc.exists():
+                rc.unlink()
 
         with patch("scripts.install.run_setup", return_value=0):
             main(["--skip-setup"], script_path=repo / "scripts" / "install.py")

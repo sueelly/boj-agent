@@ -171,6 +171,25 @@ def detect_shell_rc(home: Path) -> Path | None:
     return None
 
 
+def add_to_path(bin_dir: Path, shell_rc: Path) -> bool:
+    """shell rc에 PATH export를 추가한다. 이미 있으면 스킵한다.
+
+    Args:
+        bin_dir: PATH에 추가할 디렉터리.
+        shell_rc: 셸 설정 파일 경로.
+
+    Returns:
+        True면 추가됨, False면 이미 있어서 스킵.
+    """
+    export_line = f'export PATH="{bin_dir}:$PATH"'
+    content = shell_rc.read_text() if shell_rc.exists() else ""
+    if str(bin_dir) in content or "$HOME/bin" in content:
+        return False
+    with open(shell_rc, "a") as f:
+        f.write(f"\n{export_line}\n")
+    return True
+
+
 def print_path_advice(bin_dir: Path, shell_rc: Path | None) -> None:
     """PATH 설정 안내 메시지를 출력한다.
 
@@ -278,7 +297,15 @@ def main(argv: list[str] | None = None, *, script_path: Path | None = None) -> i
         print("  PATH에 포함되어 있습니다.")
     else:
         shell_rc = detect_shell_rc(home)
-        print_path_advice(bin_dir, shell_rc)
+        if shell_rc:
+            added = add_to_path(bin_dir, shell_rc)
+            if added:
+                print(f"  PATH 설정을 {shell_rc.name}에 추가했습니다.")
+            else:
+                print(f"  {shell_rc.name}에 PATH 설정이 이미 있습니다.")
+            print(f"  현재 세션에 적용: source ~/{shell_rc.name}")
+        else:
+            print_path_advice(bin_dir, None)
     print()
 
     # 6. boj setup 실행

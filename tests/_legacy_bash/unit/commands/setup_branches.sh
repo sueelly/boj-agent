@@ -32,7 +32,7 @@ lang_saved_to_config() {
   local cfg="$tmp/.config/boj"
   mkdir -p "$cfg"
 
-  echo "python" > "$cfg/lang"
+  echo "python" > "$cfg/prog_lang"
 
   local out
   out=$(BOJ_CONFIG_DIR="$cfg" cd "$tmp" && "$tmp/src/boj" setup --check 2>&1) || true
