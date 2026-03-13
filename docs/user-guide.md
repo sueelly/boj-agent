@@ -50,7 +50,8 @@ python3 scripts/install.py
 2. `~/bin/boj`에 CLI 명령어 설치
 3. `~/.config/boj/`에 설정 저장
 4. PATH 자동 추가 (`~/.zshrc` 등에 `export PATH="$HOME/bin:$PATH"` **한 줄**이 없을 때만 추가. 주석에만 `$HOME/bin`이 있는 경우는 예전에 스킵 버그가 있었음 — 재설치 또는 아래 한 줄 수동 추가 권장)
-5. `boj setup` 자동 실행 (`~/bin/boj` **절대 경로**로 호출 — PATH와 무관)
+5. `boj setup` 자동 실행 — **zsh/bash 서브프로세스**에서 해당 rc(`.zshrc` 등)를 `source`한 뒤 실행해, 방금 넣은 PATH와 셸 환경에 맞춤
+6. 터미널에 안내: `export PATH="$HOME/bin:$PATH"` + `source ~/.zshrc` (부모 셸은 스크립트가 대신 못 바꿈)
 
 옵션:
 ```bash

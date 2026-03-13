@@ -364,11 +364,14 @@ class TestRunSetup:
     """run_setup()이 boj setup을 subprocess로 실행한다."""
 
     def test_calls_boj_setup(self, tmp_path):
-        """boj setup 명령어를 올바르게 호출."""
+        """shell_rc 없으면 boj setup 직접 호출."""
         boj_cmd = tmp_path / "boj"
+        bin_dir = tmp_path / "bin"
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
-            result = run_setup(boj_cmd)
+            result = run_setup(
+                boj_cmd, bin_dir=bin_dir, shell_rc=None, home=tmp_path
+            )
         assert result == 0
         mock_run.assert_called_once()
         args = mock_run.call_args[0][0]
@@ -380,14 +383,18 @@ class TestRunSetup:
         boj_cmd = tmp_path / "boj"
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=1)
-            result = run_setup(boj_cmd)
+            result = run_setup(
+                boj_cmd, bin_dir=tmp_path / "bin", shell_rc=None, home=tmp_path
+            )
         assert result != 0
 
     def test_returns_nonzero_when_exception(self, tmp_path):
         """boj 실행 자체 실패 (FileNotFoundError 등) → non-zero."""
         boj_cmd = tmp_path / "nonexistent_boj"
         with patch("subprocess.run", side_effect=FileNotFoundError("not found")):
-            result = run_setup(boj_cmd)
+            result = run_setup(
+                boj_cmd, bin_dir=tmp_path / "bin", shell_rc=None, home=tmp_path
+            )
         assert result != 0
 
 
@@ -461,10 +468,9 @@ class TestMain:
         assert str(home / "bin") in rc.read_text()
 
     def test_prints_advice_when_no_rc(self, install_env, monkeypatch, capsys):
-        """PATH에 ~/bin 없고 rc 파일도 없으면 수동 안내. (IN6)"""
+        """PATH에 ~/bin 없으면 .zshrc 생성 + PATH 추가 + 적용 안내. (IN6)"""
         repo, home = install_env
         monkeypatch.setenv("PATH", "/usr/bin")
-        # rc 파일 없음 보장
         for name in (".zshrc", ".bashrc", ".bash_profile"):
             rc = home / name
             if rc.exists():
@@ -475,6 +481,8 @@ class TestMain:
 
         captured = capsys.readouterr()
         assert "PATH" in captured.out
+        assert (home / ".zshrc").exists()
+        assert str(home / "bin") in (home / ".zshrc").read_text()
 
     def test_warns_when_setup_fails(self, install_env, monkeypatch, capsys):
         """boj setup 실패 시 Warning 출력. (IN7)"""
