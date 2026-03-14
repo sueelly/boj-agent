@@ -9,7 +9,7 @@
 
 - **언어**: `{{LANG}}` (확장자: `{{EXT}}`)
 - **SUPPORTS_PARSE**: `{{SUPPORTS_PARSE}}` (Java/Python은 true, 나머지는 false)
-- **출력 디렉터리**: `{{PROBLEM_DIR}}`
+- **문제 디렉터리**: `{{PROBLEM_DIR}}`
 
 ---
 
@@ -143,6 +143,28 @@ solve() 서명을 3역할 관점에서 평가. 아래 기준으로 채점 (각 0
 
 ---
 
+## 출력 형식 (필수)
+
+**파일을 직접 생성하지 마세요.** 아래 JSON 형식으로 **stdout에만 출력**하세요.
+설명 텍스트 없이 JSON만 출력하세요.
+
+```json
+{
+  "files": {
+    "Solution.java": "파일 내용 전체...",
+    "test/Parse.java": "파일 내용 전체...",
+    "test/test_cases.json": "{\"testCases\": [...]}",
+    "artifacts/signature_review.md": "리뷰 내용..."
+  }
+}
+```
+
+- 파일 경로는 문제 디렉터리 기준 **상대 경로**.
+- 파일 내용은 **문자열** (JSON 파일도 문자열로 감싸서 출력).
+- SUPPORTS_PARSE=false이면 `test/Parse.*` 키를 생략.
+
+---
+
 ## 중요 규칙
 
 1. **Solution**: 파싱 로직 없이 `solve(...)` 시그니처만. Parse가 파싱을 담당.
@@ -150,3 +172,4 @@ solve() 서명을 3역할 관점에서 평가. 아래 기준으로 채점 (각 0
 3. **test_cases.json**: `testCases` 키 사용. `input`은 전체 입력(줄 구분 `\n`), `expected`는 기대 출력.
 4. **서명 검증**: 반드시 리뷰 루프를 통해 solve() 서명이 PASS인지 확인.
 5. **Main 클래스 금지**: Main.java, Test.java, run.sh 생성 금지 (별도 템플릿 존재).
+6. **출력 형식 준수**: 반드시 위 JSON 형식으로만 출력. 파일 직접 생성 금지.
