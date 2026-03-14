@@ -14,7 +14,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.core.config import config_get, find_problem_dir
+from src.core.config import SUPPORTED_LANGS, config_get, find_problem_dir
 from src.core.exceptions import BojError, RunError, RunMemoryError, RunTimeoutError
 
 # ---------------------------------------------------------------------------
@@ -28,8 +28,7 @@ DEFAULT_MEMORY_LIMIT_MB = 256
 _TIME_PATTERN = re.compile(r"시간\s*제한[:\s]*</strong>\s*(\d+(?:\.\d+)?)\s*초")
 _MEMORY_PATTERN = re.compile(r"메모리\s*제한[:\s]*</strong>\s*(\d+)\s*MB")
 
-# 지원 언어 (런타임 있는 것만)
-SUPPORTED_RUN_LANGS = ("java", "python")
+# 지원 언어는 config.SUPPORTED_LANGS를 사용
 
 
 # ---------------------------------------------------------------------------
@@ -335,10 +334,10 @@ def run(
     prog_lang = lang or config_get("prog_lang", "java")
 
     # 언어 유효성 검사
-    if prog_lang not in SUPPORTED_RUN_LANGS:
+    if prog_lang not in SUPPORTED_LANGS:
         raise RunError(
             f"'{prog_lang}' 언어는 현재 run 명령으로 지원되지 않습니다. "
-            f"지원 언어: {' '.join(SUPPORTED_RUN_LANGS)}"
+            f"지원 언어: {' '.join(SUPPORTED_LANGS)}"
         )
 
     # 루트 경로 결정
