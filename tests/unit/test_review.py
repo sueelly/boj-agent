@@ -233,6 +233,47 @@ class TestClipboardFallback:
 
 
 # ---------------------------------------------------------------------------
+# write_review_file
+# ---------------------------------------------------------------------------
+
+class TestWriteReviewFile:
+    """submit/REVIEW.md 파일 쓰기 테스트."""
+
+    def test_creates_submit_dir_and_writes_file(self, tmp_path):
+        """submit/ 디렉터리를 생성하고 REVIEW.md를 쓴다."""
+        from src.core.review import write_review_file
+
+        content = "# 99999 두 수의 합 - 코드 리뷰\n\n리뷰 내용"
+        result_path = write_review_file(tmp_path, content)
+
+        assert result_path == tmp_path / "submit" / "REVIEW.md"
+        assert result_path.exists()
+        assert result_path.read_text(encoding="utf-8") == content
+
+    def test_overwrites_existing_review(self, tmp_path):
+        """기존 REVIEW.md가 있으면 덮어쓴다."""
+        from src.core.review import write_review_file
+
+        submit_dir = tmp_path / "submit"
+        submit_dir.mkdir()
+        (submit_dir / "REVIEW.md").write_text("old review")
+
+        new_content = "# new review"
+        result_path = write_review_file(tmp_path, new_content)
+
+        assert result_path.read_text(encoding="utf-8") == new_content
+
+    def test_handles_unicode_content(self, tmp_path):
+        """한국어 리뷰 내용을 UTF-8로 저장한다."""
+        from src.core.review import write_review_file
+
+        content = "# 99999 두 수의 합 - 코드 리뷰\n\n## 접근 방식\n- 완전탐색"
+        result_path = write_review_file(tmp_path, content)
+
+        assert result_path.read_text(encoding="utf-8") == content
+
+
+# ---------------------------------------------------------------------------
 # review (메인 함수)
 # ---------------------------------------------------------------------------
 
@@ -275,7 +316,7 @@ class TestReview:
     def test_calls_agent_when_configured(
         self, mock_config, mock_run_review, tmp_path,
     ):
-        """RV1: 에이전트가 설정되면 run_review를 호출한다."""
+        """RV1: 에이전트가 설정되면 run_review를 호출하고 REVIEW.md를 생성한다."""
         from src.core.review import review
 
         # 문제 폴더 + Solution
@@ -296,7 +337,7 @@ class TestReview:
         }.get(key, default)
 
         mock_run_review.return_value = subprocess.CompletedProcess(
-            args=["claude"], returncode=0, stdout="done", stderr="",
+            args=["claude"], returncode=0, stdout="# Review Content", stderr="",
         )
 
         result = review(
@@ -307,6 +348,46 @@ class TestReview:
 
         mock_run_review.assert_called_once()
         assert result is not None
+        # REVIEW.md 파일이 생성되었는지 확인
+        review_path = prob_dir / "submit" / "REVIEW.md"
+        assert review_path.exists()
+        assert review_path.read_text(encoding="utf-8") == "# Review Content"
+
+    @patch("src.core.review.run_review")
+    @patch("src.core.review.config_get")
+    def test_does_not_write_review_when_stdout_empty(
+        self, mock_config, mock_run_review, tmp_path,
+    ):
+        """에이전트 stdout이 빈 경우 REVIEW.md를 생성하지 않는다."""
+        from src.core.review import review
+
+        prob_dir = tmp_path / "99999-test"
+        prob_dir.mkdir()
+        (prob_dir / "Solution.java").write_text("class S {}")
+
+        prompts_dir = tmp_path / "prompts"
+        prompts_dir.mkdir()
+        (prompts_dir / "review.md").write_text("# Review")
+
+        mock_config.side_effect = lambda key, default="": {
+            "agent": "claude",
+            "solution_root": "",
+            "boj_agent_root": "",
+            "editor": "code",
+        }.get(key, default)
+
+        mock_run_review.return_value = subprocess.CompletedProcess(
+            args=["claude"], returncode=0, stdout="", stderr="",
+        )
+
+        result = review(
+            problem_num="99999",
+            solution_root=tmp_path,
+            agent_root=tmp_path,
+        )
+
+        review_path = prob_dir / "submit" / "REVIEW.md"
+        assert not review_path.exists()
 
     @patch("src.core.review.clipboard_fallback")
     @patch("src.core.review.config_get")

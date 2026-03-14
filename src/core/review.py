@@ -156,6 +156,27 @@ def run_review(
 
 
 # ---------------------------------------------------------------------------
+# REVIEW.md 파일 저장
+# ---------------------------------------------------------------------------
+
+def write_review_file(problem_dir: Path, content: str) -> Path:
+    """리뷰 내용을 submit/REVIEW.md에 저장한다.
+
+    Args:
+        problem_dir: 문제 폴더 경로.
+        content: 리뷰 내용 문자열.
+
+    Returns:
+        생성된 REVIEW.md 파일 경로.
+    """
+    submit_dir = problem_dir / "submit"
+    submit_dir.mkdir(parents=True, exist_ok=True)
+    review_path = submit_dir / "REVIEW.md"
+    review_path.write_text(content, encoding="utf-8")
+    return review_path
+
+
+# ---------------------------------------------------------------------------
 # 클립보드 fallback
 # ---------------------------------------------------------------------------
 
@@ -249,7 +270,11 @@ def review(
 
     if agent_cmd:
         # RV1/RV4: 에이전트 실행
-        return run_review(problem_dir, agent_cmd, prompt)
+        result = run_review(problem_dir, agent_cmd, prompt)
+        # stdout 내용을 submit/REVIEW.md로 저장
+        if result.stdout and result.stdout.strip():
+            write_review_file(problem_dir, result.stdout)
+        return result
     else:
         # RV3: fallback -- 클립보드 + 에디터
         clipboard_fallback("리뷰해줘")

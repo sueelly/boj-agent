@@ -14,6 +14,13 @@
 
 ---
 
+## [2026-03-15] fix(review): Python에서 submit/REVIEW.md 직접 저장
+
+**변경 요약:** `boj review`가 에이전트에게 파일 쓰기를 위임하던 방식에서, Python 코드가 에이전트 stdout을 캡처하여 `submit/REVIEW.md`를 직접 저장하도록 변경. `boj make`의 파일 쓰기 패턴(pathlib + mkdir + write_text)과 동일.
+**의사결정:** 에이전트(`claude -p` 등)가 파일 쓰기 권한이 없으면 리뷰 내용이 stdout으로만 출력되고 저장되지 않는 문제 발생. `make.py`처럼 에이전트를 순수 함수(stdin→stdout)로 취급하고, 모든 파일 I/O는 Python이 담당하는 아키텍처로 통일. `write_review_file()` 함수를 `review.py`에 추가하고, `review()` 함수에서 agent 성공 후 호출. `prompts/review.md`는 "파일 생성" → "stdout 출력" 지시로 변경. 빈 stdout인 경우 파일 미생성 guard 추가.
+**검증 방법:** `python3 -m pytest tests/unit/test_review.py tests/integration/test_review_py.py -v` → 29 passed. 전체 `python3 -m pytest tests/unit/ tests/integration/ -v --skip-live` → 425 passed, 24 skipped.
+---
+
 ## [2026-03-15] fix(boj): setup_done 가드를 디스패처에 추가 [#65]
 **변경 요약:** `src/boj` 디스패처에 `setup_done` 가드를 추가하여 모든 명령어(setup/help/빈 입력 제외)에서 설정 완료를 공통 확인. `src/core/make.py`의 중복 `ensure_setup()`/`run_setup()` 제거.
 **의사결정:** edge-cases C1(공통 가드) 규칙에 따라 디스패처 레벨에서 일괄 처리. make.py에만 있던 가드를 디스패처로 올려 run/commit/open/review/submit 모두 동일 보호. `setup` subcommand는 line 64에서 조기 exit하므로 가드에 도달하지 않음. help/-h/--help/빈 입력은 조건문에서 제외.
