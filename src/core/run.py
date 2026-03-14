@@ -5,7 +5,6 @@ Issue #60 — run.sh Python 마이그레이션. TDD Green 단계.
 
 import json
 import os
-import platform
 import re
 import shlex
 import subprocess
@@ -219,29 +218,6 @@ def validate_run_preconditions(
 # execute_tests
 # ---------------------------------------------------------------------------
 
-def _make_preexec_fn(memory_mb: int):
-    """메모리 제한을 적용하는 preexec_fn을 생성한다 (Unix only)."""
-    if platform.system() == "Windows":
-        return None
-
-    def _set_limits():
-        try:
-            import resource
-            memory_bytes = memory_mb * 1024 * 1024
-            # macOS: RLIMIT_RSS, Linux: RLIMIT_AS
-            limit_type = (
-                resource.RLIMIT_RSS
-                if platform.system() == "Darwin"
-                else resource.RLIMIT_AS
-            )
-            resource.setrlimit(limit_type, (memory_bytes, memory_bytes))
-        except (ValueError, OSError):
-            # 제한 설정 실패 시 무시 (OS 제약)
-            pass
-
-    return _set_limits
-
-
 def execute_tests(
     cmd: list[str],
     timeout_sec: float,
@@ -250,10 +226,18 @@ def execute_tests(
 ) -> RunResult:
     """테스트를 실행하고 결과를 반환한다.
 
+    메모리 제한은 OS-level preexec_fn 대신 stderr 패턴 + 시그널
+    감지 방식을 사용한다. 이유:
+    - macOS RLIMIT_RSS는 advisory only (커널 미강제)
+    - Linux RLIMIT_AS는 가상 주소 공간을 제한하므로 JVM/Python이
+      시작도 못 함 (JVM은 256MB 가상 메모리로 부족)
+    - 테스트 러너가 stderr에 MemoryError/OutOfMemoryError를 출력하고,
+      OS가 OOM kill 시 시그널(SIGKILL)로 종료하므로 이를 감지한다.
+
     Args:
         cmd: 실행할 명령어 리스트.
         timeout_sec: 시간 제한 (초).
-        memory_mb: 메모리 제한 (MB).
+        memory_mb: 메모리 제한 (MB). 에러 메시지에 사용.
         cwd: 작업 디렉터리.
 
     Returns:
@@ -263,8 +247,6 @@ def execute_tests(
         RunTimeoutError: 시간 초과 시.
         RunMemoryError: 메모리 초과 시.
     """
-    preexec_fn = _make_preexec_fn(memory_mb)
-
     try:
         result = subprocess.run(
             cmd,
@@ -272,17 +254,23 @@ def execute_tests(
             capture_output=True,
             text=True,
             timeout=timeout_sec,
-            preexec_fn=preexec_fn,
         )
     except subprocess.TimeoutExpired as e:
         raise RunTimeoutError(
             f"시간 초과 (제한: {timeout_sec}초)"
         ) from e
 
-    # 메모리 초과 감지: stderr 패턴 기반
+    # 메모리 초과 감지:
+    # 1) stderr 패턴 (MemoryError, OutOfMemoryError 등)
+    # 2) 시그널 종료 (returncode < 0) — OOM killer의 SIGKILL(-9) 등
     if result.returncode != 0 and _is_memory_error(result.stderr):
         raise RunMemoryError(
             f"메모리 초과 (제한: {memory_mb} MB)"
+        )
+    if result.returncode < 0 and _is_signal_memory_kill(result.returncode):
+        raise RunMemoryError(
+            f"메모리 초과로 프로세스 종료됨 (시그널: {-result.returncode}, "
+            f"제한: {memory_mb} MB)"
         )
 
     return RunResult(
@@ -290,6 +278,17 @@ def execute_tests(
         stdout=result.stdout,
         stderr=result.stderr,
     )
+
+
+def _is_signal_memory_kill(returncode: int) -> bool:
+    """시그널 기반 메모리 초과 종료를 감지한다.
+
+    OOM killer는 보통 SIGKILL(9)을 보내고,
+    RLIMIT 위반 시 SIGSEGV(11)이 발생할 수 있다.
+    """
+    import signal
+    killed_by = -returncode
+    return killed_by in (signal.SIGKILL, signal.SIGSEGV)
 
 
 def _is_memory_error(stderr: str) -> bool:

@@ -217,7 +217,7 @@ class TestRunResourceLimits:
 
     @pytest.mark.skipif(
         platform.system() == "Darwin",
-        reason="macOS RLIMIT_RSS는 advisory only — 메모리 제한 미강제",
+        reason="macOS에는 OOM killer가 없어 메모리 초과 감지 불가",
     )
     def test_reports_memory_error_when_exceeded(self, boj_env, fixture_path):
         """R17: 메모리 초과 시 메모리 에러 메시지를 출력한다 (Linux only)."""
