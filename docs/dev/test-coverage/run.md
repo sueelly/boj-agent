@@ -45,8 +45,8 @@
 | R13 | README.md에서 시간 제한 파싱 (예: "2 초" → 2.0) | branches | unit |
 | R14 | README.md에서 메모리 제한 파싱 (예: "256 MB" → 256) | branches | unit |
 | R15 | README.md 없음 → 기본값 사용 (시간 5초, 메모리 256MB) | branches | unit |
-| R16 | 테스트 실행 시간 초과 → Timeout 에러 출력 | errors | unit + integration |
-| R17 | 테스트 메모리 초과 → Memory 에러 출력 | errors | unit + integration |
+| R16 | 전체 프로세스 시간 초과 → RunTimeoutError (exit 1) | errors | unit + integration |
+| R17 | 전체 프로세스 메모리 초과 → RunMemoryError (exit 1) | errors | unit + integration |
 
 ## 분기 → 테스트 매핑 테이블
 
