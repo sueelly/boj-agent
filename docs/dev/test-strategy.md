@@ -43,7 +43,7 @@ tests/
     test_boj_*.sh           # 커맨드별 Bash 통합 테스트
     test_boj_setup_py.py    # Python setup 통합 테스트
     test_make_py.py         # Python make 통합 테스트
-    test_live_fetch.py      # 라이브 네트워크 테스트 (@pytest.mark.network)
+    test_live_fetch.py      # 라이브 네트워크 테스트 (@pytest.mark.live)
   e2e/                      # E2E (설치→PATH→boj 이름으로 make/run 등)
     test_full_workflow.sh   # src/boj 직접 + make/run/submit/commit
     test_install_cli.py     # install.py → ~/bin/boj → boj make/run (pytest)
@@ -318,27 +318,23 @@ def test_run_java_passes(boj_env, fixture_path, problem_num):
 
 ## 7. Marker 규약
 
-### 7.1 `@pytest.mark.network`
+### 7.1 `@pytest.mark.live`
 
-인터넷 접속이 필요한 테스트에 부착한다. 기본 실행에서 제외된다.
+실제 BOJ 서버 연결이 필요한 테스트에 부착한다. **기본 실행되며**, `--skip-live`로 스킵할 수 있다.
 
 ```python
 # conftest.py
 def pytest_configure(config):
-    config.addinivalue_line("markers", "network: requires internet access")
-
-# pytest.ini 또는 pyproject.toml
-# [tool.pytest.ini_options]
-# addopts = "-m 'not network'"
+    config.addinivalue_line("markers", "live: 실제 BOJ HTTP 연결 필요 (--skip-live로 스킵)")
 ```
 
 ```python
-@pytest.mark.network
+@pytest.mark.live
 def test_live_fetch_problem_1010(boj_env):
     """실제 BOJ에서 이미지 포함 문제 1010을 가져온다."""
 ```
 
-네트워크 테스트는 **1010** (이미지 포함)과 **10951** (EOF 파싱) 두 문제에 한정한다.
+라이브 테스트는 인증 없이 동작하며, 1516·16957·10799·10951 등의 문제를 검증한다.
 
 ### 7.2 `@pytest.mark.agent`
 
@@ -454,9 +450,9 @@ assert "Solution.java" in result.stderr
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not network and not agent' -v --tb=short"
+addopts = "-m 'not agent' -v --tb=short"
 markers = [
-    "network: requires internet access to BOJ",
+    "live: 실제 BOJ 서버 연결 필요 (--skip-live로 스킵)",
     "agent: requires real agent execution (costly/slow)",
     "slow: takes > 5 seconds",
     "xfail: known broken behavior (document for rewrite)",
@@ -741,8 +737,8 @@ Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section
 ```
 
 `tests/run_tests.py`가 unit/integration/e2e 전체를 발견하여 실행한다.
-pytest 실행 시 `not network and not agent` marker로 네트워크/에이전트 테스트를 자동 제외한다.
-네트워크 테스트(`@pytest.mark.network`)는 수동 트리거 또는 별도 워크플로우로만 실행한다.
+pytest 실행 시 `not agent` marker로 에이전트 테스트를 자동 제외한다.
+라이브 테스트(`@pytest.mark.live`)는 기본 실행되며, `--skip-live`로 스킵할 수 있다.
 
 ---
 
@@ -1032,7 +1028,7 @@ python3 tests/run_tests.py --e2e      # E2E 테스트만
 
 ## 18. 라이브 테스트 (`tests/integration/test_live_fetch.py`)
 
-`--run-live` 옵션으로 활성화. 실제 BOJ 서버에 연결하여 검증.
+기본 실행. `--skip-live`로 스킵 가능. 실제 BOJ 서버에 연결하여 검증 (인증 불필요).
 
 | # | 테스트 | 대상 문제 |
 |---|--------|-----------|
@@ -1085,7 +1081,7 @@ python3 -m pytest tests/e2e/test_install_cli.py -v -m slow
 |------|------|-----------|
 | **test_boj_setup_py.py** | `python -m src.cli.boj_setup` subprocess | `--check`, `--lang`, `--root`, `--agent` 등 비대화형 setup 플래그가 config 파일에 반영되는지 (IP1–IP11) |
 | **test_make_py.py** | `unittest.mock` + `src.core.make` 직접 호출 | fetch/readme/cleanup/ensure_setup 등 **코어 파이프라인** (네트워크 없음). subprocess로 전체 Bash `boj make`를 돌리지 않음 |
-| **test_live_fetch.py** | `@pytest.mark.network` | 실제 BOJ HTML fetch·파싱·README (기본 pytest에서 제외) |
+| **test_live_fetch.py** | `@pytest.mark.live` | 실제 BOJ HTML fetch·파싱·README (기본 실행, `--skip-live`로 스킵) |
 
 공통점: **레포의 `src/boj` 디스패처를 “이름 boj”로 부르지 않는다.** setup_py는 Python 모듈 직행, make_py는 라이브러리 단위, Bash 통합(`test_boj_make.sh` 등)은 `"$REPO_ROOT/src/boj"` 고정 경로다. 그래서 **설치 후 PATH 상의 `boj`** 는 `test_install_cli.py` E2E로만 커버한다.
 

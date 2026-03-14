@@ -3,7 +3,7 @@
 
 실제 HTTP 연결을 사용:
   A) 로컬 Python HTTP 서버 — 네트워크 불필요, Cookie/403/404/bypass/login 검증
-  B) 실제 BOJ 연결 — BOJ_SESSION 또는 BOJ_USERNAME+BOJ_PASSWORD 미설정 시 자동 스킵
+  B) 실제 BOJ 연결 — @pytest.mark.live, 인증 불필요
 """
 
 import http.server
@@ -13,6 +13,8 @@ import threading
 import unittest
 from pathlib import Path
 from urllib.parse import parse_qs
+
+import pytest
 
 from src.core import client
 
@@ -243,41 +245,13 @@ class TestLoginWithLocalServer(unittest.TestCase):
 
 # ── Part B: 실제 BOJ 연결 테스트 ─────────────────────────────────────────────
 
+@pytest.mark.live
 class TestFetchLiveBOJ(unittest.TestCase):
-    """실제 acmicpc.net 연결 테스트 — 자격증명 미설정 시 자동 스킵."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.session = os.environ.get("BOJ_SESSION", "")
-        if not cls.session:
-            username = os.environ.get("BOJ_USERNAME", "")
-            password = os.environ.get("BOJ_PASSWORD", "")
-            if username and password:
-                try:
-                    cls.session = client.boj_login(username, password)
-                except Exception as e:
-                    raise AssertionError(
-                        f"BOJ 자동 로그인 실패: {e}\n"
-                        "아이디/비밀번호를 확인하세요."
-                    )
-            else:
-                raise unittest.SkipTest(
-                    "실제 BOJ 테스트를 실행하려면 다음 환경변수 중 하나를 설정하세요:\n"
-                    "  BOJ_SESSION=<OnlineJudge 쿠키값>\n"
-                    "  또는\n"
-                    "  BOJ_USERNAME=<아이디> BOJ_PASSWORD=<비밀번호>"
-                )
+    """실제 acmicpc.net 연결 테스트 — 인증 불필요."""
 
     def test_live_fetch_problem_1000(self):
         """실제 BOJ에서 문제 1000(A+B)을 가져와 제목과 샘플을 검증한다."""
-        with tempfile.TemporaryDirectory() as cfg_dir:
-            Path(cfg_dir, "session").write_text(self.session, encoding="utf-8")
-            os.environ["BOJ_CONFIG_DIR"] = cfg_dir
-            try:
-                html = client.fetch_html("1000")
-            finally:
-                os.environ.pop("BOJ_CONFIG_DIR", None)
-
+        html = client.fetch_html("1000")
         problem = client.parse_problem(html, "1000")
         self.assertEqual(problem["problem_num"], "1000")
         self.assertIn("A+B", problem["title"],

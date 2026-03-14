@@ -68,7 +68,7 @@ if [[ "$SUBCOMMAND" == "setup" ]]; then
   shift
   SETUP_PY="$ROOT/src/cli/boj_setup.py"
   if [[ -f "$SETUP_PY" ]]; then
-    PYTHONPATH="$ROOT" exec python3 "$SETUP_PY" "$@"
+    PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" exec python3 "$SETUP_PY" "$@"
   else
     echo "Error: boj_setup.py를 찾을 수 없습니다: $SETUP_PY" >&2
     exit 1
@@ -95,7 +95,7 @@ case "$SUBCOMMAND" in
     fi
     MAKE_PY="$ROOT/src/cli/boj_make.py"
     if [[ -f "$MAKE_PY" ]]; then
-      PYTHONPATH="$ROOT" exec python3 "$MAKE_PY" "$PROBLEM_NUM" "${@:3}"
+      PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" exec python3 "$MAKE_PY" "$PROBLEM_NUM" "${@:3}"
     else
       echo "Error: boj_make.py를 찾을 수 없습니다: $MAKE_PY" >&2
       exit 1
