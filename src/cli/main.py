@@ -65,13 +65,30 @@ def main() -> None:
         _print_usage()
         sys.exit(1)
 
+    # setup 외 명령어는 setup_done 가드 적용
+    if command != "setup":
+        from src.core.config import is_setup_done
+
+        if not is_setup_done():
+            print("설정이 완료되지 않았습니다. boj setup을 먼저 실행하세요.")
+            sys.exit(1)
+
     module_path = COMMANDS[command]
 
     # lazy import: 해당 서브커맨드 모듈만 로드
     from importlib import import_module
 
-    module = import_module(module_path)
-    sys.exit(module.main(sub_argv))
+    try:
+        module = import_module(module_path)
+        sys.exit(module.main(sub_argv))
+    except ImportError as e:
+        print(
+            f"Error: '{command}' 모듈을 로드할 수 없습니다: {e}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)
 
 
 if __name__ == "__main__":
