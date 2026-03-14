@@ -53,7 +53,7 @@
 | M6 | 문제데이터 | 이미지 다운로드 실패 (`--image-mode download`) | `Warning: 이미지 다운로드 실패 (URL). reference 모드로 대체.` | reference로 대체 | 아니오 |
 | M7 | 문제데이터 | 이미지 URL이 외부 도메인 | reference 모드: 원본 URL 사용. download 모드: 시도 후 실패 시 경고 | 경고 후 계속 | 아니오 |
 | M8 | 템플릿 | 요청 언어 템플릿 없음 (`--lang rust`) | `Error: 'rust' 템플릿이 없습니다. 지원 언어: java python` | 아니오 | 예 |
-| M9 | config | `setup_done` 플래그 없음 | "설정이 필요합니다" 안내 후 `boj setup` 자동 실행 → setup 완료 후 make 진행 | 예 | 아니오 |
+| M9 | config | `setup_done` 플래그 없음 | C1 공통 가드에서 처리 (디스패처 레벨). make 고유 동작 없음. | 예 | 아니오 |
 | M10 | subprocess | 에이전트 exit nonzero + stderr 있음 | `Error: spec 생성 실패` + exit code + stderr 포함 | 아니오 | 예 |
 | M10a | subprocess | 에이전트 exit 0 + spec 미생성 + stdout 있음 | `Error: spec 생성 실패` + stdout 포함 | 아니오 | 예 |
 | M10b | subprocess | 에이전트 exit nonzero + stderr 비어있음 | `Error: spec 생성 실패` + exit code 포함 | 아니오 | 예 |
@@ -226,7 +226,7 @@
 
 ## 자동복구 정책
 
-- **setup_done 없음**: `boj setup` 자동 실행 후 make 재개
+- **setup_done 없음**: 디스패처에서 `boj setup` 자동 실행 (모든 명령어 공통, C1)
 - **BOJ 통계 실패**: commit은 진행, 메시지에 실패 이유 포함
 - **이미지 다운로드 실패**: reference 모드로 대체
 - **id/description 없음**: 자동 보완 후 실행
