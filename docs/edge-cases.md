@@ -68,6 +68,9 @@
 | M15 | skeleton | test_cases.json fallback 생성 | problem.json의 samples에서 결정론적으로 `{"testCases": [...]}` 생성 | 예 | 아니오 |
 | M15a | skeleton | problem.json에 samples 없음 | fallback 생성 스킵 (test_cases.json 미생성) | 아니오 | 아니오 |
 | M16 | skeleton | template_vars 치환 | `{{LANG}}`, `{{EXT}}`, `{{SUPPORTS_PARSE}}` 등 프롬프트 내 플레이스홀더를 Python에서 치환 후 에이전트에 전달 | N/A | 아니오 |
+| M17 | UX | 에디터 선오픈 (README 직후) | README 생성 직후 `open_editor` 호출 — spec/skeleton 대기 중 문제 확인 가능 | N/A | 아니오 |
+| M18 | UX | `--no-open` + 선오픈 | `--no-open` 이면 선오픈도 하지 않는다 (open_editor 미호출) | N/A | 아니오 |
+| M19 | UX | 에디터 미설정 + 선오픈 | 에디터 미설정이면 선오픈도 하지 않는다 (open_editor 미호출) | N/A | 아니오 |
 
 ---
 
