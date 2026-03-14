@@ -14,6 +14,12 @@
 
 ---
 
+## [2026-03-14] feat(make): open editor right after README, before spec/skeleton [#62]
+**변경 요약:** `_run_pipeline`에서 `open_editor` 호출을 `generate_readme` 직후 / `generate_spec` 이전으로 이동. spec/skeleton 대기 40초~2분 중 사용자가 문제 본문을 즉시 볼 수 있음.
+**의사결정:** `boj_make.py` 오케스트레이션 순서만 변경 (core 함수 재사용, 에디터는 한 번만 열림). --no-open / 에디터 미설정 시 기존 동작 유지.
+**검증 방법:** `python3 -m pytest tests/unit/test_make.py tests/integration/test_make_py.py` → 61 passed (M17/M18/M19 신규 3개 포함)
+---
+
 ## [2026-03-14] fix(make): 에이전트 실행 파이프라인 디버깅 [#57]
 **변경 요약:** `boj make 10799` 실행 시 에이전트가 동작하지 않던 5가지 문제를 순차 디버깅하여 해결. 최종 아키텍처: 에이전트를 순수 함수(stdin→stdout)로 취급, 모든 파일 I/O는 Python이 담당.
 
@@ -28,7 +34,6 @@
 **의사결정:** `context_files` 방식 선택 (3가지 옵션 중). 이유: (1) 에이전트 종류(claude/gemini) 무관, (2) 권한 문제 원천 차단, (3) 호출처에서 필요한 파일만 명시적 지정. 에이전트 실행 아키텍처: `[Python] → stdin(프롬프트+컨텍스트) → [에이전트] → stdout(JSON) → [Python] → 파일 저장`.
 
 **검증 방법:** `python3 -m pytest tests/unit/test_run_agent.py tests/unit/test_make.py -v` — 52 passed.
-
 ---
 
 ## [2026-03-13] feat(install,dispatcher): auto-add PATH and dispatch setup to Python [#57]
