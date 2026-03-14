@@ -54,10 +54,20 @@
 | M7 | 문제데이터 | 이미지 URL이 외부 도메인 | reference 모드: 원본 URL 사용. download 모드: 시도 후 실패 시 경고 | 경고 후 계속 | 아니오 |
 | M8 | 템플릿 | 요청 언어 템플릿 없음 (`--lang rust`) | `Error: 'rust' 템플릿이 없습니다. 지원 언어: java python` | 아니오 | 예 |
 | M9 | config | `setup_done` 플래그 없음 | "설정이 필요합니다" 안내 후 `boj setup` 자동 실행 → setup 완료 후 make 진행 | 예 | 아니오 |
-| M10 | 문제데이터 | 에이전트 timeout/오류 | `Error: 에이전트 실행 실패. 수동으로 진행하세요.` + URL 출력 | 아니오 | 예 |
+| M10 | subprocess | 에이전트 exit nonzero + stderr 있음 | `Error: spec 생성 실패` + exit code + stderr 포함 | 아니오 | 예 |
+| M10a | subprocess | 에이전트 exit 0 + spec 미생성 + stdout 있음 | `Error: spec 생성 실패` + stdout 포함 | 아니오 | 예 |
+| M10b | subprocess | 에이전트 exit nonzero + stderr 비어있음 | `Error: spec 생성 실패` + exit code 포함 | 아니오 | 예 |
+| M10c | subprocess | 에이전트 exit 0 + spec 미생성 + 출력 없음 | `Error: spec 생성 실패` (기본 메시지만) | 아니오 | 예 |
 | M11 | 문제데이터 | 생성 후 자체검증: README ↔ 문제 불일치 | `Warning: README 내용이 문제와 다를 수 있습니다. 확인하세요.` | 아니오 | 아니오 |
 | M12 | spec | `problem.spec.json` 생성 실패 (파일 없음 / JSON 파싱 에러) | `Error: spec 생성에 실패했습니다. boj make <N> -f 로 재시도하세요.` | 아니오 | 예 |
-| M13 | 파일시스템 | `--keep-artifacts` 사용 | `artifacts/problem.json`, `problem.spec.json` 삭제하지 않고 유지 | N/A | 아니오 |
+| M13 | 파일시스템 | `--keep-artifacts` 사용 | 모든 파일 유지 (화이트리스트 정리 스킵) | N/A | 아니오 |
+| M13a | 파일시스템 | 화이트리스트 정리 (기본) | README.md, Solution.*, test/, artifacts/(이미지만) 유지. 나머지(.omc, problem.json 등) 삭제 | N/A | 아니오 |
+| M14 | skeleton | 에이전트 stdout에 유효한 JSON manifest | `{"files": {...}}` 파싱 → 파일 생성 (Solution, Parse, test_cases.json 등) | N/A | 아니오 |
+| M14a | skeleton | 에이전트 stdout이 빈 문자열 / JSON 아님 | Solution 미생성 Warning + test_cases.json fallback 생성 | fallback | 아니오 |
+| M14b | skeleton | 에이전트 실패 (exit nonzero) | Solution 미생성 Warning + test_cases.json fallback 생성 (samples 기반) | fallback | 아니오 |
+| M15 | skeleton | test_cases.json fallback 생성 | problem.json의 samples에서 결정론적으로 `{"testCases": [...]}` 생성 | 예 | 아니오 |
+| M15a | skeleton | problem.json에 samples 없음 | fallback 생성 스킵 (test_cases.json 미생성) | 아니오 | 아니오 |
+| M16 | skeleton | template_vars 치환 | `{{LANG}}`, `{{EXT}}`, `{{SUPPORTS_PARSE}}` 등 프롬프트 내 플레이스홀더를 Python에서 치환 후 에이전트에 전달 | N/A | 아니오 |
 
 ---
 
@@ -215,5 +225,5 @@
 - **submit/ 폴더 없음**: 자동 생성
 - **폴더 이미 존재**: `-f` 옵션으로 덮어쓰기 (미지정 시 에러)
 
-*최종 업데이트: 2026-03-12*
+*최종 업데이트: 2026-03-14*
 

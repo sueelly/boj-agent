@@ -31,6 +31,7 @@ tests/
     test_client.py          # BOJ client 단위 테스트
     test_config.py          # config 단위 테스트 (CF1-CF21)
     test_make.py            # make 단위 테스트 (M1-M13)
+    test_run_agent.py       # run_agent/generate_spec 에러 흐름 (M10-M10c)
     test_setup.py           # setup 단위 테스트 (S1-S15)
     test_normalizer.py      # normalizer 단위 테스트 (NR1-NR5)
     test_install.py         # install 단위 테스트 (IN1-IN8)
@@ -268,7 +269,7 @@ def test_creates_readme_when_valid_problem(boj_env, fixture_path):
 
 | 커맨드 | Happy Path | Error Path | Edge Case | 참조 |
 |--------|-----------|-----------|-----------|------|
-| `make` | 문제 폴더·JSON·README·spec 생성 | 404, 네트워크 실패, 잘못된 언어, spec 실패 | setup_done 체크, -f 덮어쓰기, --keep-artifacts | M1-M13 |
+| `make` | 문제 폴더·JSON·README·spec·skeleton 생성 | 404, 네트워크 실패, 잘못된 언어, spec 실패, skeleton 실패 | setup_done 체크, -f 덮어쓰기, --keep-artifacts, 화이트리스트 정리, template_vars 치환, test_cases fallback | M1-M16 |
 | `run` | Java 2/2 통과, Python 2/2 통과 | 폴더·솔루션·테스트 없음, 컴파일 오류 | id 없는 케이스 자동 보완, 부분 통과 | R1-R12 |
 | `commit` | 커밋 생성 | git 아님, 폴더 없음, email 미설정 | 변경사항 없음, --no-stats | CT1-CT9 |
 | `submit` | Submit.java 생성 + 컴파일 | 솔루션 없음, 미지원 언어 | Parse 없는 경우, --force | SB1-SB10 |
@@ -519,32 +520,37 @@ def test_generate_spec_raises_when_spec_missing(tmp_path):
             generate_spec(prob_dir, "echo MOCK")
 
 
-def test_cleanup_artifacts_removes_json_keeps_images(tmp_path):
-    """cleanup은 JSON만 삭제하고 이미지는 유지한다."""
-    artifacts = tmp_path / "artifacts"
-    artifacts.mkdir()
-    (artifacts / "problem.json").write_text("{}")
-    (artifacts / "problem.spec.json").write_text("{}")
-    (artifacts / "image.png").write_bytes(b"PNG")
+def test_cleanup_whitelist_keeps_solution_and_test(tmp_path):
+    """화이트리스트 정리: README, Solution, test/, artifacts 이미지만 유지."""
+    # 유지할 파일
+    (tmp_path / "README.md").write_text("# readme")
+    (tmp_path / "Solution.java").write_text("class Solution {}")
+    (tmp_path / "test").mkdir()
+    (tmp_path / "artifacts").mkdir()
+    (tmp_path / "artifacts" / "image.png").write_bytes(b"PNG")
+    # 삭제될 파일
+    (tmp_path / ".omc").mkdir()
+    (tmp_path / "random.txt").write_text("junk")
+    (tmp_path / "artifacts" / "problem.json").write_text("{}")
 
-    cleanup_artifacts(tmp_path, keep=False)
+    cleanup_artifacts(tmp_path, keep=False, lang="java")
 
-    assert not (artifacts / "problem.json").exists()
-    assert not (artifacts / "problem.spec.json").exists()
-    assert (artifacts / "image.png").exists()
+    assert (tmp_path / "README.md").exists()
+    assert (tmp_path / "Solution.java").exists()
+    assert not (tmp_path / ".omc").exists()
+    assert not (tmp_path / "random.txt").exists()
 
 
 def test_cleanup_artifacts_keeps_all_when_flag(tmp_path):
     """--keep-artifacts 시 모든 파일 유지."""
-    artifacts = tmp_path / "artifacts"
-    artifacts.mkdir()
-    (artifacts / "problem.json").write_text("{}")
-    (artifacts / "problem.spec.json").write_text("{}")
+    (tmp_path / "artifacts").mkdir()
+    (tmp_path / "artifacts" / "problem.json").write_text("{}")
+    (tmp_path / "random.txt").write_text("junk")
 
     cleanup_artifacts(tmp_path, keep=True)
 
-    assert (artifacts / "problem.json").exists()
-    assert (artifacts / "problem.spec.json").exists()
+    assert (tmp_path / "artifacts" / "problem.json").exists()
+    assert (tmp_path / "random.txt").exists()
 ```
 
 #### B. 에이전트 통합 테스트 (`@pytest.mark.agent`)
@@ -705,6 +711,7 @@ Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section
 | 단위 (config) | `tests/unit/test_config.sh` | `tests/unit/test_config.py` | ✅ Python 구현 완료 |
 | 단위 (setup) | `tests/unit/commands/setup_*.sh` | `tests/unit/test_setup.py` | ✅ Python 구현 완료 |
 | 단위 (make) | — | `tests/unit/test_make.py` | ✅ Python 구현 완료 |
+| 단위 (run_agent) | — | `tests/unit/test_run_agent.py` | ✅ Python 구현 완료 |
 | 단위 (client) | `tests/unit/test_client.sh` | `tests/unit/test_client.py` | ✅ Python 구현 완료 |
 | 단위 (install) | — | `tests/unit/test_install.py` | ✅ Python 구현 완료 |
 | 단위 (normalizer) | — | `tests/unit/test_normalizer.py` | ✅ Python 구현 완료 |

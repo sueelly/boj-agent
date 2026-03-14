@@ -14,6 +14,23 @@
 
 ---
 
+## [2026-03-14] fix(make): 에이전트 실행 파이프라인 디버깅 [#57]
+**변경 요약:** `boj make 10799` 실행 시 에이전트가 동작하지 않던 5가지 문제를 순차 디버깅하여 해결. 최종 아키텍처: 에이전트를 순수 함수(stdin→stdout)로 취급, 모든 파일 I/O는 Python이 담당.
+
+**디버깅 과정:**
+
+1. **에러 메시지 미출력** — `run_agent`가 `capture_output=True`로 stdout/stderr를 캡처하면서 `generate_spec`은 returncode만 확인. 에러 메시지에 returncode, stderr, stdout을 독립적으로 포함하도록 수정.
+2. **stdout 200자 잘림** — `[:200]` 제한 제거.
+3. **에이전트가 프롬프트를 요약만 함** — 프롬프트 **파일 경로**를 커맨드라인 인자로 전달 → 에이전트가 파일을 읽고 설명만 출력. 파일 내용을 stdin(`input=`)으로 전달하도록 수정.
+4. **에이전트 exit 0 + 출력 없음** — 마크다운 특수문자가 포함된 긴 프롬프트를 커맨드라인 인자로 전달하면 실패. stdin으로 전환하여 해결.
+5. **에이전트가 problem_dir 파일 읽기 권한 없음** — `cwd=boj_root`로 실행하면 프로젝트 외부 파일 접근 불가. `context_files` 파라미터 도입: Python이 파일을 읽어 프롬프트에 임베딩 → 에이전트 파일시스템 접근 불필요.
+
+**의사결정:** `context_files` 방식 선택 (3가지 옵션 중). 이유: (1) 에이전트 종류(claude/gemini) 무관, (2) 권한 문제 원천 차단, (3) 호출처에서 필요한 파일만 명시적 지정. 에이전트 실행 아키텍처: `[Python] → stdin(프롬프트+컨텍스트) → [에이전트] → stdout(JSON) → [Python] → 파일 저장`.
+
+**검증 방법:** `python3 -m pytest tests/unit/test_run_agent.py tests/unit/test_make.py -v` — 52 passed.
+
+---
+
 ## [2026-03-13] feat(install,dispatcher): auto-add PATH and dispatch setup to Python [#57]
 **변경 요약:** `src/boj`의 setup 디스패치를 `setup.sh` → `boj_setup.py`(PYTHONPATH 설정 포함)로 교체; `install.py`에 `add_to_path()` 추가하여 터미널 재시작 없이 `boj` 전역 사용 가능; `setup_branches.sh` 테스트의 lang 키 `lang` → `prog_lang` 수정.
 **의사결정:** ARCHITECTURE.md Option C 전환 계획의 setup 단계 완료. `exec python3 "$SETUP_PY"` 방식으로 `setup.sh` 의존성 제거. PATH 자동 추가는 rc 파일이 있으면 직접 쓰고, 없으면 안내만 출력.
