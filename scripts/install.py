@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """BOJ CLI 설치 스크립트.
 
+.. deprecated::
+    이 스크립트는 더 이상 권장되지 않습니다.
+    ``pip install boj-agent`` 로 설치하세요.
+    자세한 내용은 README.md를 참고하세요.
+
 Clone → python3 scripts/install.py → 설치 완료.
 src/setup-boj-cli.sh를 대체하는 Python 구현 (Issue #47).
 
@@ -301,6 +306,20 @@ def main(argv: list[str] | None = None, *, script_path: Path | None = None) -> i
     Returns:
         종료 코드 (0이면 성공).
     """
+    import warnings
+
+    warnings.warn(
+        "scripts/install.py는 deprecated입니다. "
+        "'pip install boj-agent'로 설치하세요.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    print()
+    print("⚠️  이 설치 방식은 deprecated입니다.")
+    print("   권장: pip install boj-agent")
+    print("   개발: pip install -e .")
+    print()
+
     parser = argparse.ArgumentParser(description="BOJ CLI 설치 스크립트")
     parser.add_argument(
         "--force", action="store_true", help="기존 설치 덮어쓰기"

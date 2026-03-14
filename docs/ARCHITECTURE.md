@@ -9,7 +9,7 @@
 ```
 boj-agent/
   src/
-    boj                       # CLI 진입점 (Bash 디스패처)
+    boj                       # CLI 진입점 (Bash 디스패처, → src/cli/main.py로 전환 중)
     setup-boj-cli.sh          # [deprecated] → scripts/install.py
     commands/                 # 서브커맨드 (각각 독립 Bash 스크립트)
       make.sh     (254줄)    # [A]Fetch → [B]Normalize → [C]Agent skeleton
@@ -56,7 +56,8 @@ boj-agent/
     integration/              # Bash/Python 통합 테스트
     e2e/                      # E2E 테스트
   scripts/
-    install.py                # Python 설치 스크립트 (clone → 설치 완료)
+    install.py                # [deprecated] → pip install boj-agent
+  pyproject.toml              # 패키지 정의 (pip install boj-agent)
   docs/                       # 문서
     ARCHITECTURE.md           # 프로젝트 구조 (현재 + 목표)
     COMMAND-SPEC.md           # 명령어별 로직 정의서
@@ -195,7 +196,8 @@ boj-agent/
 3. `boj make` — spec 기반 파이프라인으로 재설계 (#54, 진행 중)
 4. `boj run` (Java only) — 테스트 러너 Python 래퍼
 5. `boj submit` — sed/grep 접합을 Python 문자열 처리로 개선
-6. `boj commit`, `boj open`, `boj review` — 순차
+6. ~~`boj commit`, `boj open`, `boj review`~~ — ✅ 완료 (#66-#69)
+7. ~~PyPI 패키지화~~ — ✅ 완료 (#70): `pyproject.toml`, `src/cli/main.py` 디스패처, `pip install boj-agent`
 
 명령어마다 별도 PR. 한 번에 전부 재구성하지 않음.
 
@@ -211,4 +213,4 @@ boj-agent/
 
 ---
 
-*최종 업데이트: 2026-03-12*
+*최종 업데이트: 2026-03-15*

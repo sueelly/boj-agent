@@ -4,5 +4,11 @@
 .DS_Store
 # 컴파일 산출물
 *.class
+# Python
+__pycache__/
+*.egg-info/
+dist/
+build/
+.venv/
 # oh-my-claudecode 상태 디렉터리
 .omc/

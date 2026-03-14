@@ -19,6 +19,11 @@
 **변경 요약:** `boj review`가 에이전트에게 파일 쓰기를 위임하던 방식에서, Python 코드가 에이전트 stdout을 캡처하여 `submit/REVIEW.md`를 직접 저장하도록 변경. `boj make`의 파일 쓰기 패턴(pathlib + mkdir + write_text)과 동일.
 **의사결정:** 에이전트(`claude -p` 등)가 파일 쓰기 권한이 없으면 리뷰 내용이 stdout으로만 출력되고 저장되지 않는 문제 발생. `make.py`처럼 에이전트를 순수 함수(stdin→stdout)로 취급하고, 모든 파일 I/O는 Python이 담당하는 아키텍처로 통일. `write_review_file()` 함수를 `review.py`에 추가하고, `review()` 함수에서 agent 성공 후 호출. `prompts/review.md`는 "파일 생성" → "stdout 출력" 지시로 변경. 빈 stdout인 경우 파일 미생성 guard 추가.
 **검증 방법:** `python3 -m pytest tests/unit/test_review.py tests/integration/test_review_py.py -v` → 29 passed. 전체 `python3 -m pytest tests/unit/ tests/integration/ -v --skip-live` → 425 passed, 24 skipped.
+
+## [2026-03-15] feat(infra): PyPI 패키지 배포 [#70]
+**변경 요약:** `pip install boj-agent`로 설치 가능하도록 PyPI 패키지화. `pyproject.toml` 생성, `src/cli/main.py` Python 통합 디스패처 구현(Bash `src/boj` 대체), `src/__init__.py` 추가로 패키지 구조 정리, CI publish 워크플로우(`.github/workflows/publish.yml`) 추가, `scripts/install.py` deprecated 처리, `docs/user-guide.md` 설치 가이드 업데이트.
+**의사결정:** argparse 기반 디스패처로 구현. 각 서브커맨드는 lazy import(`importlib.import_module`)로 해당 모듈만 로드하여 startup 시간 최소화. 진입점 `boj = "src.cli.main:main"`으로 등록하여 `pip install` 후 바로 `boj` 명령어 사용 가능. `scripts/install.py`는 하위호환을 위해 유지하되 DeprecationWarning 추가. CI는 `v*` 태그 push 시 `pypa/gh-action-pypi-publish`로 자동 배포.
+**검증 방법:** `pip install -e .` 성공, `boj --help` / `boj run --help` / `boj unknown` 동작 확인. `python -m pytest tests/unit/test_main.py -v` → 14 passed. `python -m pytest tests/unit/ -v` → 374 passed, 0 failures.
 ---
 
 ## [2026-03-15] fix(boj): setup_done 가드를 디스패처에 추가 [#65]

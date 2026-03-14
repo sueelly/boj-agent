@@ -30,6 +30,7 @@ tests/
   unit/                     # 단위 테스트 (Python pytest + Bash)
     test_client.py          # BOJ client 단위 테스트
     test_config.py          # config 단위 테스트 (CF1-CF21)
+    test_main.py            # 통합 디스패처 단위 테스트 (help, routing, error)
     test_make.py            # make 단위 테스트 (M1-M13)
     test_run_agent.py       # run_agent/generate_spec 에러 흐름 (M10-M10c)
     test_setup.py           # setup 단위 테스트 (S1-S15)
@@ -711,6 +712,7 @@ Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section
 | 단위 (client) | `tests/unit/test_client.sh` | `tests/unit/test_client.py` | ✅ Python 구현 완료 |
 | 단위 (install) | — | `tests/unit/test_install.py` | ✅ Python 구현 완료 |
 | 단위 (normalizer) | — | `tests/unit/test_normalizer.py` | ✅ Python 구현 완료 |
+| 단위 (main dispatcher) | — | `tests/unit/test_main.py` | ✅ Python 구현 완료 |
 | 통합 | `tests/integration/*.sh` | `tests/integration/test_*.py` | 병행 운영 중 |
 | E2E | — | `tests/e2e/` | `test_full_workflow.sh`, `test_install_cli.py` |
 | 픽스처 | — | `tests/fixtures/99999/` 등 | ✅ 정리 완료 |
@@ -1087,4 +1089,30 @@ python3 -m pytest tests/e2e/test_install_cli.py -v -m slow
 
 ---
 
-*최종 업데이트: 2026-03-14*
+## 21. Python 통합 디스패처 (`tests/unit/test_main.py`)
+
+> Issue #70 — `src/cli/main.py` argparse 디스패처 단위 테스트.
+
+### 21.1 테스트 위치
+
+```
+tests/unit/test_main.py    # Python 통합 디스패처 단위 테스트
+```
+
+### 21.2 테스트 전략
+
+`subprocess.run([sys.executable, "-m", "src.cli.main", ...])` 방식으로 실제 프로세스를 실행한다.
+모킹 없이 실제 서브커맨드 모듈이 로드되는지 검증한다.
+
+### 21.3 테스트 매트릭스
+
+| # | 테스트 | 커버리지 |
+|---|--------|----------|
+| 1 | 인수 없음 → 사용법 출력 (exit 0) | 기본 동작 |
+| 2 | `--help` → 사용법 출력 (exit 0) | 도움말 |
+| 3 | `-h` → 사용법 출력 (exit 0) | 도움말 축약 |
+| 4 | `help` → 사용법 출력 (exit 0) | 도움말 서브커맨드 |
+| 5 | 알 수 없는 서브커맨드 → exit 1 + stderr | 에러 처리 |
+| 6-12 | 각 서브커맨드 `--help` → exit 0 + 라우팅 확인 | make, run, open, commit, review, submit, setup |
+
+*최종 업데이트: 2026-03-15*
