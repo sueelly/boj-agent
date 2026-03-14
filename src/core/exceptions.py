@@ -23,3 +23,15 @@ class ProblemExistsError(BojError):
 
 class SpecError(BojError):
     """spec 파일 미생성 또는 유효하지 않은 JSON."""
+
+
+class RunError(BojError):
+    """run 실행 중 일반 에러 (파일 누락, 미지원 언어 등)."""
+
+
+class RunTimeoutError(RunError):
+    """테스트 실행 시간 초과."""
+
+
+class RunMemoryError(RunError):
+    """테스트 실행 메모리 초과."""

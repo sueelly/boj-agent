@@ -87,6 +87,11 @@
 | R10 | 파일시스템 | Solution.java 컴파일 오류 | javac 에러 메시지 그대로 출력 | 아니오 | 예 |
 | R11 | 파일시스템 | Solution.java 런타임 예외 | 해당 테스트 케이스 `❌ 에러: NullPointerException` 출력 후 계속 | 아니오 | 아니오 (계속) |
 | R12 | config | `prog_lang` 이 지원하지 않는 값 | `Error: 지원하지 않는 언어: fortran. 지원: java python` | 아니오 | 예 |
+| R13 | 리소스 | README.md에서 시간 제한 파싱 (예: "2 초") | 파싱된 값(초 단위)을 subprocess timeout으로 적용 | N/A | 아니오 |
+| R14 | 리소스 | README.md에서 메모리 제한 파싱 (예: "256 MB") | 파싱된 값(MB 단위)을 resource.setrlimit으로 적용 | N/A | 아니오 |
+| R15 | 리소스 | README.md 없음 (시간/메모리 제한 파싱 불가) | 기본값 사용 (시간 5초, 메모리 256MB) + `Warning: README.md를 찾을 수 없습니다. 기본 제한을 사용합니다.` | 예 | 아니오 |
+| R16 | 리소스 | 테스트 실행 시간 초과 | `Error: 시간 초과 (제한: N초)` 출력 후 해당 테스트 실패 처리, 나머지 계속 | 아니오 | 아니오 (계속) |
+| R17 | 리소스 | 테스트 메모리 초과 | `Error: 메모리 초과 (제한: N MB)` 출력 후 해당 테스트 실패 처리, 나머지 계속 | 아니오 | 아니오 (계속) |
 
 ---
 
