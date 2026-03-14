@@ -81,6 +81,11 @@ def main(argv: list[str] | None = None) -> int:
                 print(result.stdout, end="")
             if result.stderr:
                 print(result.stderr, end="", file=sys.stderr)
+            if result.stdout and result.stdout.strip():
+                print(
+                    f"\n{GREEN}submit/REVIEW.md 저장 완료{NC}",
+                    file=sys.stderr,
+                )
         else:
             # fallback 모드
             print(

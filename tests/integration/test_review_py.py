@@ -53,10 +53,10 @@ class TestReviewHappy:
         )
 
     def test_review_with_echo_agent(self, boj_env, fixture_path):
-        """RV1: echo 에이전트로 정상 리뷰 실행."""
+        """RV1: echo 에이전트로 정상 리뷰 실행 + REVIEW.md 생성."""
         tmp_path, env = boj_env
         fix = fixture_path(99999)
-        _setup_review_dir(tmp_path, fix, lang="java")
+        prob_dir = _setup_review_dir(tmp_path, fix, lang="java")
 
         # echo를 에이전트로 설정 (config 파일)
         config_dir = Path(env["BOJ_CONFIG_DIR"])
@@ -69,6 +69,10 @@ class TestReviewHappy:
         assert result.returncode == 0, (
             f"stdout={result.stdout}\nstderr={result.stderr}"
         )
+        # REVIEW.md 파일 생성 확인
+        review_path = prob_dir / "submit" / "REVIEW.md"
+        assert review_path.exists(), "submit/REVIEW.md should be created"
+        assert len(review_path.read_text(encoding="utf-8").strip()) > 0
 
 
 # ---------------------------------------------------------------------------
