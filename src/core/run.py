@@ -280,15 +280,11 @@ def execute_tests(
             f"시간 초과 (제한: {timeout_sec}초)"
         ) from e
 
-    # 메모리 초과 감지: 시그널 또는 stderr 패턴
-    if result.returncode < 0 or (
-        result.returncode != 0
-        and _is_memory_error(result.stderr)
-    ):
-        if _is_memory_error(result.stderr):
-            raise RunMemoryError(
-                f"메모리 초과 (제한: {memory_mb} MB)"
-            )
+    # 메모리 초과 감지: stderr 패턴 기반
+    if result.returncode != 0 and _is_memory_error(result.stderr):
+        raise RunMemoryError(
+            f"메모리 초과 (제한: {memory_mb} MB)"
+        )
 
     return RunResult(
         returncode=result.returncode,
@@ -305,7 +301,6 @@ def _is_memory_error(stderr: str) -> bool:
         "Cannot allocate memory",
         "std::bad_alloc",
         "ENOMEM",
-        "mmap",
     ]
     return any(p in stderr for p in patterns)
 
