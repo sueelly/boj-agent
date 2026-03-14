@@ -741,3 +741,53 @@ class TestGenerateSkeleton:
         assert tv["EXT"] == "java"
         assert tv["SUPPORTS_PARSE"] == "true"
         assert str(problem_dir) in tv["PROBLEM_DIR"]
+
+
+# ──────────────────────────────────────────────
+# TestOpenEditor
+# ──────────────────────────────────────────────
+
+class TestOpenEditor:
+    """open_editor가 subprocess.Popen(non-blocking)을 사용하는지 검증."""
+
+    def test_uses_popen_not_run(self, tmp_path):
+        """Popen으로 실행 — subprocess.run은 호출되지 않아야 한다."""
+        from src.core.make import open_editor
+
+        with (
+            patch("src.core.make.subprocess.Popen") as mock_popen,
+            patch("src.core.make.subprocess.run") as mock_run,
+        ):
+            open_editor(tmp_path, "code")
+
+        mock_popen.assert_called_once()
+        mock_run.assert_not_called()
+
+    def test_passes_problem_dir_as_arg(self, tmp_path):
+        """problem_dir이 에디터 커맨드 인자로 전달된다."""
+        from src.core.make import open_editor
+
+        with patch("src.core.make.subprocess.Popen") as mock_popen:
+            open_editor(tmp_path, "code")
+
+        args, _ = mock_popen.call_args
+        cmd = args[0]
+        assert str(tmp_path) in cmd
+
+    def test_skips_when_editor_cmd_empty(self, tmp_path):
+        """editor_cmd가 빈 문자열이면 Popen을 호출하지 않는다."""
+        from src.core.make import open_editor
+
+        with patch("src.core.make.subprocess.Popen") as mock_popen:
+            open_editor(tmp_path, "")
+
+        mock_popen.assert_not_called()
+
+    def test_skips_when_editor_cmd_none(self, tmp_path):
+        """editor_cmd가 None이면 Popen을 호출하지 않는다."""
+        from src.core.make import open_editor
+
+        with patch("src.core.make.subprocess.Popen") as mock_popen:
+            open_editor(tmp_path, None)
+
+        mock_popen.assert_not_called()

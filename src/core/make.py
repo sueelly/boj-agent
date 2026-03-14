@@ -457,14 +457,15 @@ def _generate_test_cases_fallback(problem_dir: Path) -> None:
 
 
 def open_editor(problem_dir: Path, editor_cmd: str | None) -> None:
-    """Step 4: 설정된 에디터로 문제 폴더를 연다.
+    """Step 2: 설정된 에디터로 문제 폴더를 연다 (non-blocking).
 
-    editor_cmd가 비어 있으면 스킵 (COMMAND-SPEC: 설정된 editor 없으면 스킵).
+    Popen으로 실행하여 spec/skeleton 생성이 에디터와 병렬로 진행된다.
+    editor_cmd가 비어 있으면 스킵.
     """
     if not (editor_cmd or "").strip():
         return
     cmd = [*shlex.split(editor_cmd.strip()), str(problem_dir)]
-    subprocess.run(cmd, cwd=str(problem_dir))
+    subprocess.Popen(cmd, cwd=str(problem_dir))
 
 
 def cleanup_artifacts(problem_dir: Path, keep: bool, lang: str = "java") -> None:
