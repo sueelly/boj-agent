@@ -170,6 +170,25 @@ class TestRunBranches:
 
         assert "1/2" in result.stdout
 
+    def test_run_warns_when_readme_missing(self, boj_env, fixture_path):
+        """R15: README.md 없으면 Warning 출력 후 기본 제한으로 실행한다."""
+        tmp_path, env = boj_env
+        fix = fixture_path(99999)
+        prob_dir = setup_problem_dir(tmp_path, fix, lang="python")
+
+        # README.md 삭제
+        readme = prob_dir / "README.md"
+        if readme.exists():
+            readme.unlink()
+
+        result = run_boj(env, "run", "99999", "--lang", "python")
+
+        assert result.returncode == 0, (
+            f"stdout={result.stdout}\nstderr={result.stderr}"
+        )
+        assert "Warning" in result.stderr
+        assert "README.md" in result.stderr
+
 
 # ---------------------------------------------------------------------------
 # Error Paths

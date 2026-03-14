@@ -8,6 +8,7 @@ import platform
 import re
 import shlex
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -368,6 +369,13 @@ def run(
 
     # README.md에서 리소스 제한 파싱
     readme_path = problem_dir / "README.md"
+    if not readme_path.exists():
+        print(
+            "Warning: README.md를 찾을 수 없습니다. "
+            f"기본 제한을 사용합니다 (시간: {DEFAULT_TIME_LIMIT_SEC}초, "
+            f"메모리: {DEFAULT_MEMORY_LIMIT_MB}MB).",
+            file=sys.stderr,
+        )
     time_limit, memory_limit = parse_resource_limits(readme_path)
 
     # test_cases.json 정규화 (원본 비파괴)
