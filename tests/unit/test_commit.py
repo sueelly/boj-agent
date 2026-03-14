@@ -108,7 +108,7 @@ class TestFetchBojStats:
         mock_resp = MagicMock()
         mock_resp.text = html
 
-        with patch("src.core.commit.requests.get", return_value=mock_resp):
+        with patch("requests.get", return_value=mock_resp):
             result = fetch_boj_stats("1000", "session123", "testuser")
 
         assert result == "[✓ 56ms 1234KB]"
@@ -130,7 +130,7 @@ class TestFetchBojStats:
         import requests
 
         with patch(
-            "src.core.commit.requests.get",
+            "requests.get",
             side_effect=requests.exceptions.Timeout("timeout"),
         ):
             result = fetch_boj_stats("1000", "session123", "testuser")
@@ -143,7 +143,7 @@ class TestFetchBojStats:
         mock_resp = MagicMock()
         mock_resp.text = html
 
-        with patch("src.core.commit.requests.get", return_value=mock_resp):
+        with patch("requests.get", return_value=mock_resp):
             result = fetch_boj_stats("1000", "session123", "testuser")
 
         assert "Accepted 없음" in result
@@ -154,7 +154,7 @@ class TestFetchBojStats:
         mock_resp = MagicMock()
         mock_resp.text = html
 
-        with patch("src.core.commit.requests.get", return_value=mock_resp):
+        with patch("requests.get", return_value=mock_resp):
             result = fetch_boj_stats("1000", "session123", "testuser")
 
         assert "파싱 실패" in result
@@ -164,7 +164,7 @@ class TestFetchBojStats:
         mock_resp = MagicMock()
         mock_resp.text = ""
 
-        with patch("src.core.commit.requests.get", return_value=mock_resp):
+        with patch("requests.get", return_value=mock_resp):
             result = fetch_boj_stats("1000", "session123", "testuser")
 
         assert "응답 없음" in result
