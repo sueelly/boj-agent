@@ -296,3 +296,41 @@ def check_config() -> None:
         print(f"  setup:         {GREEN}✓ 완료{NC}")
     else:
         print(f"  setup:         {RED}✗ 미완료{NC} (boj setup 실행)")
+
+
+# ---------------------------------------------------------------------------
+# 문제 폴더 검색
+# ---------------------------------------------------------------------------
+
+def find_problem_dir(root: str, problem_num: str) -> str | None:
+    """문제 번호로 시작하는 폴더를 찾는다.
+
+    Args:
+        root: 풀이 루트 디렉터리 경로.
+        problem_num: 문제 번호 (예: "99999").
+
+    Returns:
+        찾은 폴더의 절대 경로. 없으면 None.
+
+    Raises:
+        ValueError: problem_num이 비어있거나 숫자가 아닌 경우.
+    """
+    from pathlib import Path
+
+    # 입력 검증: 빈 문자열 또는 숫자가 아닌 값 거부
+    if not problem_num or not problem_num.strip():
+        raise ValueError("문제 번호가 비어있습니다.")
+    if not problem_num.isdigit():
+        raise ValueError(
+            f"문제 번호는 숫자여야 합니다: '{problem_num}'"
+        )
+
+    root_path = Path(root)
+    if not root_path.exists():
+        return None
+
+    for d in sorted(root_path.iterdir()):
+        if d.is_dir() and d.name.startswith(problem_num):
+            return str(d)
+
+    return None

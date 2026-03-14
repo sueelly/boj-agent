@@ -101,7 +101,22 @@ case "$SUBCOMMAND" in
       exit 1
     fi
     ;;
-  run|commit|open|review|submit)
+  run)
+    # Python 마이그레이션 (#60): src/cli/boj_run.py로 라우팅
+    RUN_PY="$ROOT/src/cli/boj_run.py"
+    if [[ -f "$RUN_PY" ]]; then
+      shift  # subcommand 제거
+      PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" exec python3 "$RUN_PY" "$@"
+    else
+      # fallback: 기존 Bash
+      if [[ ! -x "$CMD_SCRIPT" ]]; then
+        echo "Error: $CMD_SCRIPT 를 찾을 수 없거나 실행할 수 없습니다." >&2
+        exit 1
+      fi
+      exec "$CMD_SCRIPT" "$ROOT" "$PROBLEM_NUM" "${@:3}"
+    fi
+    ;;
+  commit|open|review|submit)
     if [[ ! -x "$CMD_SCRIPT" ]]; then
       echo "Error: $CMD_SCRIPT 를 찾을 수 없거나 실행할 수 없습니다." >&2
       echo "  (chmod +x $CMD_SCRIPT 로 실행 권한을 추가해보세요)" >&2
