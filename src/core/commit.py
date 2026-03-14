@@ -8,9 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import requests
-from bs4 import BeautifulSoup
-
 from src.core.config import config_get, find_problem_dir
 from src.core.exceptions import BojError
 
@@ -142,6 +139,11 @@ def fetch_boj_stats(
     )
 
     try:
+        import requests  # lazy import: CI에서 미설치 가능
+    except ImportError:
+        return "[BOJ 통계: requests 모듈 없음]"
+
+    try:
         resp = requests.get(
             url,
             headers={
@@ -155,6 +157,11 @@ def fetch_boj_stats(
 
     if not resp.text:
         return "[BOJ 통계: 응답 없음]"
+
+    try:
+        from bs4 import BeautifulSoup  # lazy import: CI에서 미설치 가능
+    except ImportError:
+        return "[BOJ 통계: bs4 모듈 없음]"
 
     # BeautifulSoup으로 메모리/시간 파싱
     soup = BeautifulSoup(resp.text, "html.parser")
@@ -173,7 +180,7 @@ def fetch_boj_stats(
     return "[BOJ 통계: Accepted 없음]"
 
 
-def _parse_stat_td(soup: BeautifulSoup, unit: str) -> str | None:
+def _parse_stat_td(soup: "BeautifulSoup", unit: str) -> str | None:
     """BeautifulSoup에서 특정 단위의 td 값을 추출한다.
 
     Args:
