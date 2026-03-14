@@ -23,7 +23,7 @@ def _env_for_e2e(home: Path, base: dict | None = None) -> dict[str, str]:
     env["HOME"] = str(home)
     env.pop("BOJ_ROOT", None)
     env["BOJ_CONFIG_DIR"] = str(home / ".config" / "boj")
-    env["BOJ_AGENT_CMD"] = "echo MOCK_AGENT"
+    env["BOJ_AGENT"] = "echo MOCK_AGENT"
     env["BOJ_EDITOR"] = "true"
     return env
 
@@ -88,8 +88,11 @@ def test_install_then_boj_on_path_make_and_run(tmp_path: Path) -> None:
     cfg.mkdir(parents=True, exist_ok=True)
     (cfg / "setup_done").write_text("")
     (cfg / "prog_lang").write_text("java\n")
-    (cfg / "solution_root").write_text(f"{workspace}\n")
-    (cfg / "agent_cmd").write_text(f"{env['BOJ_AGENT_CMD']}\n")
+    # solution_root = agent_root: bash run.sh는 $ROOT(=agent_root)에서
+    # 문제 폴더를 찾으므로, make도 같은 곳에 생성해야 한다.
+    # issue-60에서 run이 Python으로 전환되면 solution_root를 분리할 수 있다.
+    (cfg / "solution_root").write_text(f"{agent_root}\n")
+    (cfg / "agent").write_text(f"{env['BOJ_AGENT']}\n")
     (cfg / "editor").write_text("true\n")
     (cfg / "username").write_text("e2e\n")
 
