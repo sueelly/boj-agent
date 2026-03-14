@@ -6,6 +6,7 @@ Issue #60 — run.sh Python 마이그레이션. TDD Green 단계.
 import json
 import platform
 import re
+import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -126,15 +127,17 @@ def build_run_command(
 
 def _build_java_command(problem_dir: Path, template_dir: Path) -> list[str]:
     """Java 컴파일 + 실행 명령을 생성한다."""
+    pd = shlex.quote(str(problem_dir))
+    td = shlex.quote(str(template_dir))
     return [
         "bash", "-c",
         (
-            f'cd "{problem_dir}" && '
-            f'javac -cp ".:{template_dir}" '
-            f'"{template_dir}/ParseAndCallSolve.java" '
-            f'"{template_dir}/Test.java" '
+            f'cd {pd} && '
+            f'javac -cp ".:{td}" '
+            f'{td}/ParseAndCallSolve.java '
+            f'{td}/Test.java '
             f'Solution.java test/Parse.java 2>&1 && '
-            f'java -cp ".:test:{template_dir}" Test; '
+            f'java -cp ".:test:{td}" Test; '
             f'ret=$?; rm -f ./*.class test/*.class 2>/dev/null; exit $ret'
         ),
     ]
