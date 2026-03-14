@@ -4,6 +4,7 @@ Issue #60 — Python 마이그레이션 + 리소스 제한. TDD Red 단계.
 edge-cases R1-R17 커버리지 (integration 레벨).
 """
 
+import platform
 import shutil
 import subprocess
 from pathlib import Path
@@ -215,7 +216,7 @@ class TestRunResourceLimits:
         assert "시간 초과" in combined or "Timeout" in combined or "timeout" in combined
 
     @pytest.mark.skipif(
-        __import__("platform").system() == "Darwin",
+        platform.system() == "Darwin",
         reason="macOS RLIMIT_RSS는 advisory only — 메모리 제한 미강제",
     )
     def test_reports_memory_error_when_exceeded(self, boj_env, fixture_path):
