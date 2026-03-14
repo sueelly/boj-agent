@@ -109,7 +109,7 @@ class TestParseResourceLimits:
 
         time_sec, memory_mb = parse_resource_limits(fixture_readme)
 
-        assert time_sec == 1.0
+        assert time_sec == 5.0
         assert memory_mb == 256
 
 

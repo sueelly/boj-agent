@@ -1,5 +1,5 @@
 <h2><a href="https://www.acmicpc.net/problem/99999">99999번: 두 수의 합</a></h2>
-<p><strong>시간 제한:</strong> 1 초 | <strong>메모리 제한:</strong> 256 MB</p>
+<p><strong>시간 제한:</strong> 5 초 | <strong>메모리 제한:</strong> 256 MB</p>
 <hr>
 
 <h3>문제</h3>

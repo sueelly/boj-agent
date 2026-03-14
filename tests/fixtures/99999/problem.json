@@ -1,7 +1,7 @@
 {
   "problem_num": "99999",
   "title": "두 수의 합",
-  "time_limit": "1 초",
+  "time_limit": "5 초",
   "memory_limit": "256 MB",
   "description_html": "<p>두 정수 A와 B를 입력받은 다음, A+B를 출력하는 프로그램을 작성하시오.</p>",
   "input_html": "<p>첫째 줄에 A와 B가 주어진다.</p>",
