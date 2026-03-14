@@ -8,7 +8,7 @@ subprocess.CompletedProcess mock 헬퍼: _mock_agent_result().
 엣지케이스 커버리지 매핑:
 - M3  (폴더 존재, -f 없음)   → TestCheckExisting.test_raises_when_dir_exists_without_force
 - M3a (폴더 존재, -f 있음)   → TestCheckExisting.test_allows_overwrite_when_force
-- M9  (setup_done 없음)      → TestEnsureSetup.test_runs_setup_when_no_flag
+- M9  (setup_done 없음)      → test_setup_guard.TestSetupGuard.test_shows_setup_message_when_no_setup_done
 - M12 (spec 생성 실패)       → TestGenerateSpec.test_raises_when_spec_file_missing
 - M13 (--keep-artifacts)      → TestCleanupArtifacts.test_keeps_all_when_flag
 """
@@ -23,7 +23,6 @@ import pytest
 from src.core.exceptions import ProblemExistsError, SpecError
 from src.core.normalizer import normalize
 from src.core.make import (
-    ensure_setup,
     check_existing,
     fetch_problem,
     generate_readme,
@@ -40,8 +39,6 @@ from src.core.make import (
 from src.core.config import (
     config_get,
     config_set,
-    is_setup_done,
-    mark_setup_done,
 )
 
 
@@ -134,28 +131,6 @@ class TestSanitizeTitleSlug:
     def test_preserves_hyphens(self):
         result = _sanitize_title_slug("A-B-C")
         assert result == "A-B-C"
-
-
-# ──────────────────────────────────────────────
-# TestEnsureSetup — M9
-# ──────────────────────────────────────────────
-
-class TestEnsureSetup:
-    """사전 조건: setup_done 플래그 확인."""
-
-    def test_runs_setup_when_no_flag(self, config_env):
-        """M9: setup_done 없으면 boj setup을 자동 실행한다."""
-        assert not is_setup_done()
-        with patch("src.core.make.run_setup") as mock_setup:
-            ensure_setup()
-            mock_setup.assert_called_once()
-
-    def test_skips_setup_when_flag_exists(self, config_env):
-        """setup_done 있으면 setup을 실행하지 않는다."""
-        mark_setup_done()
-        with patch("src.core.make.run_setup") as mock_setup:
-            ensure_setup()
-            mock_setup.assert_not_called()
 
 
 # ──────────────────────────────────────────────
@@ -786,7 +761,6 @@ class TestRunPipelineCallOrder:
 
         args = parse_args(["99999"])
         with (
-            patch("src.cli.boj_make.ensure_setup"),
             patch("src.cli.boj_make.config_get", side_effect=self._config_get),
             patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
             patch("src.cli.boj_make.generate_readme", side_effect=mock_readme),
@@ -813,7 +787,6 @@ class TestRunPipelineCallOrder:
 
         args = parse_args(["99999", "--no-open"])
         with (
-            patch("src.cli.boj_make.ensure_setup"),
             patch("src.cli.boj_make.config_get", side_effect=self._config_get),
             patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
             patch("src.cli.boj_make.generate_readme"),
@@ -841,7 +814,6 @@ class TestRunPipelineCallOrder:
 
         args = parse_args(["99999"])
         with (
-            patch("src.cli.boj_make.ensure_setup"),
             patch("src.cli.boj_make.config_get", side_effect=config_no_editor),
             patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
             patch("src.cli.boj_make.generate_readme"),

@@ -14,6 +14,12 @@
 
 ---
 
+## [2026-03-15] fix(boj): setup_done 가드를 디스패처에 추가 [#65]
+**변경 요약:** `src/boj` 디스패처에 `setup_done` 가드를 추가하여 모든 명령어(setup/help/빈 입력 제외)에서 설정 완료를 공통 확인. `src/core/make.py`의 중복 `ensure_setup()`/`run_setup()` 제거.
+**의사결정:** edge-cases C1(공통 가드) 규칙에 따라 디스패처 레벨에서 일괄 처리. make.py에만 있던 가드를 디스패처로 올려 run/commit/open/review/submit 모두 동일 보호. `setup` subcommand는 line 64에서 조기 exit하므로 가드에 도달하지 않음. help/-h/--help/빈 입력은 조건문에서 제외.
+**검증 방법:** `python3 -m pytest tests/ -v --tb=short` → 333 passed, 1 skipped. `tests/integration/test_setup_guard.py` 6개 테스트 (메시지 출력, exit code, help/빈 입력 건너뜀, setup_done 있을 때 정상 동작).
+---
+
 ## [2026-03-14] feat(make): open editor right after README, before spec/skeleton [#62]
 **변경 요약:** `_run_pipeline`에서 `open_editor` 호출을 `generate_readme` 직후 / `generate_spec` 이전으로 이동. spec/skeleton 대기 40초~2분 중 사용자가 문제 본문을 즉시 볼 수 있음.
 **의사결정:** `boj_make.py` 오케스트레이션 순서만 변경 (core 함수 재사용, 에디터는 한 번만 열림). --no-open / 에디터 미설정 시 기존 동작 유지.

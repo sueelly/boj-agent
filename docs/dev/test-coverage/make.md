@@ -7,7 +7,7 @@
 
 ```
 사전조건
-├── ensure_setup()          — setup_done 플래그 확인, 없으면 boj setup 실행 [M9]
+├── setup_done 가드          — 디스패처(src/boj)에서 공통 처리 (C1) [M9]
 ├── _validate_problem_id()  — 숫자, 양의 정수 검증
 └── check_existing()        — 기존 폴더 존재 시 -f 없으면 ProblemExistsError [M3/M3a]
 
@@ -45,7 +45,7 @@
 | M6 | 이미지 DL 실패 | ✅ | `test_make.py` | `TestFetchProblem.test_image_download_error_propagates` |
 | M7 | 외부 도메인 이미지 | 🔮 | — | 이미지 도메인 필터 미구현 |
 | M8 | 미지원 언어 | 🔮 | — | 언어 검증 로직 미구현 (generate_skeleton에 lang validation 없음) |
-| M9 | setup_done 없음 | ✅ | `test_make.py` | `TestEnsureSetup.test_runs_setup_when_no_flag` |
+| M9 | setup_done 없음 | ✅ | `test_setup_guard.py` | `TestSetupGuard.test_shows_setup_message_when_no_setup_done` |
 | M10 | 에이전트 exit nonzero + stderr | ✅ | `test_run_agent.py` | `TestGenerateSpecErrorFlow.test_agent_stderr_surfaced_in_error` |
 | M10a | 에이전트 exit 0 + stdout 있음 | ✅ | `test_run_agent.py` | `TestGenerateSpecErrorFlow.test_agent_success_but_no_spec_shows_stdout` |
 | M10b | 에이전트 exit nonzero + stderr 비어있음 | ✅ | `test_run_agent.py` | `TestGenerateSpecErrorFlow.test_agent_fails_but_empty_stderr_shows_returncode` |
@@ -70,7 +70,6 @@
 |------|--------|----------|------|
 | `_validate_problem_id` | `TestValidateProblemId` | 6 | `test_make.py` |
 | `_sanitize_title_slug` | `TestSanitizeTitleSlug` | 5 | `test_make.py` |
-| `ensure_setup` | `TestEnsureSetup` | 2 | `test_make.py` |
 | `check_existing` | `TestCheckExisting` | 4 | `test_make.py` |
 | `fetch_problem` | `TestFetchProblem` | 8 | `test_make.py` |
 | `generate_readme` | `TestGenerateReadme` | 4 | `test_make.py` |

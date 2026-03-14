@@ -11,7 +11,6 @@ import subprocess
 from pathlib import Path
 
 from src.core.client import fetch_html, parse_problem
-from src.core.config import is_setup_done
 from src.core.exceptions import ProblemExistsError, SpecError
 from src.core.normalizer import normalize
 
@@ -73,15 +72,6 @@ def _get_lang_meta(lang: str) -> dict[str, str]:
     }
 
 
-def run_setup() -> None:
-    """boj setup을 실행한다. ensure_setup에서 호출.
-
-    src.cli.boj_setup.main()을 직접 호출한다.
-    """
-    from src.cli.boj_setup import main as setup_main
-    setup_main([])
-
-
 def run_agent(
     problem_dir: Path,
     agent_cmd: str,
@@ -139,12 +129,6 @@ def run_agent(
         cmd, input=full_prompt, cwd=str(boj_root),
         capture_output=True, text=True,
     )
-
-
-def ensure_setup() -> None:
-    """사전 조건: setup_done 확인, 없으면 boj setup 실행."""
-    if not is_setup_done():
-        run_setup()
 
 
 def check_existing(problem_dir: Path, force: bool) -> None:
