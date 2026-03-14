@@ -4,11 +4,13 @@ Issue #60 — run.sh Python 마이그레이션. TDD Green 단계.
 """
 
 import json
+import os
 import platform
 import re
 import shlex
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -378,20 +380,28 @@ def run(
         )
     time_limit, memory_limit = parse_resource_limits(readme_path)
 
-    # test_cases.json 정규화 (원본 비파괴)
+    # test_cases.json 정규화 (원본을 temp에 백업 후 교체, finally에서 복구)
     test_cases_path = problem_dir / "test" / "test_cases.json"
     normalized = normalize_test_cases(test_cases_path)
 
-    # 정규화된 내용으로 임시 교체
-    original_content = test_cases_path.read_text(encoding="utf-8")
-    data = json.loads(original_content)
-    data["testCases"] = normalized
-    test_cases_path.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding="utf-8",
+    # 원본을 temp 파일에 백업
+    backup_fd, backup_path = tempfile.mkstemp(
+        prefix="test_cases_", suffix=".json",
+        dir=str(test_cases_path.parent),
     )
-
     try:
+        original_content = test_cases_path.read_bytes()
+        with os.fdopen(backup_fd, "wb") as f:
+            f.write(original_content)
+
+        # 정규화된 내용으로 교체
+        data = json.loads(original_content.decode("utf-8"))
+        data["testCases"] = normalized
+        test_cases_path.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
         # 실행 명령 조립
         cmd = build_run_command(prog_lang, problem_dir, template_dir)
 
@@ -402,5 +412,8 @@ def run(
         return result
 
     finally:
-        # 원본 복구
-        test_cases_path.write_text(original_content, encoding="utf-8")
+        # 원본 복구 (backup에서)
+        backup = Path(backup_path)
+        if backup.exists():
+            backup.replace(test_cases_path)
+        # backup이 없으면(이미 이동됨) 아무것도 하지 않음
