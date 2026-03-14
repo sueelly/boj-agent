@@ -27,7 +27,7 @@ jobs:
         run: python3 -m pip install -r requirements.txt
 
       - name: Run all tests
-        run: python3 tests/run_tests.py
+        run: python3 tests/run_tests.py --skip-live
 
       - name: Check Java template compilation
         run: |

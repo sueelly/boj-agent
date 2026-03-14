@@ -31,6 +31,7 @@ tests/
     test_client.py          # BOJ client 단위 테스트
     test_config.py          # config 단위 테스트 (CF1-CF21)
     test_make.py            # make 단위 테스트 (M1-M13)
+    test_run_agent.py       # run_agent/generate_spec 에러 흐름 (M10-M10c)
     test_setup.py           # setup 단위 테스트 (S1-S15)
     test_normalizer.py      # normalizer 단위 테스트 (NR1-NR5)
     test_install.py         # install 단위 테스트 (IN1-IN8)
@@ -42,7 +43,7 @@ tests/
     test_boj_*.sh           # 커맨드별 Bash 통합 테스트
     test_boj_setup_py.py    # Python setup 통합 테스트
     test_make_py.py         # Python make 통합 테스트
-    test_live_fetch.py      # 라이브 네트워크 테스트 (@pytest.mark.network)
+    test_live_fetch.py      # 라이브 네트워크 테스트 (@pytest.mark.live)
   e2e/                      # E2E (설치→PATH→boj 이름으로 make/run 등)
     test_full_workflow.sh   # src/boj 직접 + make/run/submit/commit
     test_install_cli.py     # install.py → ~/bin/boj → boj make/run (pytest)
@@ -268,7 +269,7 @@ def test_creates_readme_when_valid_problem(boj_env, fixture_path):
 
 | 커맨드 | Happy Path | Error Path | Edge Case | 참조 |
 |--------|-----------|-----------|-----------|------|
-| `make` | 문제 폴더·JSON·README·spec 생성 | 404, 네트워크 실패, 잘못된 언어, spec 실패 | setup_done 체크, -f 덮어쓰기, --keep-artifacts | M1-M13 |
+| `make` | 문제 폴더·JSON·README·spec·skeleton 생성 | 404, 네트워크 실패, 잘못된 언어, spec 실패, skeleton 실패 | setup_done 체크, -f 덮어쓰기, --keep-artifacts, 화이트리스트 정리, template_vars 치환, test_cases fallback | M1-M16 |
 | `run` | Java 2/2 통과, Python 2/2 통과 | 폴더·솔루션·테스트 없음, 컴파일 오류 | id 없는 케이스 자동 보완, 부분 통과 | R1-R12 |
 | `commit` | 커밋 생성 | git 아님, 폴더 없음, email 미설정 | 변경사항 없음, --no-stats | CT1-CT9 |
 | `submit` | Submit.java 생성 + 컴파일 | 솔루션 없음, 미지원 언어 | Parse 없는 경우, --force | SB1-SB10 |
@@ -317,27 +318,23 @@ def test_run_java_passes(boj_env, fixture_path, problem_num):
 
 ## 7. Marker 규약
 
-### 7.1 `@pytest.mark.network`
+### 7.1 `@pytest.mark.live`
 
-인터넷 접속이 필요한 테스트에 부착한다. 기본 실행에서 제외된다.
+실제 BOJ 서버 연결이 필요한 테스트에 부착한다. **기본 실행되며**, `--skip-live`로 스킵할 수 있다.
 
 ```python
 # conftest.py
 def pytest_configure(config):
-    config.addinivalue_line("markers", "network: requires internet access")
-
-# pytest.ini 또는 pyproject.toml
-# [tool.pytest.ini_options]
-# addopts = "-m 'not network'"
+    config.addinivalue_line("markers", "live: 실제 BOJ HTTP 연결 필요 (--skip-live로 스킵)")
 ```
 
 ```python
-@pytest.mark.network
+@pytest.mark.live
 def test_live_fetch_problem_1010(boj_env):
     """실제 BOJ에서 이미지 포함 문제 1010을 가져온다."""
 ```
 
-네트워크 테스트는 **1010** (이미지 포함)과 **10951** (EOF 파싱) 두 문제에 한정한다.
+라이브 테스트는 인증 없이 동작하며, 1516·16957·10799·10951 등의 문제를 검증한다.
 
 ### 7.2 `@pytest.mark.agent`
 
@@ -453,9 +450,9 @@ assert "Solution.java" in result.stderr
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not network and not agent' -v --tb=short"
+addopts = "-m 'not agent' -v --tb=short"
 markers = [
-    "network: requires internet access to BOJ",
+    "live: 실제 BOJ 서버 연결 필요 (--skip-live로 스킵)",
     "agent: requires real agent execution (costly/slow)",
     "slow: takes > 5 seconds",
     "xfail: known broken behavior (document for rewrite)",
@@ -519,32 +516,37 @@ def test_generate_spec_raises_when_spec_missing(tmp_path):
             generate_spec(prob_dir, "echo MOCK")
 
 
-def test_cleanup_artifacts_removes_json_keeps_images(tmp_path):
-    """cleanup은 JSON만 삭제하고 이미지는 유지한다."""
-    artifacts = tmp_path / "artifacts"
-    artifacts.mkdir()
-    (artifacts / "problem.json").write_text("{}")
-    (artifacts / "problem.spec.json").write_text("{}")
-    (artifacts / "image.png").write_bytes(b"PNG")
+def test_cleanup_whitelist_keeps_solution_and_test(tmp_path):
+    """화이트리스트 정리: README, Solution, test/, artifacts 이미지만 유지."""
+    # 유지할 파일
+    (tmp_path / "README.md").write_text("# readme")
+    (tmp_path / "Solution.java").write_text("class Solution {}")
+    (tmp_path / "test").mkdir()
+    (tmp_path / "artifacts").mkdir()
+    (tmp_path / "artifacts" / "image.png").write_bytes(b"PNG")
+    # 삭제될 파일
+    (tmp_path / ".omc").mkdir()
+    (tmp_path / "random.txt").write_text("junk")
+    (tmp_path / "artifacts" / "problem.json").write_text("{}")
 
-    cleanup_artifacts(tmp_path, keep=False)
+    cleanup_artifacts(tmp_path, keep=False, lang="java")
 
-    assert not (artifacts / "problem.json").exists()
-    assert not (artifacts / "problem.spec.json").exists()
-    assert (artifacts / "image.png").exists()
+    assert (tmp_path / "README.md").exists()
+    assert (tmp_path / "Solution.java").exists()
+    assert not (tmp_path / ".omc").exists()
+    assert not (tmp_path / "random.txt").exists()
 
 
 def test_cleanup_artifacts_keeps_all_when_flag(tmp_path):
     """--keep-artifacts 시 모든 파일 유지."""
-    artifacts = tmp_path / "artifacts"
-    artifacts.mkdir()
-    (artifacts / "problem.json").write_text("{}")
-    (artifacts / "problem.spec.json").write_text("{}")
+    (tmp_path / "artifacts").mkdir()
+    (tmp_path / "artifacts" / "problem.json").write_text("{}")
+    (tmp_path / "random.txt").write_text("junk")
 
     cleanup_artifacts(tmp_path, keep=True)
 
-    assert (artifacts / "problem.json").exists()
-    assert (artifacts / "problem.spec.json").exists()
+    assert (tmp_path / "artifacts" / "problem.json").exists()
+    assert (tmp_path / "random.txt").exists()
 ```
 
 #### B. 에이전트 통합 테스트 (`@pytest.mark.agent`)
@@ -705,6 +707,7 @@ Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section
 | 단위 (config) | `tests/unit/test_config.sh` | `tests/unit/test_config.py` | ✅ Python 구현 완료 |
 | 단위 (setup) | `tests/unit/commands/setup_*.sh` | `tests/unit/test_setup.py` | ✅ Python 구현 완료 |
 | 단위 (make) | — | `tests/unit/test_make.py` | ✅ Python 구현 완료 |
+| 단위 (run_agent) | — | `tests/unit/test_run_agent.py` | ✅ Python 구현 완료 |
 | 단위 (client) | `tests/unit/test_client.sh` | `tests/unit/test_client.py` | ✅ Python 구현 완료 |
 | 단위 (install) | — | `tests/unit/test_install.py` | ✅ Python 구현 완료 |
 | 단위 (normalizer) | — | `tests/unit/test_normalizer.py` | ✅ Python 구현 완료 |
@@ -734,8 +737,8 @@ Python 재구현(`src/cli/boj_setup.py`)의 단위 테스트 전략은 **Section
 ```
 
 `tests/run_tests.py`가 unit/integration/e2e 전체를 발견하여 실행한다.
-pytest 실행 시 `not network and not agent` marker로 네트워크/에이전트 테스트를 자동 제외한다.
-네트워크 테스트(`@pytest.mark.network`)는 수동 트리거 또는 별도 워크플로우로만 실행한다.
+pytest 실행 시 `not agent` marker로 에이전트 테스트를 자동 제외한다.
+라이브 테스트(`@pytest.mark.live`)는 기본 실행되며, `--skip-live`로 스킵할 수 있다.
 
 ---
 
@@ -1025,7 +1028,7 @@ python3 tests/run_tests.py --e2e      # E2E 테스트만
 
 ## 18. 라이브 테스트 (`tests/integration/test_live_fetch.py`)
 
-`--run-live` 옵션으로 활성화. 실제 BOJ 서버에 연결하여 검증.
+기본 실행. `--skip-live`로 스킵 가능. 실제 BOJ 서버에 연결하여 검증 (인증 불필요).
 
 | # | 테스트 | 대상 문제 |
 |---|--------|-----------|
@@ -1078,7 +1081,7 @@ python3 -m pytest tests/e2e/test_install_cli.py -v -m slow
 |------|------|-----------|
 | **test_boj_setup_py.py** | `python -m src.cli.boj_setup` subprocess | `--check`, `--lang`, `--root`, `--agent` 등 비대화형 setup 플래그가 config 파일에 반영되는지 (IP1–IP11) |
 | **test_make_py.py** | `unittest.mock` + `src.core.make` 직접 호출 | fetch/readme/cleanup/ensure_setup 등 **코어 파이프라인** (네트워크 없음). subprocess로 전체 Bash `boj make`를 돌리지 않음 |
-| **test_live_fetch.py** | `@pytest.mark.network` | 실제 BOJ HTML fetch·파싱·README (기본 pytest에서 제외) |
+| **test_live_fetch.py** | `@pytest.mark.live` | 실제 BOJ HTML fetch·파싱·README (기본 실행, `--skip-live`로 스킵) |
 
 공통점: **레포의 `src/boj` 디스패처를 “이름 boj”로 부르지 않는다.** setup_py는 Python 모듈 직행, make_py는 라이브러리 단위, Bash 통합(`test_boj_make.sh` 등)은 `"$REPO_ROOT/src/boj"` 고정 경로다. 그래서 **설치 후 PATH 상의 `boj`** 는 `test_install_cli.py` E2E로만 커버한다.
 

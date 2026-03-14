@@ -135,7 +135,7 @@ def _run_pipeline(args: argparse.Namespace) -> int:
 
     # Step 5: artifacts 정리
     print("[6/6] 정리 중...", file=sys.stderr)
-    cleanup_artifacts(problem_dir, keep=args.keep_artifacts)
+    cleanup_artifacts(problem_dir, keep=args.keep_artifacts, lang=lang)
 
     print(f"✓ {problem_dir.name} 생성 완료", file=sys.stderr)
     return 0

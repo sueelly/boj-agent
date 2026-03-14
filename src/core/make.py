@@ -6,6 +6,7 @@ Issue #54 — TDD Green 단계.
 import json
 import re
 import shlex
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -14,8 +15,13 @@ from src.core.config import is_setup_done
 from src.core.exceptions import ProblemExistsError, SpecError
 from src.core.normalizer import normalize
 
-# 삭제 대상 아티팩트 파일 이름
-_CLEANUP_TARGETS = ("problem.json", "problem.spec.json")
+# 정리 시 artifacts/ 내 유지할 이미지 확장자
+_IMAGE_EXTENSIONS = frozenset({
+    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp",
+})
+
+# 정리 시 problem_dir 루트에서 항상 유지할 항목
+_KEEP_NAMES_BASE = frozenset({"README.md", "test", "artifacts"})
 
 # title_slug 생성 제약
 _MAX_SLUG_LENGTH = 30
@@ -44,6 +50,29 @@ def _sanitize_title_slug(title: str) -> str:
     return slug[:_MAX_SLUG_LENGTH]
 
 
+def _get_lang_meta(lang: str) -> dict[str, str]:
+    """languages.json에서 언어 메타데이터를 가져온다.
+
+    Returns:
+        ext, supports_parse, solution_file 키를 가진 딕셔너리.
+    """
+    boj_root = Path(__file__).resolve().parent.parent.parent
+    lang_file = boj_root / "templates" / "languages.json"
+    data = json.loads(lang_file.read_text(encoding="utf-8"))
+    lang_info = data["languages"].get(lang, {})
+
+    ext = lang_info.get("extension", lang)
+    skeleton = lang_info.get("skeleton", {})
+    solution_file = skeleton.get("solution", f"Solution.{ext}")
+    supports_parse = skeleton.get("parse") is not None
+
+    return {
+        "ext": ext,
+        "supports_parse": "true" if supports_parse else "false",
+        "solution_file": solution_file,
+    }
+
+
 def run_setup() -> None:
     """boj setup을 실행한다. ensure_setup에서 호출.
 
@@ -53,26 +82,63 @@ def run_setup() -> None:
     setup_main([])
 
 
-def run_agent(problem_dir: Path, agent_cmd: str, prompt_name: str) -> int:
+def run_agent(
+    problem_dir: Path,
+    agent_cmd: str,
+    prompt_name: str,
+    context_files: dict[str, Path] | None = None,
+    template_vars: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess:
     """에이전트를 subprocess로 실행한다.
+
+    프롬프트 파일의 내용을 읽어 problem_dir 컨텍스트와 함께
+    stdin으로 에이전트에 전달한다. context_files로 지정된 파일들은
+    자동으로 읽어 프롬프트에 포함된다.
 
     Args:
         problem_dir: 문제 폴더 경로.
-        agent_cmd: 에이전트 실행 명령어 (예: "claude", "gemini").
+        agent_cmd: 에이전트 실행 명령어 (예: "claude -p --").
         prompt_name: 프롬프트 이름 (예: "make-spec", "make-skeleton").
+        context_files: 프롬프트에 포함할 파일 딕셔너리.
+            키는 표시 이름, 값은 파일 경로.
+            예: {"problem.json": problem_dir / "artifacts" / "problem.json"}
+        template_vars: 프롬프트 내 ``{{KEY}}`` 플레이스홀더를 치환할 딕셔너리.
+            예: {"LANG": "java", "EXT": "java"}
 
     Returns:
-        프로세스 종료 코드.
+        CompletedProcess 결과 (returncode, stdout, stderr 포함).
     """
-    prompts_dir = Path(__file__).resolve().parent.parent.parent / "prompts"
-    prompt_file = prompts_dir / f"{prompt_name}.md"
+    boj_root = Path(__file__).resolve().parent.parent.parent
+    prompt_file = boj_root / "prompts" / f"{prompt_name}.md"
+    prompt_content = prompt_file.read_text(encoding="utf-8")
 
-    cmd = [*shlex.split(agent_cmd), str(prompt_file), str(problem_dir)]
-    result = subprocess.run(
-        cmd, cwd=str(problem_dir),
+    # 템플릿 변수 치환
+    if template_vars:
+        for key, value in template_vars.items():
+            prompt_content = prompt_content.replace(f"{{{{{key}}}}}", value)
+
+    full_prompt = (
+        f"{prompt_content}\n\n"
+        f"---\n\n"
+        f"## 작업 대상\n\n"
+        f"문제 디렉터리: {problem_dir}\n"
+    )
+
+    # context_files 내용을 프롬프트에 포함
+    if context_files:
+        for name, path in context_files.items():
+            if path.exists():
+                data = path.read_text(encoding="utf-8")
+                full_prompt += (
+                    f"\n### {name}\n\n"
+                    f"```json\n{data}\n```\n"
+                )
+
+    cmd = shlex.split(agent_cmd)
+    return subprocess.run(
+        cmd, input=full_prompt, cwd=str(boj_root),
         capture_output=True, text=True,
     )
-    return result.returncode
 
 
 def ensure_setup() -> None:
@@ -205,14 +271,36 @@ def generate_spec(problem_dir: Path, agent_cmd: str) -> dict:
     Raises:
         SpecError: spec 파일 미생성 또는 유효하지 않은 JSON일 때.
     """
-    run_agent(problem_dir, agent_cmd, "make-spec")
+    result = run_agent(problem_dir, agent_cmd, "make-spec", context_files={
+        "problem.json": problem_dir / "artifacts" / "problem.json",
+    })
 
     spec_path = problem_dir / "artifacts" / "problem.spec.json"
 
+    # 에이전트가 파일을 직접 생성하지 않은 경우,
+    # stdout에 JSON이 출력되었을 수 있다 (claude -p 모드).
+    # 마크다운 분석 텍스트 + JSON 혼합 출력도 처리한다.
+    if not spec_path.exists() and result.stdout and result.stdout.strip():
+        extracted = _extract_json_manifest(result.stdout.strip())
+        if extracted is not None:
+            spec_path.parent.mkdir(parents=True, exist_ok=True)
+            spec_path.write_text(
+                json.dumps(extracted, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
     if not spec_path.exists():
+        lines = []
+        if result.returncode != 0:
+            lines.append(f"에이전트 exit code: {result.returncode}")
+        if result.stderr and result.stderr.strip():
+            lines.append(f"stderr: {result.stderr.strip()}")
+        if result.stdout and result.stdout.strip():
+            lines.append(f"stdout: {result.stdout.strip()}")
+        detail = "\n" + "\n".join(lines) if lines else ""
         raise SpecError(
             "problem.spec.json이 생성되지 않았습니다. "
-            "boj make <문제번호> -f 로 재시도하세요."
+            f"boj make <문제번호> -f 로 재시도하세요.{detail}"
         )
 
     try:
@@ -230,8 +318,142 @@ def generate_skeleton(problem_dir: Path, lang: str, agent_cmd: str) -> None:
     """Step 3: Solution + Parse 생성.
 
     에이전트에 make-skeleton 프롬프트를 전달해 Solution/Parse 및 test_cases.json 생성.
+    에이전트는 stdout으로 JSON manifest를 출력하고, Python이 파일을 생성한다.
     """
-    run_agent(problem_dir, agent_cmd, "make-skeleton")
+    import sys
+
+    lang_meta = _get_lang_meta(lang)
+
+    # problem.json 내용을 템플릿 변수로 직접 삽입
+    problem_json_path = problem_dir / "artifacts" / "problem.json"
+    problem_json_content = ""
+    if problem_json_path.exists():
+        problem_json_content = problem_json_path.read_text(encoding="utf-8")
+
+    template_vars = {
+        "LANG": lang,
+        "EXT": lang_meta["ext"],
+        "SUPPORTS_PARSE": lang_meta["supports_parse"],
+        "PROBLEM_DIR": str(problem_dir),
+        "PROBLEM_JSON": problem_json_content,
+    }
+
+    result = run_agent(
+        problem_dir, agent_cmd, "make-skeleton",
+        context_files={
+            "problem.spec.json": problem_dir / "artifacts" / "problem.spec.json",
+        },
+        template_vars=template_vars,
+    )
+
+    # stdout에서 JSON manifest 추출 → 파일 생성
+    files_written = _write_skeleton_files(problem_dir, result)
+
+    # fallback: test_cases.json을 problem.json samples에서 결정론적으로 생성
+    test_cases_path = problem_dir / "test" / "test_cases.json"
+    if not test_cases_path.exists():
+        _generate_test_cases_fallback(problem_dir)
+
+    # 필수 파일 검증
+    solution_file = lang_meta["solution_file"]
+    if not (problem_dir / solution_file).exists():
+        detail = ""
+        if result.returncode != 0:
+            detail = f" (exit {result.returncode})"
+        elif result.stderr and result.stderr.strip():
+            detail = f" ({result.stderr.strip()[:200]})"
+        elif not files_written and result.stdout and result.stdout.strip():
+            detail = f" (stdout: {result.stdout.strip()[:200]})"
+        print(
+            f"Warning: {solution_file}이 생성되지 않았습니다.{detail}",
+            file=sys.stderr,
+        )
+
+
+def _extract_json_manifest(stdout: str) -> dict | None:
+    """stdout에서 JSON manifest(``{"files": {...}}``)를 추출한다."""
+    # 1차: 전체 stdout이 유효한 JSON
+    try:
+        data = json.loads(stdout)
+        if isinstance(data, dict):
+            return data
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # 2차: 마크다운 코드 펜스 안의 JSON
+    fence_match = re.search(r"```(?:json)?\s*\n({.*?})\s*\n```", stdout, re.DOTALL)
+    if fence_match:
+        try:
+            data = json.loads(fence_match.group(1))
+            if isinstance(data, dict):
+                return data
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    # 3차: 첫 번째 { ~ 마지막 } 범위
+    start = stdout.find("{")
+    end = stdout.rfind("}")
+    if start != -1 and end > start:
+        try:
+            data = json.loads(stdout[start : end + 1])
+            if isinstance(data, dict):
+                return data
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    return None
+
+
+def _write_skeleton_files(
+    problem_dir: Path,
+    result: subprocess.CompletedProcess,
+) -> bool:
+    """에이전트 stdout JSON manifest를 파싱하여 파일들을 생성한다.
+
+    Returns:
+        True면 하나 이상의 파일이 생성됨.
+    """
+    if not (result.stdout and result.stdout.strip()):
+        return False
+
+    manifest = _extract_json_manifest(result.stdout.strip())
+    if not manifest or "files" not in manifest:
+        return False
+
+    written = False
+    for rel_path, content in manifest["files"].items():
+        file_path = problem_dir / rel_path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(str(content), encoding="utf-8")
+        written = True
+
+    return written
+
+
+def _generate_test_cases_fallback(problem_dir: Path) -> None:
+    """problem.json의 samples에서 test_cases.json을 결정론적으로 생성한다."""
+    problem_json_path = problem_dir / "artifacts" / "problem.json"
+    if not problem_json_path.exists():
+        return
+
+    problem = json.loads(problem_json_path.read_text(encoding="utf-8"))
+    samples = problem.get("samples", [])
+    if not samples:
+        return
+
+    test_cases = {
+        "testCases": [
+            {"input": s["input"], "expected": s["output"]}
+            for s in samples
+        ],
+    }
+
+    test_dir = problem_dir / "test"
+    test_dir.mkdir(parents=True, exist_ok=True)
+    (test_dir / "test_cases.json").write_text(
+        json.dumps(test_cases, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def open_editor(problem_dir: Path, editor_cmd: str | None) -> None:
@@ -245,27 +467,55 @@ def open_editor(problem_dir: Path, editor_cmd: str | None) -> None:
     subprocess.run(cmd, cwd=str(problem_dir))
 
 
-def cleanup_artifacts(problem_dir: Path, keep: bool) -> None:
-    """Step 5: artifacts 정리.
+def cleanup_artifacts(problem_dir: Path, keep: bool, lang: str = "java") -> None:
+    """Step 5: 화이트리스트 기반 정리.
 
-    keep=False일 때 problem.json, problem.spec.json만 삭제한다.
-    이미지 파일 및 기타 JSON은 유지한다.
+    keep=True면 모든 파일 유지.
+    keep=False면 화이트리스트(README.md, Solution, test/, artifacts 이미지)만
+    남기고 나머지를 삭제한다.
 
     Args:
         problem_dir: 문제 폴더 경로.
         keep: True면 모든 파일 유지 (--keep-artifacts).
+        lang: 프로그래밍 언어 (Solution 파일명 결정에 사용).
     """
     if keep:
         return
 
+    if not problem_dir.is_dir():
+        return
+
+    # 언어별 Solution 파일명 결정
+    lang_meta = _get_lang_meta(lang)
+    solution_file = lang_meta["solution_file"]
+
+    keep_names = _KEEP_NAMES_BASE | {solution_file}
+
+    # 화이트리스트에 없는 항목 삭제
+    for item in problem_dir.iterdir():
+        if item.name in keep_names:
+            continue
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
+
+    # artifacts/ 내부: 이미지만 유지, 나머지 삭제
     artifacts = problem_dir / "artifacts"
     if not artifacts.is_dir():
         return
 
-    for name in _CLEANUP_TARGETS:
-        target = artifacts / name
-        if target.exists():
-            target.unlink()
+    for item in artifacts.iterdir():
+        if item.is_file() and item.suffix.lower() in _IMAGE_EXTENSIONS:
+            continue
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
+
+    # 빈 artifacts/ 삭제
+    if artifacts.is_dir() and not any(artifacts.iterdir()):
+        artifacts.rmdir()
 
 
 def run_make(problem_id: str, **kwargs) -> None:

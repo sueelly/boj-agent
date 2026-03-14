@@ -1,6 +1,7 @@
 """실제 BOJ 서버에서 문제를 가져와 검증하는 라이브 테스트.
 
-실행: python3 -m pytest tests/integration/test_live_fetch.py -v --run-live
+실행: python3 -m pytest tests/integration/test_live_fetch.py -v
+스킵: python3 -m pytest tests/integration/test_live_fetch.py -v --skip-live
 
 검증 대상 문제:
     1516  — 게임 개발 (일반 문제)

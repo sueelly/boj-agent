@@ -1,7 +1,7 @@
 # make 테스트 커버리지 (Python)
 
 > `src/core/make.py` + `src/cli/boj_make.py` 기준.
-> 참조: [COMMAND-SPEC.md](../../COMMAND-SPEC.md), [edge-cases.md](../../edge-cases.md) M1-M13
+> 참조: [COMMAND-SPEC.md](../../COMMAND-SPEC.md), [edge-cases.md](../../edge-cases.md) M1-M16
 
 ## 파이프라인 흐름
 
@@ -19,11 +19,16 @@
 
 [Step 2] generate_spec()    — 에이전트 실행 → problem.spec.json [M10/M12]
 
-[Step 3] generate_skeleton()— 에이전트 실행 → Solution + Parse [M8]
+[Step 3] generate_skeleton()— 에이전트 stdout JSON manifest → 파일 생성 [M8/M14-M16]
+    ├── _get_lang_meta()        — languages.json에서 ext/supports_parse 추출
+    ├── template_vars 치환      — {{LANG}}, {{EXT}} 등 플레이스홀더 → 실제 값
+    ├── _extract_json_manifest()— stdout에서 JSON 추출 (3단계 파싱)
+    ├── _write_skeleton_files() — manifest["files"] → 파일 쓰기
+    └── _generate_test_cases_fallback() — samples → test_cases.json (에이전트 실패 시)
 
 [Step 4] open_editor()      — --no-open 아니면 에디터 열기
 
-[Step 5] cleanup_artifacts()— JSON 정리, 이미지 유지 [M13]
+[Step 5] cleanup_artifacts()— 화이트리스트 기반 정리 [M13/M13a]
 ```
 
 ## edge-cases M1-M13 → 테스트 매핑
@@ -40,10 +45,20 @@
 | M7 | 외부 도메인 이미지 | 🔮 | — | 이미지 도메인 필터 미구현 |
 | M8 | 미지원 언어 | 🔮 | — | 언어 검증 로직 미구현 (generate_skeleton에 lang validation 없음) |
 | M9 | setup_done 없음 | ✅ | `test_make.py` | `TestEnsureSetup.test_runs_setup_when_no_flag` |
-| M10 | 에이전트 오류 | ✅ | `test_make.py` | `TestGenerateSpec.test_raises_on_agent_nonzero_exit` |
+| M10 | 에이전트 exit nonzero + stderr | ✅ | `test_run_agent.py` | `TestGenerateSpecErrorFlow.test_agent_stderr_surfaced_in_error` |
+| M10a | 에이전트 exit 0 + stdout 있음 | ✅ | `test_run_agent.py` | `TestGenerateSpecErrorFlow.test_agent_success_but_no_spec_shows_stdout` |
+| M10b | 에이전트 exit nonzero + stderr 비어있음 | ✅ | `test_run_agent.py` | `TestGenerateSpecErrorFlow.test_agent_fails_but_empty_stderr_shows_returncode` |
+| M10c | 에이전트 exit 0 + 출력 없음 | ✅ | `test_run_agent.py` | `TestGenerateSpecErrorFlow.test_agent_success_no_output_no_spec_gives_base_message` |
 | M11 | README 자체검증 | 🔮 | — | 자체검증 로직 미구현 |
 | M12 | spec 생성 실패 | ✅ | `test_make.py` | `TestGenerateSpec.test_raises_when_spec_file_missing` |
 | M13 | --keep-artifacts | ✅ | `test_make.py` | `TestCleanupArtifacts.test_keeps_all_when_flag` |
+| M13a | 화이트리스트 정리 | ✅ | `test_make.py` | `TestCleanupArtifacts.test_keeps_whitelisted_deletes_rest` |
+| M14 | skeleton stdout JSON manifest | ✅ | `test_make.py` | `TestGenerateSkeleton.test_writes_files_from_agent_stdout` |
+| M14a | skeleton 빈 stdout / 비-JSON | ✅ | `test_make.py` | `TestWriteSkeletonFiles.test_returns_false_on_empty_stdout` |
+| M14b | skeleton 에이전트 실패 + fallback | ✅ | `test_make.py` | `TestGenerateSkeleton.test_fallback_test_cases_when_agent_fails` |
+| M15 | test_cases.json fallback | ✅ | `test_make.py` | `TestGenerateTestCasesFallback.test_generates_from_samples` |
+| M15a | samples 없을 때 fallback 스킵 | ✅ | `test_make.py` | `TestGenerateTestCasesFallback.test_skips_when_no_samples` |
+| M16 | template_vars 치환 | ✅ | `test_make.py` | `TestGenerateSkeleton.test_template_vars_substituted` |
 
 ## 함수별 단위 테스트 현황
 
@@ -56,7 +71,15 @@
 | `fetch_problem` | `TestFetchProblem` | 8 | `test_make.py` |
 | `generate_readme` | `TestGenerateReadme` | 4 | `test_make.py` |
 | `generate_spec` | `TestGenerateSpec` | 5 | `test_make.py` |
-| `cleanup_artifacts` | `TestCleanupArtifacts` | 4 | `test_make.py` |
+| `cleanup_artifacts` | `TestCleanupArtifacts` | 6 | `test_make.py` |
+| `_get_lang_meta` | `TestGetLangMeta` | 4 | `test_make.py` |
+| `_extract_json_manifest` | `TestExtractJsonManifest` | 5 | `test_make.py` |
+| `_write_skeleton_files` | `TestWriteSkeletonFiles` | 3 | `test_make.py` |
+| `_generate_test_cases_fallback` | `TestGenerateTestCasesFallback` | 3 | `test_make.py` |
+| `generate_skeleton` | `TestGenerateSkeleton` | 3 | `test_make.py` |
+| `run_agent` | `TestRunAgentCommand` | 4 | `test_run_agent.py` |
+| `run_agent` | `TestRunAgentErrorHandling` | 2 | `test_run_agent.py` |
+| `generate_spec` (에러 흐름) | `TestGenerateSpecErrorFlow` | 6 | `test_run_agent.py` |
 
 ## 통합 테스트
 
