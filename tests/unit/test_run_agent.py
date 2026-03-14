@@ -259,6 +259,31 @@ class TestGenerateSpecErrorFlow:
         # 파일도 실제로 생성되었는지 확인
         assert (artifacts / "problem.spec.json").exists()
 
+    def test_stdout_markdown_with_json_extracted(self, tmp_path):
+        """에이전트 stdout이 마크다운+JSON 혼합이면 JSON만 추출하여 저장."""
+        problem_dir = tmp_path / "1516"
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir(parents=True)
+
+        spec_json = '{"specLevel": 2, "input": {"stream": "single"}}'
+        mixed_stdout = (
+            "**Analysis:**\n"
+            "- **Stream**: `single`\n\n"
+            "```json\n"
+            f"{spec_json}\n"
+            "```\n"
+        )
+        result = MagicMock()
+        result.returncode = 0
+        result.stderr = ""
+        result.stdout = mixed_stdout
+
+        with patch("src.core.make.subprocess.run", return_value=result):
+            spec = generate_spec(problem_dir, "claude -p --")
+
+        assert spec["specLevel"] == 2
+        assert (artifacts / "problem.spec.json").exists()
+
     def test_stdout_non_json_still_raises(self, tmp_path):
         """에이전트 stdout이 유효한 JSON이 아니면 에러 발생."""
         problem_dir = tmp_path / "10799"

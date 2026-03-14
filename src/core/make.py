@@ -279,15 +279,15 @@ def generate_spec(problem_dir: Path, agent_cmd: str) -> dict:
 
     # 에이전트가 파일을 직접 생성하지 않은 경우,
     # stdout에 JSON이 출력되었을 수 있다 (claude -p 모드).
+    # 마크다운 분석 텍스트 + JSON 혼합 출력도 처리한다.
     if not spec_path.exists() and result.stdout and result.stdout.strip():
-        stdout = result.stdout.strip()
-        try:
-            json.loads(stdout)
-            # 유효한 JSON이면 파일로 저장
+        extracted = _extract_json_manifest(result.stdout.strip())
+        if extracted is not None:
             spec_path.parent.mkdir(parents=True, exist_ok=True)
-            spec_path.write_text(stdout, encoding="utf-8")
-        except (json.JSONDecodeError, ValueError):
-            pass  # JSON이 아니면 아래 에러 처리로 진행
+            spec_path.write_text(
+                json.dumps(extracted, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
 
     if not spec_path.exists():
         lines = []
