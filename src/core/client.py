@@ -113,6 +113,16 @@ def parse_problem(html: str, problem_num: str) -> dict:
         el = soup.find(id=element_id)
         return el.decode_contents().strip() if el else ""
 
+    # problem-info 테이블에서 시간/메모리 제한 추출
+    time_limit = ""
+    memory_limit = ""
+    info_table = soup.find("table", id="problem-info")
+    if info_table:
+        tds = info_table.find_all("td")
+        if len(tds) >= 2:
+            time_limit = tds[0].get_text(strip=True)
+            memory_limit = tds[1].get_text(strip=True)
+
     samples = []
     n = 1
     while True:
@@ -135,8 +145,8 @@ def parse_problem(html: str, problem_num: str) -> dict:
     return {
         "problem_num": problem_num,
         "title": _text("problem_title") or "",
-        "time_limit": _text("problem_time_limit") or "",
-        "memory_limit": _text("problem_memory_limit") or "",
+        "time_limit": time_limit,
+        "memory_limit": memory_limit,
         "description_html": description_html,
         "input_html": _inner_html("problem_input"),
         "output_html": _inner_html("problem_output"),
