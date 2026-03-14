@@ -145,7 +145,7 @@ def _build_java_command(problem_dir: Path, template_dir: Path) -> list[str]:
     ]
 
 
-def _build_python_command(problem_dir: Path, template_dir: Path) -> list[str]:
+def _build_python_command(_problem_dir: Path, template_dir: Path) -> list[str]:
     """Python 테스트 실행 명령을 생성한다."""
     return [
         "python3",
