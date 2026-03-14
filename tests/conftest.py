@@ -93,6 +93,12 @@ def boj_env(tmp_path):
     )
 
     env = os.environ.copy()
+
+    # 개발자 환경의 BOJ 변수가 테스트에 누출되지 않도록 제거
+    for key in list(env):
+        if key.startswith("BOJ_"):
+            del env[key]
+
     env.update({
         "BOJ_ROOT": str(tmp_path),
         "HOME": str(tmp_path),
