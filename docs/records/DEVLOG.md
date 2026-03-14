@@ -14,6 +14,12 @@
 
 ---
 
+## [2026-03-14] fix(make): use Popen for non-blocking editor launch [#57]
+**변경 요약:** `open_editor`를 `subprocess.run`(blocking) → `subprocess.Popen`(non-blocking)으로 교체해 터미널 에디터(vim/nano) 사용 시 파이프라인 중단 방지.
+**의사결정:** `subprocess.run`은 에디터 종료까지 블록되어 spec/skeleton 생성이 지연됨. `Popen`은 fire-and-forget으로 병렬 실행 가능.
+**검증 방법:** `python3 -m pytest tests/unit/test_make.py::TestOpenEditor -v` — 4 passed
+---
+
 ## [2026-03-14] fix(make): 에이전트 실행 파이프라인 디버깅 [#57]
 **변경 요약:** `boj make 10799` 실행 시 에이전트가 동작하지 않던 5가지 문제를 순차 디버깅하여 해결. 최종 아키텍처: 에이전트를 순수 함수(stdin→stdout)로 취급, 모든 파일 I/O는 Python이 담당.
 
