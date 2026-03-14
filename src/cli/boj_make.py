@@ -117,21 +117,21 @@ def _run_pipeline(args: argparse.Namespace) -> int:
     problem_json = problem_dir / "artifacts" / "problem.json"
     generate_readme(problem_json)
 
-    # Step 2: spec 생성 (에이전트 필수)
-    print("[3/6] problem.spec.json 생성 중...", file=sys.stderr)
-    generate_spec(problem_dir, agent_cmd)
-
-    # Step 3: Solution + Parse 생성 (에이전트)
-    print("[4/6] Solution/Parse 생성 중...", file=sys.stderr)
-    generate_skeleton(problem_dir, lang, agent_cmd)
-
-    # Step 4: 에디터 오픈
+    # Step 2: 에디터 선오픈 — README 직후, spec/skeleton 대기 중 문제 확인 가능
     editor_cmd = config_get("editor", DEFAULTS.get("editor", "")) if not args.no_open else ""
     if editor_cmd:
-        print("[5/6] 에디터 열기...", file=sys.stderr)
+        print("[3/6] 에디터 열기...", file=sys.stderr)
         open_editor(problem_dir, editor_cmd)
     elif not args.no_open:
-        print("[5/6] 에디터 미설정 — 스킵", file=sys.stderr)
+        print("[3/6] 에디터 미설정 — 스킵", file=sys.stderr)
+
+    # Step 3: spec 생성 (에이전트 필수)
+    print("[4/6] problem.spec.json 생성 중...", file=sys.stderr)
+    generate_spec(problem_dir, agent_cmd)
+
+    # Step 4: Solution + Parse 생성 (에이전트)
+    print("[5/6] Solution/Parse 생성 중...", file=sys.stderr)
+    generate_skeleton(problem_dir, lang, agent_cmd)
 
     # Step 5: artifacts 정리
     print("[6/6] 정리 중...", file=sys.stderr)

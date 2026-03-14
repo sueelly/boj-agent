@@ -741,3 +741,116 @@ class TestGenerateSkeleton:
         assert tv["EXT"] == "java"
         assert tv["SUPPORTS_PARSE"] == "true"
         assert str(problem_dir) in tv["PROBLEM_DIR"]
+
+
+# TestRunPipelineCallOrder — M17/M18/M19
+# ──────────────────────────────────────────────
+
+class TestRunPipelineCallOrder:
+    """M17/M18/M19: _run_pipeline에서 open_editor 호출 순서 검증."""
+
+    def _config_get(self, key, default=""):
+        return {
+            "agent": "echo mock",
+            "prog_lang": "java",
+            "solution_root": "",
+            "editor": "code",
+        }.get(key, default)
+
+    @pytest.fixture
+    def problem_fixture(self, tmp_path):
+        """problem_dir + artifacts 구조."""
+        problem_dir = tmp_path / "99999-test"
+        problem_dir.mkdir()
+        (problem_dir / "artifacts").mkdir()
+        (problem_dir / "artifacts" / "problem.json").write_text("{}")
+        return problem_dir
+
+    def test_open_editor_called_after_readme_before_spec(self, problem_fixture):
+        """M17: open_editor는 generate_readme 이후, generate_spec 이전에 호출된다."""
+        from src.cli.boj_make import _run_pipeline, parse_args
+
+        call_order = []
+
+        def mock_readme(*a, **kw):
+            call_order.append("readme")
+
+        def mock_editor(*a, **kw):
+            call_order.append("editor")
+
+        def mock_spec(*a, **kw):
+            call_order.append("spec")
+
+        def mock_skeleton(*a, **kw):
+            call_order.append("skeleton")
+
+        args = parse_args(["99999"])
+        with (
+            patch("src.cli.boj_make.ensure_setup"),
+            patch("src.cli.boj_make.config_get", side_effect=self._config_get),
+            patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
+            patch("src.cli.boj_make.generate_readme", side_effect=mock_readme),
+            patch("src.cli.boj_make.open_editor", side_effect=mock_editor),
+            patch("src.cli.boj_make.generate_spec", side_effect=mock_spec),
+            patch("src.cli.boj_make.generate_skeleton", side_effect=mock_skeleton),
+            patch("src.cli.boj_make.cleanup_artifacts"),
+        ):
+            result = _run_pipeline(args)
+
+        assert result == 0
+        assert "readme" in call_order
+        assert "editor" in call_order
+        assert "spec" in call_order
+        readme_idx = call_order.index("readme")
+        editor_idx = call_order.index("editor")
+        spec_idx = call_order.index("spec")
+        assert editor_idx > readme_idx, "에디터는 README 생성 이후에 열려야 한다"
+        assert editor_idx < spec_idx, "에디터는 spec 생성 이전에 열려야 한다"
+
+    def test_no_open_skips_editor_entirely(self, problem_fixture):
+        """M18: --no-open이면 open_editor가 전혀 호출되지 않는다."""
+        from src.cli.boj_make import _run_pipeline, parse_args
+
+        args = parse_args(["99999", "--no-open"])
+        with (
+            patch("src.cli.boj_make.ensure_setup"),
+            patch("src.cli.boj_make.config_get", side_effect=self._config_get),
+            patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
+            patch("src.cli.boj_make.generate_readme"),
+            patch("src.cli.boj_make.open_editor") as mock_editor,
+            patch("src.cli.boj_make.generate_spec"),
+            patch("src.cli.boj_make.generate_skeleton"),
+            patch("src.cli.boj_make.cleanup_artifacts"),
+        ):
+            result = _run_pipeline(args)
+
+        assert result == 0
+        mock_editor.assert_not_called()
+
+    def test_no_editor_config_skips_early_open(self, problem_fixture):
+        """M19: 에디터 미설정이면 open_editor가 호출되지 않는다."""
+        from src.cli.boj_make import _run_pipeline, parse_args
+
+        def config_no_editor(key, default=""):
+            return {
+                "agent": "echo mock",
+                "prog_lang": "java",
+                "solution_root": "",
+                "editor": "",
+            }.get(key, default)
+
+        args = parse_args(["99999"])
+        with (
+            patch("src.cli.boj_make.ensure_setup"),
+            patch("src.cli.boj_make.config_get", side_effect=config_no_editor),
+            patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
+            patch("src.cli.boj_make.generate_readme"),
+            patch("src.cli.boj_make.open_editor") as mock_editor,
+            patch("src.cli.boj_make.generate_spec"),
+            patch("src.cli.boj_make.generate_skeleton"),
+            patch("src.cli.boj_make.cleanup_artifacts"),
+        ):
+            result = _run_pipeline(args)
+
+        assert result == 0
+        mock_editor.assert_not_called()

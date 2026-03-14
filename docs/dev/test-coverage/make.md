@@ -17,17 +17,18 @@
 
 [Step 1] generate_readme()  — problem.json → README.md
 
-[Step 2] generate_spec()    — 에이전트 실행 → problem.spec.json [M10/M12]
+[Step 2] open_editor()      — README 직후 선오픈 (spec 이전) [M14/M15/M16]
+    ├── --no-open이면 스킵
+    └── 에디터 미설정이면 스킵
 
-[Step 3] generate_skeleton()— 에이전트 stdout JSON manifest → 파일 생성 [M8/M14-M16]
+[Step 3] generate_spec()    — 에이전트 실행 → problem.spec.json [M10/M12]
+
+[Step 4] generate_skeleton()— 에이전트 stdout JSON manifest → 파일 생성 [M8/M14-M16]
     ├── _get_lang_meta()        — languages.json에서 ext/supports_parse 추출
     ├── template_vars 치환      — {{LANG}}, {{EXT}} 등 플레이스홀더 → 실제 값
     ├── _extract_json_manifest()— stdout에서 JSON 추출 (3단계 파싱)
     ├── _write_skeleton_files() — manifest["files"] → 파일 쓰기
     └── _generate_test_cases_fallback() — samples → test_cases.json (에이전트 실패 시)
-
-[Step 4] open_editor()      — --no-open 아니면 에디터 열기
-
 [Step 5] cleanup_artifacts()— 화이트리스트 기반 정리 [M13/M13a]
 ```
 
@@ -59,6 +60,9 @@
 | M15 | test_cases.json fallback | ✅ | `test_make.py` | `TestGenerateTestCasesFallback.test_generates_from_samples` |
 | M15a | samples 없을 때 fallback 스킵 | ✅ | `test_make.py` | `TestGenerateTestCasesFallback.test_skips_when_no_samples` |
 | M16 | template_vars 치환 | ✅ | `test_make.py` | `TestGenerateSkeleton.test_template_vars_substituted` |
+| M17 | 에디터 선오픈 (README 직후) | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_open_editor_called_after_readme_before_spec` |
+| M18 | --no-open 이면 선오픈 없음 | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_no_open_skips_editor_entirely` |
+| M19 | 에디터 미설정 이면 선오픈 없음 | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_no_editor_config_skips_early_open` |
 
 ## 함수별 단위 테스트 현황
 

@@ -104,6 +104,8 @@ boj make 4949 --keep-artifacts    # 중간 산출물(problem.json, problem.spec.
 boj make 4949 -f                  # 이미 존재하는 문제 폴더 덮어쓰기
 ```
 
+> **참고**: README.md가 생성되면 에디터가 즉시 열립니다. spec/skeleton 생성(40초~2분)을 기다리는 동안 문제 본문을 바로 읽을 수 있습니다.
+>
 > **참고**: 이미 존재하는 문제 폴더에 `boj make`를 실행하면 안내 메시지와 함께 중단됩니다.
 > 덮어쓰려면 `-f` 옵션을 사용하세요.
 
