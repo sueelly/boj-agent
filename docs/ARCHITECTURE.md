@@ -9,20 +9,29 @@
 ```
 boj-agent/
   src/
-    boj                       # CLI 진입점 (Bash 디스패처, → src/cli/main.py로 전환 중)
+    boj                       # CLI 진입점 (Bash 디스패처 → Python 라우팅)
     setup-boj-cli.sh          # [deprecated] → scripts/install.py
-    commands/                 # 서브커맨드 (각각 독립 Bash 스크립트)
-      make.sh     (254줄)    # [A]Fetch → [B]Normalize → [C]Agent skeleton
-      run.sh      (168줄)    # test_cases.json 기반 테스트 실행
-      commit.sh   (179줄)    # git add/commit + BOJ 통계
-      submit.sh   (301줄)    # Submit 파일 생성 (Java sed/grep 접합)
-      setup.sh    (284줄)    # 대화형/비대화형 설정
-      open.sh     (50줄)     # 에디터 열기
-      review.sh   (51줄)     # 에이전트 리뷰 호출
-    lib/
-      config.sh   (195줄)    # 공통 설정 로더 + 유틸리티 함수
-      boj_client.py           # BOJ HTML fetch + 파싱 (Python, requests+BS4)
-      boj_normalizer.py       # problem.json → README.md (Python)
+    core/                     # Python 핵심 로직 (순수 함수, CLI 없음)
+      config.py               # 설정 로더 (env > 파일 > 기본값)
+      client.py               # BOJ HTML fetch + 파싱 (requests+BS4)
+      normalizer.py           # problem.json → README.md
+      make.py                 # boj make 핵심 로직
+      run.py                  # boj run 핵심 로직
+      commit.py               # boj commit 핵심 로직
+      submit.py               # boj submit 핵심 로직
+      open.py                 # boj open 핵심 로직
+      review.py               # boj review 핵심 로직
+      exceptions.py           # 공통 예외 클래스
+    cli/                      # CLI 래퍼 (core 위 얇은 레이어)
+      main.py                 # argparse 디스패처
+      boj_setup.py, boj_make.py, boj_run.py, boj_commit.py
+      boj_submit.py, boj_open.py, boj_review.py
+    commands/                 # [legacy fallback] Bash 서브커맨드
+      make.sh, run.sh, commit.sh, submit.sh, setup.sh, open.sh, review.sh
+    lib/                      # [legacy] 공통 라이브러리
+      config.sh               # Bash 설정 로더
+      boj_client.py           # → core/client.py로 이동 완료
+      boj_normalizer.py       # → core/normalizer.py로 이동 완료
   templates/
     _common/
       test_cases.json         # 스키마 예시
@@ -39,9 +48,9 @@ boj-agent/
     languages.json            # 언어 메타데이터
   prompts/
     make-spec.md              # make Step 2: spec 생성 (make.py generate_spec)
-    make-skeleton.md          # make Step 3: 스켈레톤 생성 (make.sh:181, make.py generate_skeleton)
+    make-skeleton.md          # make Step 3: 스켈레톤 생성 (make.py generate_skeleton)
     make-parse-and-tests.md   # [deprecated] make 파이프라인 미사용, make-skeleton으로 통합
-    review.md                 # review용 에이전트 프롬프트 (review.sh:29에서 사용)
+    review.md                 # review용 에이전트 프롬프트
   reference/
     spec/                     # boj-spec-kit 레퍼런스 (problem.spec.json 생성용)
       problem-spec-format.md, boj-spec-rules.md, spec-levels.md
@@ -52,8 +61,8 @@ boj-agent/
     run_tests.py              # 통합 테스트 러너 (pytest + bash 자동 발견)
     run_tests.sh              # 레거시 Bash 러너 (전환 기간 유지)
     fixtures/                 # 테스트 픽스처 (99999, 1000, 6588, 9495)
-    unit/                     # Bash 단위 테스트 + Python pytest
-    integration/              # Bash/Python 통합 테스트
+    unit/                     # Python pytest 단위 테스트 + Bash 단위 테스트
+    integration/              # Python/Bash 통합 테스트
     e2e/                      # E2E 테스트
   scripts/
     install.py                # [deprecated] → pip install boj-agent
@@ -61,14 +70,14 @@ boj-agent/
   docs/                       # 문서
     ARCHITECTURE.md           # 프로젝트 구조 (현재 + 목표)
     COMMAND-SPEC.md           # 명령어별 로직 정의서
-    edge-cases.md             # 엣지케이스 매트릭스
     user-guide.md             # 사용자 가이드
     dev/                      # 개발 프로세스 가이드
       WORKFLOW.md             # 이슈 → PR → 머지 워크플로우
       VERIFICATION.md         # 7단계 검증 파이프라인
-      test-strategy.md        # pytest 특성화 테스트 전략
-      test-coverage/          # 테스트 커버리지 데이터
-      rewrite-plan.md         # Python 전환 계획
+      testing/                # 테스트 문서 (통합)
+        strategy.md           # pytest 특성화 테스트 전략
+        edge-cases.md         # 엣지케이스 매트릭스
+        coverage/             # 명령어별 테스트 커버리지
     records/                  # 기록
       DEVLOG.md               # 변경 기록 (구조화 + Legacy 여정)
 ```
@@ -169,7 +178,7 @@ boj-agent/
     fixtures/                 # 기존 픽스처 유지
   prompts/                    # 에이전트 지시문 (reference/와 같은 레벨)
   docs/                       # 문서
-    ARCHITECTURE.md, COMMAND-SPEC.md, edge-cases.md, user-guide.md
+    ARCHITECTURE.md, COMMAND-SPEC.md, user-guide.md
     dev/                      # 개발 프로세스 가이드
     records/                  # 기록 (DEVLOG.md)
   languages.json              # 언어 메타데이터 (프로젝트 루트)
@@ -193,11 +202,13 @@ boj-agent/
 
 1. ~~`boj setup`~~ — ✅ 완료 (#46)
 2. ~~`scripts/install.py`~~ — ✅ 완료 (#47)
-3. `boj make` — spec 기반 파이프라인으로 재설계 (#54, 진행 중)
-4. `boj run` (Java only) — 테스트 러너 Python 래퍼
-5. `boj submit` — sed/grep 접합을 Python 문자열 처리로 개선
-6. ~~`boj commit`, `boj open`, `boj review`~~ — ✅ 완료 (#66-#69)
-7. ~~PyPI 패키지화~~ — ✅ 완료 (#70): `pyproject.toml`, `src/cli/main.py` 디스패처, `pip install boj-agent`
+3. ~~`boj make`~~ — ✅ 완료 (#54)
+4. ~~`boj run`~~ — ✅ 완료 (#60)
+5. ~~`boj open`~~ — ✅ 완료 (#66)
+6. ~~`boj review`~~ — ✅ 완료 (#67)
+7. ~~`boj commit`~~ — ✅ 완료 (#68)
+8. ~~`boj submit`~~ — ✅ 완료 (#69)
+9. ~~PyPI 패키지화~~ — ✅ 완료 (#70): `pyproject.toml`, `src/cli/main.py` 디스패처, `pip install boj-agent`
 
 명령어마다 별도 PR. 한 번에 전부 재구성하지 않음.
 

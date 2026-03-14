@@ -8,18 +8,15 @@
 ```
 boj-agent/
 ├── src/
-│   ├── boj                 # CLI 진입점
-│   ├── setup-boj-cli.sh    # [deprecated] → scripts/install.py
-│   ├── lib/
-│   │   └── config.sh       # 공통 설정 라이브러리
-│   └── commands/           # setup, make, open, run, submit, review, commit
-├── templates/              # 언어별 공통 코드 (테스트 러너 + 계약)
-│   ├── _common/
-│   ├── languages.json      # 언어 메타데이터
-│   └── java/ python/ cpp/ c/ kotlin/
-├── prompts/                # 에이전트용 지시문 (환경 생성 / 제출 / 리뷰)
-├── tests/                  # 단위 + 통합 테스트
-└── docs/                   # 사용자 가이드, 엣지 케이스
+│   ├── boj                 # CLI 진입점 (Bash 디스패처 → Python 라우팅)
+│   ├── core/               # Python 핵심 로직 (순수 함수, CLI 없음)
+│   ├── cli/                # CLI 래퍼 (core 위 얇은 레이어)
+│   ├── commands/           # [legacy] Bash 서브커맨드 (fallback용)
+│   └── lib/                # [legacy] Bash 공통 라이브러리
+├── templates/              # 언어별 런타임 코드 (테스트 러너 + 계약)
+├── prompts/                # 에이전트용 지시문
+├── tests/                  # pytest 단위 + 통합 테스트
+└── docs/                   # 문서
 ```
 
 문제별 폴더는 `BOJ_ROOT` 아래에 생성됩니다:

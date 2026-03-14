@@ -1,7 +1,7 @@
 # make 테스트 커버리지 (Python)
 
 > `src/core/make.py` + `src/cli/boj_make.py` 기준.
-> 참조: [COMMAND-SPEC.md](../../COMMAND-SPEC.md), [edge-cases.md](../../edge-cases.md) M1-M16
+> 참조: [COMMAND-SPEC.md](../../../COMMAND-SPEC.md), [edge-cases.md](../edge-cases.md) M1-M16
 
 ## 파이프라인 흐름
 

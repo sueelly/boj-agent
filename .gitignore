@@ -10,5 +10,7 @@ __pycache__/
 dist/
 build/
 .venv/
+# 포트폴리오 (개인용, 배포 제외)
+docs/portfolio/
 # oh-my-claudecode 상태 디렉터리
 .omc/

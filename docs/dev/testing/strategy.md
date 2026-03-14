@@ -1,6 +1,6 @@
 # pytest Test Strategy
 
-> Python 재작성(`docs/dev/rewrite-plan.md`) 진행 중 현재 구현의 동작을 pytest로 고정(freeze)하는 테스트 전략.
+> 현재 구현의 동작을 pytest로 고정(freeze)하는 테스트 전략.
 > 이 문서만 읽으면 누구든 일관된 스타일로 테스트를 작성할 수 있어야 한다.
 
 ---
@@ -264,7 +264,7 @@ def test_creates_readme_when_valid_problem(boj_env, fixture_path):
 ## 6. 테스트 매트릭스
 
 각 커맨드별로 **happy path / error path / edge case** 세 범주를 커버한다.
-`docs/edge-cases.md`의 엣지케이스 매트릭스가 기준이다.
+`docs/dev/testing/edge-cases.md`의 엣지케이스 매트릭스가 기준이다.
 
 ### 6.1 커맨드별 커버리지 기준
 

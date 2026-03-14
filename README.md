@@ -1,20 +1,26 @@
 # Boj-Agent
 
-백준 알고리즘 문제 풀이를 **에이전트(AI)**와 함께 자동화하는 CLI.
-문제 환경 생성, 로컬 테스트, 제출용 코드·리뷰까지 한 흐름으로 사용할 수 있고, **에이전트는 Cursor뿐 아니라 설정으로 갈아끼울 수 있습니다.**
+백준 알고리즘 문제 풀이를 **에이전트(AI)**와 함께 자동화하는 Python CLI.
+문제 환경 생성, 로컬 테스트, 제출용 코드·리뷰까지 한 흐름으로 사용할 수 있고, **에이전트는 설정으로 갈아끼울 수 있습니다.**
 
 ## 빠른 시작
 
 ```bash
+pip install boj-agent        # PyPI 설치
+boj setup                    # 초기 설정 (루트, 언어, 에이전트)
+boj make 4949                # 환경 생성
+boj open 4949                # 에디터로 풀기
+boj run 4949                 # 테스트
+boj submit 4949 --open       # Submit 파일 생성 + 제출 페이지 오픈
+boj review 4949              # 코드 리뷰
+boj commit 4949              # 커밋 (BOJ 통계 포함)
+```
+
+개발 모드 설치:
+```bash
 git clone <this-repo>
 cd boj-agent
-./src/setup-boj-cli.sh   # PATH에 boj 설치
-boj setup                 # 초기 설정 (루트, 언어, 에이전트)
-boj make 4949             # 환경 생성
-boj open 4949             # 에디터로 풀기
-boj run 4949              # 테스트
-boj submit 4949 --open    # Submit.java 생성 + 제출 페이지 오픈
-boj commit 4949           # 커밋
+pip install -e ".[dev]"
 ```
 
 ## 명령어
@@ -40,43 +46,80 @@ boj open   4949 --editor cursor     # 에디터 지정
 boj setup  --check                  # 현재 설정 상태 확인
 ```
 
-## 문서
-
-- **사용 가이드**: [docs/user-guide.md](docs/user-guide.md)
-- **엣지 케이스 매트릭스**: [docs/edge-cases.md](docs/edge-cases.md)
-- **개발 기록**: [docs/records/DEVLOG.md](docs/records/DEVLOG.md)
-- **에이전트 지시문**: [prompts/README.md](prompts/README.md)
-
 ## 구조
 
 ```
 boj-agent/
 ├── src/
-│   ├── boj                 # CLI 진입점 (7개 서브커맨드 디스패처)
-│   ├── setup-boj-cli.sh    # 한 번 설치 (~/bin/boj 복사)
-│   ├── lib/
-│   │   └── config.sh       # 공통 설정 로더 (config_get/set, validate_lang 등)
-│   └── commands/           # setup / make / open / run / submit / review / commit
-├── templates/              # 언어별 공통 코드 (Java, Python, C++, C, Kotlin, Go, Rust ...)
-│   ├── _common/
-│   ├── languages.json      # 12개 언어 메타데이터
-│   └── java/ python/ cpp/ c/ kotlin/ go/ rust/ ruby/ swift/ scala/ js/ ts/
-├── prompts/                # 에이전트용 지시문 (환경 생성 / 제출 / 리뷰)
-├── tests/
-│   ├── run_tests.sh        # --unit | --integration | --all
-│   ├── unit/               # config.sh 단위 테스트
-│   └── integration/        # 명령어별 통합 테스트
-└── docs/                   # 사용자 가이드, 엣지 케이스, 개발 기록
+│   ├── boj                 # CLI 진입점 (Bash 디스패처 → Python 라우팅)
+│   ├── core/               # Python 핵심 로직 (순수 함수, CLI 없음)
+│   ├── cli/                # CLI 래퍼 (core 위 얇은 레이어)
+│   ├── commands/           # [legacy] Bash 서브커맨드 (fallback용)
+│   └── lib/                # [legacy] Bash 공통 라이브러리
+├── templates/              # 언어별 런타임 코드 (테스트 러너 + 계약)
+├── prompts/                # 에이전트용 지시문
+├── tests/                  # pytest 단위 + 통합 테스트
+└── docs/                   # 문서
 ```
 
 ## 설정
 
 `~/.config/boj/` 에 파일별로 저장됩니다.
-환경변수(`BOJ_ROOT`, `BOJ_LANG`, `BOJ_AGENT`, `BOJ_SESSION`, `BOJ_USER`, `BOJ_EDITOR`)로 오버라이드 가능.
+환경변수로 오버라이드 가능합니다.
+
+| 파일 | 환경변수 | 설명 |
+|------|----------|------|
+| `solution_root` | `BOJ_SOLUTION_ROOT` | 문제 풀이 루트 경로 |
+| `prog_lang` | `BOJ_PROG_LANG` | 기본 언어 (java/python) |
+| `agent` | `BOJ_AGENT` | 에이전트 명령 (예: `claude -p --`) |
+| `editor` | `BOJ_EDITOR` | 에디터 (code/cursor/vim/nano) |
+| `username` | `BOJ_USERNAME` | BOJ 사용자 ID (commit 통계용) |
 
 ```bash
 boj setup          # 대화형 설정
 boj setup --check  # 현재 설정 확인
 ```
+
+## 지원 언어
+
+| 언어 | 확장자 | run | submit |
+|------|--------|-----|--------|
+| java | .java | O | O |
+| python | .py | O | O |
+
+## 워크플로우
+
+```
+boj setup           ← 최초 1회
+    ↓
+boj make 4949       ← 에이전트로 환경 생성 (README, Solution, test/)
+    ↓
+boj open 4949       ← 에디터로 풀기
+    ↓
+boj run 4949        ← 로컬 테스트
+    ↓
+boj submit 4949     ← Submit 파일 생성
+    ↓
+boj review 4949     ← (선택) 리뷰
+    ↓
+boj commit 4949     ← 커밋 (BOJ 통계 포함)
+```
+
+## 테스트
+
+```bash
+./tests/run_tests.sh                    # 전체 (단위 + 통합)
+./tests/run_tests.sh --unit             # 단위만
+./tests/run_tests.sh --integration      # 통합만
+python -m pytest tests/unit/            # pytest 직접 실행
+```
+
+## 문서
+
+- **사용 가이드**: [docs/user-guide.md](docs/user-guide.md)
+- **아키텍처**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **엣지 케이스**: [docs/dev/testing/edge-cases.md](docs/dev/testing/edge-cases.md)
+- **개발 기록**: [docs/records/DEVLOG.md](docs/records/DEVLOG.md)
+- **에이전트 지시문**: [prompts/README.md](prompts/README.md)
 
 자세한 내용은 [docs/user-guide.md](docs/user-guide.md) 참고.
