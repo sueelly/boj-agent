@@ -3,6 +3,8 @@
 Issue #54 — TDD Red 단계.
 edge-cases.md M1~M13 커버리지.
 
+subprocess.CompletedProcess mock 헬퍼: _mock_agent_result().
+
 엣지케이스 커버리지 매핑:
 - M3  (폴더 존재, -f 없음)   → TestCheckExisting.test_raises_when_dir_exists_without_force
 - M3a (폴더 존재, -f 있음)   → TestCheckExisting.test_allows_overwrite_when_force
@@ -12,6 +14,7 @@ edge-cases.md M1~M13 커버리지.
 """
 
 import json
+import subprocess
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -25,9 +28,14 @@ from src.core.make import (
     fetch_problem,
     generate_readme,
     generate_spec,
+    generate_skeleton,
     cleanup_artifacts,
     _validate_problem_id,
     _sanitize_title_slug,
+    _get_lang_meta,
+    _extract_json_manifest,
+    _write_skeleton_files,
+    _generate_test_cases_fallback,
 )
 from src.core.config import (
     config_get,
@@ -193,7 +201,7 @@ class TestGenerateSpec:
 
     def test_raises_when_spec_file_missing(self, problem_dir):
         """M12: 에이전트 실행 후 spec 파일 없으면 SpecError."""
-        with patch("src.core.make.run_agent", return_value=0):
+        with patch("src.core.make.run_agent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")):
             with pytest.raises(SpecError, match="생성되지 않았습니다"):
                 generate_spec(problem_dir, "echo MOCK")
 
@@ -201,7 +209,7 @@ class TestGenerateSpec:
         """M12: spec 파일이 유효하지 않은 JSON이면 SpecError."""
         spec_path = problem_dir / "artifacts" / "problem.spec.json"
         spec_path.write_text("NOT VALID JSON {{{")
-        with patch("src.core.make.run_agent", return_value=0):
+        with patch("src.core.make.run_agent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")):
             with pytest.raises(SpecError, match="유효하지 않은 JSON"):
                 generate_spec(problem_dir, "echo MOCK")
 
@@ -214,19 +222,19 @@ class TestGenerateSpec:
             "input": {},
             "output": {},
         }))
-        with patch("src.core.make.run_agent", return_value=0):
+        with patch("src.core.make.run_agent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")):
             result = generate_spec(problem_dir, "echo MOCK")
         assert result is not None
 
     def test_error_message_suggests_retry(self, problem_dir):
         """에러 메시지에 '-f 로 재시도' 안내가 포함된다."""
-        with patch("src.core.make.run_agent", return_value=0):
+        with patch("src.core.make.run_agent", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")):
             with pytest.raises(SpecError, match="-f"):
                 generate_spec(problem_dir, "echo MOCK")
 
     def test_raises_when_agent_fails_and_no_spec(self, problem_dir):
         """M10: 에이전트가 non-zero exit하고 spec 미생성 시 SpecError."""
-        with patch("src.core.make.run_agent", return_value=1):
+        with patch("src.core.make.run_agent", return_value=subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="agent failed")):
             with pytest.raises(SpecError, match="생성되지 않았습니다"):
                 generate_spec(problem_dir, "echo MOCK")
 
@@ -236,50 +244,86 @@ class TestGenerateSpec:
 # ──────────────────────────────────────────────
 
 class TestCleanupArtifacts:
-    """Step 5: artifacts 정리."""
+    """Step 5: 화이트리스트 기반 정리."""
 
-    def test_removes_json_keeps_images(self, problem_dir):
-        """cleanup은 JSON만 삭제하고 이미지는 유지한다."""
+    def test_keeps_whitelisted_deletes_rest(self, problem_dir):
+        """화이트리스트(README, Solution, test/, artifacts 이미지)만 유지."""
+        # 유지할 파일
+        (problem_dir / "README.md").write_text("# readme")
+        (problem_dir / "Solution.java").write_text("class Solution {}")
+        test_dir = problem_dir / "test"
+        test_dir.mkdir()
+        (test_dir / "Parse.java").write_text("class Parse {}")
         artifacts = problem_dir / "artifacts"
-        (artifacts / "problem.json").write_text("{}")
-        (artifacts / "problem.spec.json").write_text("{}")
         (artifacts / "image.png").write_bytes(b"PNG")
 
-        cleanup_artifacts(problem_dir, keep=False)
+        # 삭제될 파일/디렉터리
+        omc_dir = problem_dir / ".omc"
+        omc_dir.mkdir()
+        (omc_dir / "state.json").write_text("{}")
+        (problem_dir / "random.txt").write_text("junk")
+        (artifacts / "problem.json").write_text("{}")
+        (artifacts / "problem.spec.json").write_text("{}")
 
+        cleanup_artifacts(problem_dir, keep=False, lang="java")
+
+        # 유지 확인
+        assert (problem_dir / "README.md").exists()
+        assert (problem_dir / "Solution.java").exists()
+        assert (test_dir / "Parse.java").exists()
+        assert (artifacts / "image.png").exists()
+        # 삭제 확인
+        assert not omc_dir.exists()
+        assert not (problem_dir / "random.txt").exists()
         assert not (artifacts / "problem.json").exists()
         assert not (artifacts / "problem.spec.json").exists()
-        assert (artifacts / "image.png").exists()
 
     def test_keeps_all_when_flag(self, problem_dir):
         """M13: --keep-artifacts 시 모든 파일 유지."""
         artifacts = problem_dir / "artifacts"
         (artifacts / "problem.json").write_text("{}")
-        (artifacts / "problem.spec.json").write_text("{}")
+        (problem_dir / "random.txt").write_text("junk")
 
         cleanup_artifacts(problem_dir, keep=True)
 
         assert (artifacts / "problem.json").exists()
-        assert (artifacts / "problem.spec.json").exists()
+        assert (problem_dir / "random.txt").exists()
 
-    def test_no_error_when_artifacts_dir_missing(self, tmp_path):
-        """artifacts/ 폴더 없어도 에러 없이 진행."""
-        prob_dir = tmp_path / "99999-no-artifacts"
-        prob_dir.mkdir()
+    def test_no_error_when_dir_missing(self, tmp_path):
+        """problem_dir이 없어도 에러 없이 진행."""
+        prob_dir = tmp_path / "99999-nonexistent"
         cleanup_artifacts(prob_dir, keep=False)  # 예외 없음
 
-    def test_removes_only_spec_json_files(self, problem_dir):
-        """problem.json, problem.spec.json만 삭제. 다른 JSON은 유지."""
+    def test_removes_empty_artifacts_dir(self, problem_dir):
+        """artifacts/ 안에 이미지가 없으면 디렉터리 자체를 삭제."""
         artifacts = problem_dir / "artifacts"
         (artifacts / "problem.json").write_text("{}")
-        (artifacts / "problem.spec.json").write_text("{}")
-        (artifacts / "other_data.json").write_text("{}")
 
         cleanup_artifacts(problem_dir, keep=False)
 
+        assert not artifacts.exists()
+
+    def test_keeps_artifacts_dir_with_images(self, problem_dir):
+        """artifacts/ 안에 이미지가 있으면 디렉터리 유지."""
+        artifacts = problem_dir / "artifacts"
+        (artifacts / "problem.json").write_text("{}")
+        (artifacts / "diagram.svg").write_text("<svg/>")
+
+        cleanup_artifacts(problem_dir, keep=False)
+
+        assert artifacts.exists()
+        assert (artifacts / "diagram.svg").exists()
         assert not (artifacts / "problem.json").exists()
-        assert not (artifacts / "problem.spec.json").exists()
-        assert (artifacts / "other_data.json").exists()
+
+    def test_python_solution_file_kept(self, problem_dir):
+        """lang=python이면 solution.py를 유지."""
+        (problem_dir / "solution.py").write_text("class Solution: pass")
+        (problem_dir / "random.txt").write_text("junk")
+
+        cleanup_artifacts(problem_dir, keep=False, lang="python")
+
+        assert (problem_dir / "solution.py").exists()
+        assert not (problem_dir / "random.txt").exists()
 
 
 # ──────────────────────────────────────────────
@@ -484,3 +528,216 @@ class TestGenerateReadme:
         readme_path = generate_readme(tmp_problem_json, problem_dir=tmp_path)
         result = readme_path.read_text()
         assert result == expected
+
+
+# ──────────────────────────────────────────────
+# TestGetLangMeta — 언어 메타데이터
+# ──────────────────────────────────────────────
+
+class TestGetLangMeta:
+    """_get_lang_meta: languages.json에서 메타데이터 추출."""
+
+    def test_java_meta(self):
+        meta = _get_lang_meta("java")
+        assert meta["ext"] == "java"
+        assert meta["supports_parse"] == "true"
+        assert meta["solution_file"] == "Solution.java"
+
+    def test_python_meta(self):
+        meta = _get_lang_meta("python")
+        assert meta["ext"] == "py"
+        assert meta["supports_parse"] == "true"
+        assert meta["solution_file"] == "solution.py"
+
+    def test_cpp_no_parse(self):
+        meta = _get_lang_meta("cpp")
+        assert meta["ext"] == "cpp"
+        assert meta["supports_parse"] == "false"
+
+    def test_unknown_lang_fallback(self):
+        meta = _get_lang_meta("brainfuck")
+        assert meta["ext"] == "brainfuck"
+        assert meta["supports_parse"] == "false"
+        assert meta["solution_file"] == "Solution.brainfuck"
+
+
+# ──────────────────────────────────────────────
+# TestExtractJsonManifest — stdout JSON 추출
+# ──────────────────────────────────────────────
+
+class TestExtractJsonManifest:
+    """_extract_json_manifest: stdout에서 JSON 추출."""
+
+    def test_pure_json(self):
+        stdout = '{"files": {"Solution.java": "code"}}'
+        result = _extract_json_manifest(stdout)
+        assert result == {"files": {"Solution.java": "code"}}
+
+    def test_json_in_code_fence(self):
+        stdout = 'Here is the result:\n```json\n{"files": {"a.java": "x"}}\n```\nDone.'
+        result = _extract_json_manifest(stdout)
+        assert result["files"]["a.java"] == "x"
+
+    def test_json_with_surrounding_text(self):
+        stdout = 'Output: {"files": {"b.py": "y"}} end'
+        result = _extract_json_manifest(stdout)
+        assert result["files"]["b.py"] == "y"
+
+    def test_no_json_returns_none(self):
+        assert _extract_json_manifest("no json here") is None
+
+    def test_invalid_json_returns_none(self):
+        assert _extract_json_manifest("{broken json") is None
+
+
+# ──────────────────────────────────────────────
+# TestWriteSkeletonFiles — manifest → 파일 생성
+# ──────────────────────────────────────────────
+
+class TestWriteSkeletonFiles:
+    """_write_skeleton_files: JSON manifest에서 파일 생성."""
+
+    def test_writes_files_from_manifest(self, tmp_path):
+        result = MagicMock()
+        result.stdout = json.dumps({
+            "files": {
+                "Solution.java": "public class Solution {}",
+                "test/Parse.java": "public class Parse {}",
+                "test/test_cases.json": '{"testCases": []}',
+            }
+        })
+
+        written = _write_skeleton_files(tmp_path, result)
+
+        assert written is True
+        assert (tmp_path / "Solution.java").read_text() == "public class Solution {}"
+        assert (tmp_path / "test" / "Parse.java").read_text() == "public class Parse {}"
+        assert (tmp_path / "test" / "test_cases.json").exists()
+
+    def test_returns_false_on_empty_stdout(self, tmp_path):
+        result = MagicMock()
+        result.stdout = ""
+        assert _write_skeleton_files(tmp_path, result) is False
+
+    def test_returns_false_on_no_files_key(self, tmp_path):
+        result = MagicMock()
+        result.stdout = '{"other": "data"}'
+        assert _write_skeleton_files(tmp_path, result) is False
+
+
+# ──────────────────────────────────────────────
+# TestGenerateTestCasesFallback
+# ──────────────────────────────────────────────
+
+class TestGenerateTestCasesFallback:
+    """_generate_test_cases_fallback: samples → test_cases.json."""
+
+    def test_generates_from_samples(self, tmp_path):
+        problem_dir = tmp_path / "10799"
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir(parents=True)
+        (artifacts / "problem.json").write_text(json.dumps(SAMPLE_PROBLEM, ensure_ascii=False))
+
+        _generate_test_cases_fallback(problem_dir)
+
+        tc_path = problem_dir / "test" / "test_cases.json"
+        assert tc_path.exists()
+        data = json.loads(tc_path.read_text())
+        assert len(data["testCases"]) == 2
+        assert data["testCases"][0]["input"] == "1 2"
+        assert data["testCases"][0]["expected"] == "3"
+
+    def test_skips_when_no_problem_json(self, tmp_path):
+        _generate_test_cases_fallback(tmp_path)
+        assert not (tmp_path / "test" / "test_cases.json").exists()
+
+    def test_skips_when_no_samples(self, tmp_path):
+        problem_dir = tmp_path / "empty"
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir(parents=True)
+        (artifacts / "problem.json").write_text('{"title": "no samples"}')
+
+        _generate_test_cases_fallback(problem_dir)
+        assert not (problem_dir / "test" / "test_cases.json").exists()
+
+
+# ──────────────────────────────────────────────
+# TestGenerateSkeleton — Step 3 통합
+# ──────────────────────────────────────────────
+
+class TestGenerateSkeleton:
+    """generate_skeleton: 에이전트 stdout → 파일 생성 + fallback."""
+
+    def test_writes_files_from_agent_stdout(self, tmp_path):
+        """에이전트가 JSON manifest 출력 → 파일 생성."""
+        problem_dir = tmp_path / "10799"
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir(parents=True)
+        (artifacts / "problem.json").write_text(json.dumps(SAMPLE_PROBLEM, ensure_ascii=False))
+
+        manifest = json.dumps({
+            "files": {
+                "Solution.java": "public class Solution { public int solve(int a, int b) { return 0; } }",
+                "test/Parse.java": "public class Parse implements ParseAndCallSolve {}",
+                "test/test_cases.json": json.dumps({"testCases": [{"input": "1 2", "expected": "3"}]}),
+            }
+        })
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = manifest
+        mock_result.stderr = ""
+
+        with patch("src.core.make.run_agent", return_value=mock_result):
+            generate_skeleton(problem_dir, "java", "claude -p --")
+
+        assert (problem_dir / "Solution.java").exists()
+        assert (problem_dir / "test" / "Parse.java").exists()
+        assert (problem_dir / "test" / "test_cases.json").exists()
+
+    def test_fallback_test_cases_when_agent_fails(self, tmp_path):
+        """에이전트 실패해도 test_cases.json은 fallback으로 생성."""
+        problem_dir = tmp_path / "10799"
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir(parents=True)
+        (artifacts / "problem.json").write_text(json.dumps(SAMPLE_PROBLEM, ensure_ascii=False))
+
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        mock_result.stderr = "agent failed"
+
+        with patch("src.core.make.run_agent", return_value=mock_result):
+            generate_skeleton(problem_dir, "java", "claude -p --")
+
+        # Solution.java는 없지만 test_cases.json은 fallback으로 생성
+        assert not (problem_dir / "Solution.java").exists()
+        tc = problem_dir / "test" / "test_cases.json"
+        assert tc.exists()
+        data = json.loads(tc.read_text())
+        assert len(data["testCases"]) == 2
+
+    def test_template_vars_substituted(self, tmp_path):
+        """template_vars가 run_agent에 전달되는지 확인."""
+        problem_dir = tmp_path / "10799"
+        artifacts = problem_dir / "artifacts"
+        artifacts.mkdir(parents=True)
+        (artifacts / "problem.json").write_text(json.dumps(SAMPLE_PROBLEM, ensure_ascii=False))
+
+        captured = {}
+
+        def mock_run_agent(pd, cmd, prompt, **kwargs):
+            captured["template_vars"] = kwargs.get("template_vars")
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            return result
+
+        with patch("src.core.make.run_agent", side_effect=mock_run_agent):
+            generate_skeleton(problem_dir, "java", "claude -p --")
+
+        tv = captured["template_vars"]
+        assert tv["LANG"] == "java"
+        assert tv["EXT"] == "java"
+        assert tv["SUPPORTS_PARSE"] == "true"
+        assert str(problem_dir) in tv["PROBLEM_DIR"]
