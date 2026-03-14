@@ -11,7 +11,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.core.config import config_get, find_problem_dir, validate_lang
+from src.core.config import config_get, find_problem_dir
 from src.core.exceptions import BojError, RunError, RunMemoryError, RunTimeoutError
 
 # ---------------------------------------------------------------------------
