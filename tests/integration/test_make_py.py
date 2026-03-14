@@ -13,13 +13,11 @@ import pytest
 
 from src.core.exceptions import ProblemExistsError
 from src.core.make import (
-    ensure_setup,
     check_existing,
     fetch_problem,
     generate_readme,
     cleanup_artifacts,
 )
-from src.core.config import mark_setup_done
 
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
@@ -93,19 +91,6 @@ class TestMakePyIntegration:
         problem_dir = tmp_path / "99999-test"
         problem_dir.mkdir()
         check_existing(problem_dir, force=True)  # 예외 없음
-
-    def test_make_auto_runs_setup_when_no_flag(self, config_env):
-        """M9: setup_done 없으면 boj setup 자동 실행."""
-        with patch("src.core.make.run_setup") as mock_setup:
-            ensure_setup()
-            mock_setup.assert_called_once()
-
-    def test_make_skips_setup_when_already_done(self, config_env):
-        """setup_done 있으면 setup을 실행하지 않는다."""
-        mark_setup_done()
-        with patch("src.core.make.run_setup") as mock_setup:
-            ensure_setup()
-            mock_setup.assert_not_called()
 
     def test_cleanup_removes_artifacts_after_pipeline(self, tmp_path):
         """파이프라인 후 cleanup이 JSON만 삭제한다."""

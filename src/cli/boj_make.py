@@ -13,7 +13,6 @@ from pathlib import Path
 from src.core.config import config_get, DEFAULTS
 from src.core.exceptions import BojError
 from src.core.make import (
-    ensure_setup,
     fetch_problem,
     generate_readme,
     generate_spec,
@@ -86,8 +85,7 @@ def _run_pipeline(args: argparse.Namespace) -> int:
     Returns:
         종료 코드. 0=성공, 1=실패.
     """
-    # Step 사전 조건 (COMMAND-SPEC: setup 완료 시 에이전트 필수, fallback 없음)
-    ensure_setup()
+    # Step 사전 조건 (setup_done 가드는 디스패처에서 처리)
     agent_cmd = (config_get("agent") or DEFAULTS.get("agent", "") or "").strip()
     if not agent_cmd:
         print("Error: 에이전트가 설정되지 않았습니다. boj setup을 실행한 뒤 에이전트를 선택하세요.", file=sys.stderr)

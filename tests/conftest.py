@@ -99,10 +99,14 @@ def boj_env(tmp_path):
         if key.startswith("BOJ_"):
             del env[key]
 
+    config_dir = tmp_path / ".config" / "boj"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "setup_done").touch()
+
     env.update({
         "BOJ_ROOT": str(tmp_path),
         "HOME": str(tmp_path),
-        "BOJ_CONFIG_DIR": str(tmp_path / ".config" / "boj"),
+        "BOJ_CONFIG_DIR": str(config_dir),
         "BOJ_EDITOR": "true",
     })
 

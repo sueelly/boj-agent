@@ -84,6 +84,18 @@ if ! ROOT="$(find_boj_root)"; then
   exit 1
 fi
 
+# setup_done 가드: setup 외 명령어에서 설정 완료 확인 (C1)
+CONFIG_DIR="${BOJ_CONFIG_DIR:-$HOME/.config/boj}"
+if [[ "$SUBCOMMAND" != "help" && "$SUBCOMMAND" != "-h" && "$SUBCOMMAND" != "--help" && -n "$SUBCOMMAND" && ! -f "$CONFIG_DIR/setup_done" ]]; then
+  echo "설정이 완료되지 않았습니다. boj setup을 진행합니다."
+  SETUP_PY="$ROOT/src/cli/boj_setup.py"
+  PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" python3 "$SETUP_PY"
+  if [[ ! -f "$CONFIG_DIR/setup_done" ]]; then
+    echo "Error: 설정이 완료되지 않았습니다. boj setup을 다시 실행하세요." >&2
+    exit 1
+  fi
+fi
+
 PROBLEM_NUM="${2:-}"
 CMD_SCRIPT="$ROOT/src/commands/$SUBCOMMAND.sh"
 
