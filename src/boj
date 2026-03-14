@@ -174,12 +174,19 @@ case "$SUBCOMMAND" in
     fi
     ;;
   submit)
-    if [[ ! -x "$CMD_SCRIPT" ]]; then
-      echo "Error: $CMD_SCRIPT 를 찾을 수 없거나 실행할 수 없습니다." >&2
-      echo "  (chmod +x $CMD_SCRIPT 로 실행 권한을 추가해보세요)" >&2
-      exit 1
+    # Python 마이그레이션 (#69): src/cli/boj_submit.py로 라우팅
+    SUBMIT_PY="$ROOT/src/cli/boj_submit.py"
+    if [[ -f "$SUBMIT_PY" ]]; then
+      shift  # subcommand 제거
+      PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" exec python3 "$SUBMIT_PY" "$@"
+    else
+      # fallback: 기존 Bash
+      if [[ ! -x "$CMD_SCRIPT" ]]; then
+        echo "Error: $CMD_SCRIPT 를 찾을 수 없거나 실행할 수 없습니다." >&2
+        exit 1
+      fi
+      exec "$CMD_SCRIPT" "$ROOT" "$PROBLEM_NUM" "${@:3}"
     fi
-    exec "$CMD_SCRIPT" "$ROOT" "$PROBLEM_NUM" "${@:3}"
     ;;
   -h|--help|help|"")
     print_usage
