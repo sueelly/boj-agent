@@ -8,7 +8,7 @@ subprocess.CompletedProcess mock 헬퍼: _mock_agent_result().
 엣지케이스 커버리지 매핑:
 - M3  (폴더 존재, -f 없음)   → TestCheckExisting.test_raises_when_dir_exists_without_force
 - M3a (폴더 존재, -f 있음)   → TestCheckExisting.test_allows_overwrite_when_force
-- M9  (setup_done 없음)      → TestEnsureSetup.test_runs_setup_when_no_flag
+- M9  (setup_done 없음)      → test_setup_guard.TestSetupGuard.test_shows_setup_message_when_no_setup_done
 - M12 (spec 생성 실패)       → TestGenerateSpec.test_raises_when_spec_file_missing
 - M13 (--keep-artifacts)      → TestCleanupArtifacts.test_keeps_all_when_flag
 """
@@ -761,7 +761,6 @@ class TestRunPipelineCallOrder:
 
         args = parse_args(["99999"])
         with (
-
             patch("src.cli.boj_make.config_get", side_effect=self._config_get),
             patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
             patch("src.cli.boj_make.generate_readme", side_effect=mock_readme),
@@ -788,7 +787,6 @@ class TestRunPipelineCallOrder:
 
         args = parse_args(["99999", "--no-open"])
         with (
-
             patch("src.cli.boj_make.config_get", side_effect=self._config_get),
             patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
             patch("src.cli.boj_make.generate_readme"),
@@ -816,7 +814,6 @@ class TestRunPipelineCallOrder:
 
         args = parse_args(["99999"])
         with (
-
             patch("src.cli.boj_make.config_get", side_effect=config_no_editor),
             patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
             patch("src.cli.boj_make.generate_readme"),
