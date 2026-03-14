@@ -311,8 +311,19 @@ def find_problem_dir(root: str, problem_num: str) -> str | None:
 
     Returns:
         찾은 폴더의 절대 경로. 없으면 None.
+
+    Raises:
+        ValueError: problem_num이 비어있거나 숫자가 아닌 경우.
     """
     from pathlib import Path
+
+    # 입력 검증: 빈 문자열 또는 숫자가 아닌 값 거부
+    if not problem_num or not problem_num.strip():
+        raise ValueError("문제 번호가 비어있습니다.")
+    if not problem_num.isdigit():
+        raise ValueError(
+            f"문제 번호는 숫자여야 합니다: '{problem_num}'"
+        )
 
     root_path = Path(root)
     if not root_path.exists():
