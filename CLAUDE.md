@@ -3,7 +3,7 @@
 ## 프로젝트 개요
 Bash + Python 혼합 CLI로 BOJ 문제 풀이 자동화.
 명령어 7개: `make`, `open`, `run`, `commit`, `review`, `submit`, `setup`.
-Python 코어로 전환 예정 (docs/dev/rewrite-plan.md, docs/ARCHITECTURE.md 참고).
+Python 코어로 전환 완료 (docs/ARCHITECTURE.md 참고).
 
 ## 절대 규칙
 - main에 직접 커밋 금지 — 항상 브랜치 + PR
@@ -26,14 +26,17 @@ javac templates/java/*.java             # Java 템플릿 컴파일
 ## 프로젝트 구조
 ```
 src/
-  boj                       # CLI 진입점 (Bash 디스패처)
-  setup-boj-cli.sh          # ~/bin/boj 설치 스크립트
-  commands/                 # 서브커맨드 (각각 독립 Bash 스크립트)
+  boj                       # CLI 진입점 (Bash 디스패처 → Python 라우팅)
+  core/                     # Python 핵심 로직 (순수 함수, CLI 없음)
+    config.py, client.py, make.py, run.py, commit.py, submit.py
+    open.py, review.py, normalizer.py, exceptions.py
+  cli/                      # CLI 래퍼 (core 위 얇은 레이어)
+    main.py, boj_setup.py, boj_make.py, boj_run.py, boj_commit.py
+    boj_submit.py, boj_open.py, boj_review.py
+  commands/                 # [legacy fallback] Bash 서브커맨드
     make.sh, run.sh, commit.sh, submit.sh, setup.sh, open.sh, review.sh
-  lib/
-    config.sh               # 공통 설정 로더 (env > 파일 > 기본값)
-    boj_client.py            # BOJ HTML fetch + 파싱 (Python, requests+BS4)
-    boj_normalizer.py        # problem.json → README.md (Python)
+  lib/                      # [legacy] 공통 라이브러리
+    config.sh, boj_client.py, boj_normalizer.py
 templates/
   java/                     # Test.java, ParseAndCallSolve.java (런타임 인프라)
   python/                   # test_runner.py (런타임 인프라)
@@ -42,18 +45,17 @@ templates/
   languages.json             # 언어 메타데이터
 tests/
   run_tests.sh               # 전체 테스트 실행
-  unit/                      # Bash 단위 (commands/) + Python (test_boj_client.py)
-  integration/               # 명령어별 통합 테스트
+  unit/                      # Python pytest + Bash 단위 테스트
+  integration/               # Python/Bash 통합 테스트
   fixtures/                  # 테스트 픽스처 (99999, 1000, 6588, 9495, boj_client/)
-  lib/                       # 테스트 헬퍼 (matrix_helpers.sh)
 docs/
   ARCHITECTURE.md            # 현재 구조 + 목표 구조 (Option C)
   COMMAND-SPEC.md            # 명령어별 로직 정의서
   user-guide.md              # 사용자 가이드
-  edge-cases.md              # 엣지케이스 매트릭스
   dev/                       # 개발 프로세스 가이드
-    WORKFLOW.md, VERIFICATION.md, test-strategy.md, rewrite-plan.md
-    test-coverage/
+    WORKFLOW.md, VERIFICATION.md
+    testing/                 # 테스트 문서 (통합)
+      strategy.md, edge-cases.md, coverage/
   records/
     DEVLOG.md                # 변경 기록
 prompts/                     # 에이전트 지시문 (make-skeleton, review, submit)
