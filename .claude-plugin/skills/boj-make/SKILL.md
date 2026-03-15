@@ -11,14 +11,15 @@ tools:
 
 Arguments: $ARGUMENTS
 
-## 1. 사전 확인
+## 1. 사전 확인 (필수)
 
 ```bash
-command -v boj >/dev/null 2>&1 || echo "ERROR: boj CLI not found"
+command -v boj >/dev/null 2>&1 && echo "CLI_OK" || echo "CLI_NOT_FOUND"
+cat ~/.config/boj/root 2>/dev/null || echo "SETUP_NEEDED"
 ```
 
-boj CLI가 없으면 즉시 중단하고 안내:
-"boj CLI가 설치되어 있지 않습니다. `pip install boj-agent` 또는 `src/setup-boj-cli.sh`로 설치하세요."
+- `CLI_NOT_FOUND` → "boj CLI가 설치되어 있지 않습니다. `pipx install boj-agent`로 설치하세요." **즉시 중단.**
+- `SETUP_NEEDED` → "boj 초기 설정이 필요합니다." → `/boj-setup` 스킬을 먼저 실행하도록 안내. **즉시 중단.**
 
 ## 2. 인자 파싱
 
@@ -36,8 +37,8 @@ boj make <문제번호> [옵션들]
 성공 시 생성된 README.md를 읽어서 문제 내용 요약 표시.
 
 ```bash
-# 생성된 문제 디렉토리 찾기
-ls -d *<문제번호>*/ 2>/dev/null
+BOJ_ROOT=$(cat ~/.config/boj/root)
+ls -d "$BOJ_ROOT"/*<문제번호>*/ 2>/dev/null
 ```
 
 ## 5. 다음 단계 안내

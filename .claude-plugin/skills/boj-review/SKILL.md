@@ -11,14 +11,15 @@ tools:
 
 Arguments: $ARGUMENTS
 
-## 1. 사전 확인
+## 1. 사전 확인 (필수)
 
 ```bash
-command -v boj >/dev/null 2>&1 || echo "ERROR: boj CLI not found"
+command -v boj >/dev/null 2>&1 && echo "CLI_OK" || echo "CLI_NOT_FOUND"
+cat ~/.config/boj/root 2>/dev/null || echo "SETUP_NEEDED"
 ```
 
-boj CLI가 없으면 즉시 중단:
-"boj CLI가 설치되어 있지 않습니다. `pip install boj-agent` 또는 `src/setup-boj-cli.sh`로 설치하세요."
+- `CLI_NOT_FOUND` → "boj CLI가 설치되어 있지 않습니다. `pipx install boj-agent`로 설치하세요." **즉시 중단.**
+- `SETUP_NEEDED` → "boj 초기 설정이 필요합니다." → `/boj-setup` 스킬을 먼저 실행하도록 안내. **즉시 중단.**
 
 ## 2. 인자 파싱
 
