@@ -1,0 +1,9 @@
+{
+  "name": "boj-agent",
+  "version": "0.1.0",
+  "description": "백준(BOJ) 문제 풀이 자동화 스킬 — 문제 생성, 테스트, 커밋, 제출을 Claude Code에서 바로 사용",
+  "author": {
+    "name": "sueelly"
+  },
+  "homepage": "https://github.com/sueelly/boj-agent"
+}

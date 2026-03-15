@@ -14,6 +14,12 @@
 
 ---
 
+## [2026-03-15] feat(infra): Claude Code skill 패키징 [#71]
+**변경 요약:** boj-agent CLI 7개 명령어를 Claude Code 플러그인 스킬로 패키징. `.claude-plugin/` 디렉토리에 plugin.json 매니페스트 + 8개 SKILL.md(개별 7개 + 복합 boj-solve 1개) 생성. 자연어 트리거("백준 N번 풀어줘") 및 슬래시 커맨드(`/boj-make N`) 모두 지원.
+**의사결정:** Option B(Skill export) 채택. MCP 서버(Option A) 대비 구현이 간단하고, 기존 CLI를 그대로 활용 가능. 스킬은 `boj` CLI의 래퍼 역할만 수행하며, 로직은 CLI에 위임. description에 한국어 트리거 문구를 포함하여 자연어 자동 매칭 지원. fork context 미사용(파일 생성/git 변경이 메인 컨텍스트에서 보여야 하므로).
+**검증 방법:** `claude --plugin-dir .claude-plugin --print "슬래시 커맨드 목록에서 boj로 시작하는 것들"` → 8개 스킬 모두 인식. 자연어 트리거 매칭 테스트("백준 1000번 만들어줘" → boj-make 트리거) 확인.
+---
+
 ## [2026-03-15] fix(review): Python에서 submit/REVIEW.md 직접 저장
 
 **변경 요약:** `boj review`가 에이전트에게 파일 쓰기를 위임하던 방식에서, Python 코드가 에이전트 stdout을 캡처하여 `submit/REVIEW.md`를 직접 저장하도록 변경. `boj make`의 파일 쓰기 패턴(pathlib + mkdir + write_text)과 동일.

@@ -105,6 +105,33 @@ boj review 4949     ← (선택) 리뷰
 boj commit 4949     ← 커밋 (BOJ 통계 포함)
 ```
 
+## Claude Code 플러그인
+
+boj-agent를 Claude Code에서 스킬로 사용할 수 있습니다.
+자연어("백준 1000번 풀어줘")나 슬래시 커맨드(`/boj-make 1000`)로 호출 가능합니다.
+
+```bash
+# 플러그인 로드
+claude --plugin-dir .claude-plugin
+
+# 또는 마켓플레이스에서 설치
+/plugin marketplace add sueelly/boj-agent
+/plugin install boj-agent
+```
+
+| 스킬 | 설명 |
+|------|------|
+| `/boj-make <N>` | 문제 환경 생성 |
+| `/boj-run <N>` | 테스트 실행 |
+| `/boj-commit <N>` | 풀이 커밋 (BOJ 통계 포함) |
+| `/boj-review <N>` | 코드 리뷰 |
+| `/boj-submit <N>` | 제출 파일 생성 |
+| `/boj-open <N>` | 에디터에서 열기 |
+| `/boj-setup` | 초기 설정 |
+| `/boj-solve <N>` | 전체 자동 풀이 (make→풀이→run→commit→submit) |
+
+자세한 내용은 [.claude-plugin/README.md](.claude-plugin/README.md) 참고.
+
 ## 테스트
 
 ```bash
