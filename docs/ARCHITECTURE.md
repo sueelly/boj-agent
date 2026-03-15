@@ -224,4 +224,45 @@ boj-agent/
 
 ---
 
+---
+
+## Claude Code 플러그인 (`#71`)
+
+```
+.claude-plugin/
+├── plugin.json                    # 플러그인 매니페스트
+├── README.md                      # 설치/사용 가이드
+└── skills/
+    ├── boj-make/SKILL.md          # boj make 래퍼
+    ├── boj-run/SKILL.md           # boj run 래퍼
+    ├── boj-commit/SKILL.md        # boj commit 래퍼
+    ├── boj-review/SKILL.md        # boj review 래퍼
+    ├── boj-submit/SKILL.md        # boj submit 래퍼
+    ├── boj-open/SKILL.md          # boj open 래퍼
+    ├── boj-setup/SKILL.md         # boj setup 래퍼
+    └── boj-solve/SKILL.md         # 복합: make → 풀이 → run → commit → submit
+```
+
+### 설계 원칙
+
+- **스킬은 래퍼**: 로직은 `boj` CLI에 위임, 스킬은 Bash로 호출만 담당
+- **자연어 트리거**: 각 SKILL.md의 `description`에 한국어 트리거 문구 포함 (예: "백준 N번 만들어줘")
+- **CLI 의존**: `boj` CLI가 PATH에 있어야 동작. 없으면 설치 안내 후 중단
+- **메인 컨텍스트 실행**: 파일 생성/git 변경이 필요하므로 fork context 사용 안 함
+
+### 사용 방법
+
+```bash
+# 로컬 테스트
+claude --plugin-dir .claude-plugin
+
+# 슬래시 커맨드
+/boj-make 1000
+/boj-solve 1000
+
+# 자연어 (description 기반 자동 매칭)
+"백준 1000번 풀어줘"  → boj-solve 트리거
+"1000번 돌려줘"       → boj-run 트리거
+```
+
 *최종 업데이트: 2026-03-15*
