@@ -1,6 +1,6 @@
 ---
 name: done
-description: 이슈 완료 원스텝: verify(7단계) → 미커밋 처리 → push → PR 생성 → 이슈 라벨 업데이트
+description: 이슈 완료 원스텝: verify(7단계) → 미커밋 처리 → push → PR 생성 → 이슈 라벨 업데이트 → worktree 정리
 tools:
   - Bash
   - Read
@@ -86,10 +86,33 @@ gh pr create \
 ```bash
 gh issue edit $ISSUE_NUM \
   --remove-label "in-progress" \
-  --add-label "review"
+  --add-label "review" 2>/dev/null || true
 ```
 
-## 7. 완료 요약
+## 7. Worktree 정리 안내
+
+현재 worktree에서 작업 중인지 확인:
+```bash
+git worktree list | grep "$(pwd)"
+```
+
+worktree 내에서 작업 중이면 정리 안내:
+```
+현재 worktree에서 작업 중입니다: [worktree 경로]
+PR이 머지된 후 다음 명령어로 정리할 수 있습니다:
+
+  git worktree remove [worktree 경로]
+  git branch -d [브랜치명]
+
+지금 worktree를 제거하시겠습니까? (keep/remove)
+```
+
+- **keep**: worktree 유지 (PR 리뷰 중 추가 수정 가능)
+- **remove**: worktree 및 브랜치 즉시 삭제
+
+> worktree가 아닌 일반 브랜치에서 작업 중이면 이 단계를 건너뜀.
+
+## 8. 완료 요약
 
 ```
 ╔══════════════════════════════════════╗
@@ -98,6 +121,7 @@ gh issue edit $ISSUE_NUM \
 이슈: #N [제목]
 PR: [PR URL]
 브랜치: [브랜치명]
+Worktree: [worktree 경로 또는 "N/A"]
 검증: PASS (7/7 단계)
 
 → @claude 멘션 또는 /review 로 코드리뷰를 진행하세요
