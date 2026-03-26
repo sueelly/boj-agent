@@ -63,6 +63,7 @@
 | M17 | 에디터 선오픈 (README 직후) | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_open_editor_called_after_readme_before_spec` |
 | M18 | --no-open 이면 선오픈 없음 | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_no_open_skips_editor_entirely` |
 | M19 | 에디터 미설정 이면 선오픈 없음 | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_no_editor_config_skips_early_open` |
+| M20 | PyPI 리소스 접근 | ✅ | `test_resources.py` | `TestResourceAccess.*`, `TestResourceAccessIsolated.*` |
 
 ## 함수별 단위 테스트 현황
 

@@ -55,8 +55,8 @@ def _get_lang_meta(lang: str) -> dict[str, str]:
     Returns:
         ext, supports_parse, solution_file 키를 가진 딕셔너리.
     """
-    boj_root = Path(__file__).resolve().parent.parent.parent
-    lang_file = boj_root / "templates" / "languages.json"
+    from src.core.resources import get_languages_json
+    lang_file = get_languages_json()
     data = json.loads(lang_file.read_text(encoding="utf-8"))
     lang_info = data["languages"].get(lang, {})
 
@@ -98,8 +98,8 @@ def run_agent(
     Returns:
         CompletedProcess 결과 (returncode, stdout, stderr 포함).
     """
-    boj_root = Path(__file__).resolve().parent.parent.parent
-    prompt_file = boj_root / "prompts" / f"{prompt_name}.md"
+    from src.core.resources import get_prompt_file
+    prompt_file = get_prompt_file(prompt_name)
     prompt_content = prompt_file.read_text(encoding="utf-8")
 
     # 템플릿 변수 치환
@@ -126,7 +126,7 @@ def run_agent(
 
     cmd = shlex.split(agent_cmd)
     return subprocess.run(
-        cmd, input=full_prompt, cwd=str(boj_root),
+        cmd, input=full_prompt, cwd=str(problem_dir),
         capture_output=True, text=True,
     )
 

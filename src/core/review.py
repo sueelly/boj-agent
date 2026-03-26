@@ -238,7 +238,8 @@ def review(
 
     if agent_root is None:
         root_str = config_get("boj_agent_root", "")
-        agent_root = Path(root_str) if root_str else Path.cwd()
+        if root_str:
+            agent_root = Path(root_str)
 
     # 문제 폴더 찾기 (RV3)
     problem_dir_str = find_problem_dir(str(solution_root), problem_num)
@@ -258,7 +259,11 @@ def review(
         )
 
     # 프롬프트 빌드
-    prompt_template = agent_root / "prompts" / "review.md"
+    if agent_root is not None:
+        prompt_template = agent_root / "prompts" / "review.md"
+    else:
+        from src.core.resources import get_prompt_file
+        prompt_template = get_prompt_file("review")
     prompt = build_review_prompt(problem_dir, prompt_template)
 
     # 에이전트 명령어 확인 (RV3: 없으면 fallback)

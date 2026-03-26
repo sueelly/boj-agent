@@ -346,7 +346,8 @@ def run(
 
     if agent_root is None:
         root_str = config_get("boj_agent_root", "")
-        agent_root = Path(root_str) if root_str else Path.cwd()
+        if root_str:
+            agent_root = Path(root_str)
 
     # 문제 폴더 찾기
     problem_dir = find_problem_dir(str(solution_root), problem_num)
@@ -357,7 +358,11 @@ def run(
     problem_dir = Path(problem_dir)
 
     # 템플릿 디렉터리
-    template_dir = agent_root / "templates" / prog_lang
+    if agent_root is not None:
+        template_dir = agent_root / "templates" / prog_lang
+    else:
+        from src.core.resources import get_template_lang_dir
+        template_dir = get_template_lang_dir(prog_lang)
 
     # 사전 조건 검증
     validate_run_preconditions(problem_dir, prog_lang, template_dir)

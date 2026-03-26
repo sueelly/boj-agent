@@ -25,3 +25,9 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = ["src*"]
+
+[tool.setuptools.package-data]
+"src.resources" = [
+    "prompts/*.md",
+    "templates/**/*",
+]
