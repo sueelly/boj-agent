@@ -38,9 +38,8 @@ class TestRunAgentCommand:
         stdin_content = captured["input"]
         assert "BOJ ProblemSpec Generator" in stdin_content, "프롬프트 내용이 stdin에 포함되어야 함"
         assert str(problem_dir) in stdin_content, "문제 디렉터리 경로가 stdin에 포함되어야 함"
-        # cwd는 boj-agent 루트여야 한다 (reference/ 상대 경로 해석을 위해)
-        boj_root = Path(__file__).resolve().parent.parent.parent
-        assert captured["cwd"] == str(boj_root)
+        # cwd는 문제 디렉터리여야 한다
+        assert captured["cwd"] == str(problem_dir)
 
     def test_context_files_included_in_stdin(self, tmp_path):
         """context_files로 지정한 파일 내용이 stdin에 포함되는지 확인."""

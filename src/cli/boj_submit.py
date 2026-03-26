@@ -89,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
         agent_root = Path(args.agent_root)
     else:
         root_str = config_get("boj_agent_root", "")
-        agent_root = Path(root_str) if root_str else Path.cwd()
+        agent_root = Path(root_str) if root_str else None
 
     try:
         # 문제 폴더 찾기
@@ -103,7 +103,11 @@ def main(argv: list[str] | None = None) -> int:
 
         problem_dir = Path(problem_dir_str)
         problem_name = problem_dir.name
-        template_dir = agent_root / "templates" / lang
+        if agent_root is not None:
+            template_dir = agent_root / "templates" / lang
+        else:
+            from src.core.resources import get_template_lang_dir
+            template_dir = get_template_lang_dir(lang)
 
         print(f"{BLUE}Submit 생성: {problem_name} ({lang}){NC}")
 
