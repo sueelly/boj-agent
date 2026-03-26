@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "boj-agent"
-version = "1.0.0"
+version = "1.0.1"
 description = "BOJ 문제 풀이 자동화 CLI"
 readme = "README.md"
 license = "MIT"
