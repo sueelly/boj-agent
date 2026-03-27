@@ -116,7 +116,9 @@ def _run_pipeline(args: argparse.Namespace) -> int:
     generate_readme(problem_json)
 
     # Step 2: 에디터 선오픈 — README 직후, spec/skeleton 대기 중 문제 확인 가능
-    editor_cmd = config_get("editor", DEFAULTS.get("editor", "")) if not args.no_open else ""
+    # 우선순위: --no-open 플래그 > make_auto_open 설정 > 기본값(true)
+    auto_open = config_get("make_auto_open", "true").strip().lower() != "false"
+    editor_cmd = config_get("editor", DEFAULTS.get("editor", "")) if (not args.no_open and auto_open) else ""
     if editor_cmd:
         print("[3/6] 에디터 열기...", file=sys.stderr)
         open_editor(problem_dir, editor_cmd)
