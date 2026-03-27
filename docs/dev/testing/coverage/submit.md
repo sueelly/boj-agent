@@ -3,18 +3,19 @@
 ## 로직 흐름 (단계별)
 1. ROOT / PROBLEM_NUM 인수 수신
 2. config 로드
-3. 옵션 파싱 (--lang, --open, --force)
-4. 언어별 파일 확장자 결정
-5. Solution 파일 존재 확인
-6. submit/ 폴더 생성
-7. 기존 Submit 파일 존재 확인 (--force 아니면 BojError)
-8. 언어별 Submit 생성
+3. 옵션 파싱 (--lang, --open, --no-open, --force)
+4. 브라우저 열기 여부 결정: --no-open > --open > submit_open config > 기본값(true)
+5. 언어별 파일 확장자 결정
+6. Solution 파일 존재 확인
+7. submit/ 폴더 생성
+8. 기존 Submit 파일 존재 확인 (--force 아니면 BojError)
+9. 언어별 Submit 생성
    - Java: imports 추출 + Main 클래스 + Solution/Parse 병합
    - Python: 헤더 + Solution 내용 + main 블록
    - C++: bits/stdc++.h + Solution 내용 + main
    - C: stdio.h + Solution 내용 + main
-9. Java: javac 컴파일 검증
-10. --open: 제출 페이지 브라우저 열기
+10. Java: javac 컴파일 검증
+11. 브라우저 열기 (결정된 값이 true인 경우)
 
 ## 분기 목록
 | ID | 분기 | 경로 |
@@ -29,6 +30,10 @@
 | SB8 | Solution.java 없음 → exit 1 | errors |
 | SB9 | 미지원 언어 → exit 1 | errors |
 | SB10 | Submit 이미 있고 --force 없음 → exit 1 | errors |
+| SB11 | submit_open 미설정 → 기본값 true → 브라우저 열기 | config |
+| SB12 | submit_open=false → 브라우저 안 열기 | config |
+| SB13 | submit_open=false + --open → 브라우저 열기 | config |
+| SB14 | submit_open=true + --no-open → 브라우저 안 열기 | config |
 
 ## 분기 → 테스트 매핑 테이블
 
@@ -55,6 +60,14 @@
 | — | TestGenerateJavaSubmit | test_duplicate_imports_deduplicated |
 | — | TestGenerateCSubmit | test_basic_generation |
 | — | TestGenerateSubmit | test_creates_submit_directory |
+
+### 단위 테스트 — submit_open config (`tests/unit/test_submit.py`)
+| 분기 | 클래스 | 테스트 메서드 |
+|------|--------|-------------|
+| SB11 | TestSubmitCliOpenBehavior | test_default_opens_browser |
+| SB12 | TestSubmitCliOpenBehavior | test_config_false_no_open |
+| SB13 | TestSubmitCliOpenBehavior | test_open_flag_overrides_config_false |
+| SB14 | TestSubmitCliOpenBehavior | test_no_open_flag_overrides_config_true |
 
 ### 통합 테스트 (`tests/integration/test_submit_py.py`)
 | 분기 | 클래스 | 테스트 메서드 |

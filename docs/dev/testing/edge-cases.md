@@ -71,6 +71,8 @@
 | M17 | UX | 에디터 선오픈 (README 직후) | README 생성 직후 `open_editor` 호출 — spec/skeleton 대기 중 문제 확인 가능 | N/A | 아니오 |
 | M18 | UX | `--no-open` + 선오픈 | `--no-open` 이면 선오픈도 하지 않는다 (open_editor 미호출) | N/A | 아니오 |
 | M19 | UX | 에디터 미설정 + 선오픈 | 에디터 미설정이면 선오픈도 하지 않는다 (open_editor 미호출) | N/A | 아니오 |
+| M20 | config | `make_auto_open=false` + `--no-open` 미지정 | `make_auto_open` 설정이 "false"이면 에디터 자동 열기 하지 않는다 (open_editor 미호출) | N/A | 아니오 |
+| M21 | config | `make_auto_open=true` (기본값) 또는 미설정 | `make_auto_open`이 "true"(또는 미설정)이면 기존 동작 유지 (에디터 열기) | N/A | 아니오 |
 
 ---
 
@@ -150,6 +152,23 @@
 | SB8 | config | 언어 미설정 | java 기본값 사용, `Warning: 언어 미설정. java 사용.` | 예 | 아니오 |
 | SB9 | 파일시스템 | 생성된 Submit.java 컴파일 검증 실패 | `Warning: Submit.java 컴파일 확인 실패. 수동으로 확인하세요.` | 아니오 | 아니오 (경고만) |
 | SB10 | config | `--open` 이지만 브라우저 없음 | `Warning: 브라우저를 열 수 없습니다. URL: https://www.acmicpc.net/submit/4949` | URL 출력 | 아니오 |
+| SB11 | config | `submit_open` 설정 없음 (기본값) | 기본값 `true` → 제출 후 브라우저 자동 열기 | N/A | 아니오 |
+| SB12 | config | `submit_open=false` 설정 | 브라우저 자동 열기 안 함 | N/A | 아니오 |
+| SB13 | config | `submit_open=false` + `--open` 플래그 | `--open` 우선 → 브라우저 열기 | N/A | 아니오 |
+| SB14 | config | `submit_open=true` + `--no-open` 플래그 | `--no-open` 우선 → 브라우저 안 열기 | N/A | 아니오 |
+
+---
+
+## `boj reset`
+
+| # | 카테고리 | 케이스 | 기대 동작 | 자동복구 | 중단 |
+|---|---------|--------|-----------|---------|------|
+| RS1 | UX | 확인 프롬프트 (--force 없음) | "Solution 파일을 초기 상태로 되돌리겠습니까? (y/N)" 표시, N이면 중단 | 아니오 | 사용자 선택 |
+| RS2 | UX | --force 플래그 사용 | 확인 프롬프트 생략하고 즉시 실행 | N/A | 아니오 |
+| RS3 | 파일시스템 | --no-backup 없음 (기본) | reset 전 Solution 파일을 `Solution.java.bak` 으로 복사 | 예 | 아니오 |
+| RS4 | git | submit/ 디렉터리 존재 시 | submit/ 디렉터리 전체 삭제 (cleanup_submit) | 예 | 아니오 |
+| RS5 | 파일시스템 | Solution 파일 없음 | `Error: Solution 파일을 찾을 수 없습니다.` | 아니오 | 예 |
+| RS6 | git | git repo 아님 | `Error: git 저장소가 아닙니다.` | 아니오 | 예 |
 
 ---
 
@@ -233,5 +252,5 @@
 - **submit/ 폴더 없음**: 자동 생성
 - **폴더 이미 존재**: `-f` 옵션으로 덮어쓰기 (미지정 시 에러)
 
-*최종 업데이트: 2026-03-14*
+*최종 업데이트: 2026-03-27*
 

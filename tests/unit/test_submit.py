@@ -1,14 +1,16 @@
 """src/core/submit.py 단위 테스트.
 
 Issue #69 — boj submit Python 마이그레이션.
-edge-cases SB1-SB10 커버리지.
+Issue #86 — submit_open config 지원.
+edge-cases SB1-SB14 커버리지.
 """
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.cli.boj_submit import main as submit_main
 from src.core.exceptions import BojError
 from src.core.submit import (
     compile_check,
@@ -666,3 +668,128 @@ class TestCompileCheck:
         template_dir.mkdir(parents=True)
 
         assert compile_check(submit, template_dir) is False
+
+
+# ---------------------------------------------------------------------------
+# TestSubmitCliOpenBehavior — submit_open config 우선순위 (SB11-SB14)
+# ---------------------------------------------------------------------------
+
+
+class TestSubmitCliOpenBehavior:
+    """boj_submit CLI의 브라우저 열기 동작 — submit_open config 우선순위."""
+
+    def _make_problem_dir(self, tmp_path: Path, lang: str = "java") -> Path:
+        """테스트용 문제 디렉터리와 Solution 파일을 생성한다."""
+        problem_dir = tmp_path / "solutions" / "99999-test"
+        problem_dir.mkdir(parents=True)
+        if lang == "java":
+            (problem_dir / "Solution.java").write_text(
+                "public class Solution {}\n"
+            )
+        else:
+            (problem_dir / "solution.py").write_text(
+                "class Solution:\n    pass\n"
+            )
+        template_dir = tmp_path / "templates" / lang
+        template_dir.mkdir(parents=True)
+        return problem_dir
+
+    def test_default_opens_browser(self, tmp_path):
+        """SB11: submit_open 미설정(기본값 true) → 브라우저 자동 열기."""
+        problem_dir = self._make_problem_dir(tmp_path)
+        solutions_root = problem_dir.parent
+
+        with (
+            patch("src.cli.boj_submit.config_get") as mock_cfg,
+            patch("src.cli.boj_submit.open_submit_page") as mock_open,
+            patch("src.cli.boj_submit.generate_submit") as mock_gen,
+            patch("src.cli.boj_submit.compile_check", return_value=True),
+            patch("src.cli.boj_submit.find_problem_dir", return_value=str(problem_dir)),
+        ):
+            mock_cfg.side_effect = lambda key, default="": {
+                "prog_lang": "java",
+                "solution_root": str(solutions_root),
+                "boj_agent_root": str(tmp_path),
+                "submit_open": "true",
+            }.get(key, default)
+            mock_gen.return_value = problem_dir / "submit" / "Submit.java"
+
+            result = submit_main(["99999"])
+
+        assert result == 0
+        mock_open.assert_called_once_with("99999")
+
+    def test_config_false_no_open(self, tmp_path):
+        """SB12: submit_open=false → 브라우저 열기 안 함."""
+        problem_dir = self._make_problem_dir(tmp_path)
+        solutions_root = problem_dir.parent
+
+        with (
+            patch("src.cli.boj_submit.config_get") as mock_cfg,
+            patch("src.cli.boj_submit.open_submit_page") as mock_open,
+            patch("src.cli.boj_submit.generate_submit") as mock_gen,
+            patch("src.cli.boj_submit.compile_check", return_value=True),
+            patch("src.cli.boj_submit.find_problem_dir", return_value=str(problem_dir)),
+        ):
+            mock_cfg.side_effect = lambda key, default="": {
+                "prog_lang": "java",
+                "solution_root": str(solutions_root),
+                "boj_agent_root": str(tmp_path),
+                "submit_open": "false",
+            }.get(key, default)
+            mock_gen.return_value = problem_dir / "submit" / "Submit.java"
+
+            result = submit_main(["99999"])
+
+        assert result == 0
+        mock_open.assert_not_called()
+
+    def test_open_flag_overrides_config_false(self, tmp_path):
+        """SB13: submit_open=false + --open → --open 우선, 브라우저 열기."""
+        problem_dir = self._make_problem_dir(tmp_path)
+        solutions_root = problem_dir.parent
+
+        with (
+            patch("src.cli.boj_submit.config_get") as mock_cfg,
+            patch("src.cli.boj_submit.open_submit_page") as mock_open,
+            patch("src.cli.boj_submit.generate_submit") as mock_gen,
+            patch("src.cli.boj_submit.compile_check", return_value=True),
+            patch("src.cli.boj_submit.find_problem_dir", return_value=str(problem_dir)),
+        ):
+            mock_cfg.side_effect = lambda key, default="": {
+                "prog_lang": "java",
+                "solution_root": str(solutions_root),
+                "boj_agent_root": str(tmp_path),
+                "submit_open": "false",
+            }.get(key, default)
+            mock_gen.return_value = problem_dir / "submit" / "Submit.java"
+
+            result = submit_main(["99999", "--open"])
+
+        assert result == 0
+        mock_open.assert_called_once_with("99999")
+
+    def test_no_open_flag_overrides_config_true(self, tmp_path):
+        """SB14: submit_open=true + --no-open → --no-open 우선, 브라우저 안 열기."""
+        problem_dir = self._make_problem_dir(tmp_path)
+        solutions_root = problem_dir.parent
+
+        with (
+            patch("src.cli.boj_submit.config_get") as mock_cfg,
+            patch("src.cli.boj_submit.open_submit_page") as mock_open,
+            patch("src.cli.boj_submit.generate_submit") as mock_gen,
+            patch("src.cli.boj_submit.compile_check", return_value=True),
+            patch("src.cli.boj_submit.find_problem_dir", return_value=str(problem_dir)),
+        ):
+            mock_cfg.side_effect = lambda key, default="": {
+                "prog_lang": "java",
+                "solution_root": str(solutions_root),
+                "boj_agent_root": str(tmp_path),
+                "submit_open": "true",
+            }.get(key, default)
+            mock_gen.return_value = problem_dir / "submit" / "Submit.java"
+
+            result = submit_main(["99999", "--no-open"])
+
+        assert result == 0
+        mock_open.assert_not_called()

@@ -2,10 +2,13 @@
 """boj submit CLI 래퍼 — 인수 파싱 + 출력 포매팅.
 
 Issue #69 — submit.sh Python 마이그레이션.
+Issue #86 — submit 시 제출 페이지 자동 열기를 기본값으로 변경 + config 설정 지원.
 
 사용법:
-    python -m src.cli.boj_submit <문제번호> [--lang java|python|cpp|c] [--open] [--force]
+    python -m src.cli.boj_submit <문제번호> [--lang java|python|cpp|c] [--open] [--no-open] [--force]
     또는 boj 디스패처에서 호출.
+
+브라우저 열기 우선순위: --no-open > --open > submit_open config > 기본값(true)
 """
 
 import argparse
@@ -39,11 +42,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="언어 override (java|python|cpp|c). 미지정 시 config 사용.",
     )
-    parser.add_argument(
+    open_group = parser.add_mutually_exclusive_group()
+    open_group.add_argument(
         "--open",
         action="store_true",
+        default=False,
         dest="open_browser",
-        help="제출 페이지 브라우저 열기",
+        help="제출 페이지 브라우저 열기 (config 무시하고 강제 열기)",
+    )
+    open_group.add_argument(
+        "--no-open",
+        action="store_true",
+        default=False,
+        dest="no_open_browser",
+        help="제출 페이지 브라우저 열기 안 함 (config 무시)",
     )
     parser.add_argument(
         "--force", "-f",
@@ -133,8 +145,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{BLUE}생성된 파일: {submit_path}{NC}")
         print()
 
-        # --open: 제출 페이지 브라우저 오픈
-        if args.open_browser:
+        # 브라우저 열기 여부 결정: --no-open > --open > submit_open config > 기본값(true)
+        if args.no_open_browser:
+            should_open = False
+        elif args.open_browser:
+            should_open = True
+        else:
+            should_open = config_get("submit_open", "true").lower() not in ("false", "0", "no")
+
+        # 제출 페이지 브라우저 오픈
+        if should_open:
             url = f"https://www.acmicpc.net/submit/{args.problem_id}"
             print(f"{BLUE}제출 페이지 오픈: {url}{NC}")
             open_submit_page(args.problem_id)
@@ -149,8 +169,8 @@ def main(argv: list[str] | None = None) -> int:
             "에서 제출"
         )
         print(
-            f"  또는: boj submit {args.problem_id} --open  "
-            "(제출 페이지 자동 오픈)"
+            f"  또는: boj submit {args.problem_id} --no-open  "
+            "(브라우저 자동 열기 끄기)"
         )
 
         return 0
