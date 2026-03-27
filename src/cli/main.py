@@ -22,6 +22,7 @@ COMMANDS = {
     "review": "src.cli.boj_review",
     "submit": "src.cli.boj_submit",
     "setup": "src.cli.boj_setup",
+    "reset": "src.cli.boj_reset",
 }
 
 
