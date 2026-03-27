@@ -876,3 +876,31 @@ class TestOpenEditor:
             open_editor(tmp_path, None)
 
         mock_popen.assert_not_called()
+
+
+# ──────────────────────────────────────────────
+# TestSkeletonPromptContent — M21
+# ──────────────────────────────────────────────
+
+class TestSkeletonPromptContent:
+    """M21: make-skeleton 프롬프트에 한글 주석 규칙이 포함되어 있는지 검증."""
+
+    def test_prompt_contains_korean_comment_rule(self):
+        """make-skeleton 프롬프트에 '한글로 작성' 규칙이 포함되어 있다."""
+        from src.core.resources import get_prompt_file
+        content = get_prompt_file("make-skeleton").read_text(encoding="utf-8")
+        assert "한글로 작성" in content
+
+    def test_prompt_contains_problem_summary_rule(self):
+        """make-skeleton 프롬프트에 문제 설명 요약 주석 규칙이 포함되어 있다."""
+        from src.core.resources import get_prompt_file
+        content = get_prompt_file("make-skeleton").read_text(encoding="utf-8")
+        assert "문제 설명 요약 주석" in content
+        assert "문제 번호" in content
+        assert "입출력" in content
+
+    def test_prompt_contains_korean_example(self):
+        """make-skeleton 프롬프트에 한글 주석 예시가 포함되어 있다."""
+        from src.core.resources import get_prompt_file
+        content = get_prompt_file("make-skeleton").read_text(encoding="utf-8")
+        assert "TODO: 구현" in content
