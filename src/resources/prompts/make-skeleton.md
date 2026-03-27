@@ -32,6 +32,46 @@
 - **메서드**: `solve(...)` — 문제에 맞는 파라미터와 반환 타입.
 - **구현**: 비워두거나 `TODO`만 둠 (사용자가 직접 구현).
 
+**주석 규칙 (필수)**:
+- **모든 주석은 한글로 작성**한다. 영어 주석 금지.
+- **파일 상단에 문제 설명 요약 주석**을 반드시 포함한다:
+  - 문제 번호, 제목
+  - 문제 핵심 요약 (1-2줄)
+  - 입출력 형식 간략 설명
+
+Java 예시:
+```java
+/**
+ * BOJ 1000 - A+B
+ *
+ * 두 정수 A와 B를 입력받아 A+B를 출력한다.
+ *
+ * 입력: 두 정수 A, B (0 < A, B < 10)
+ * 출력: A+B
+ */
+public class Solution {
+    public int solve(int a, int b) {
+        return 0; // TODO: 구현
+    }
+}
+```
+
+Python 예시:
+```python
+"""
+BOJ 1000 - A+B
+
+두 정수 A와 B를 입력받아 A+B를 출력한다.
+
+입력: 두 정수 A, B (0 < A, B < 10)
+출력: A+B
+"""
+
+class Solution:
+    def solve(self, a: int, b: int) -> int:
+        return 0  # TODO: 구현
+```
+
 **서명 금지 규칙 (절대 위반 금지)**:
 - **단일 String/str 파라미터 전부 금지** — 파라미터 이름과 무관하게, `solve`가 String 하나만 받는 형태는 금지 (raw stdin blob).
 - 예: `solve(String input)`, `solve(String s)`, `solve(String data)`, `solve(s: str)` 등 모두 금지.

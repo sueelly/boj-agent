@@ -64,6 +64,7 @@
 | M18 | --no-open 이면 선오픈 없음 | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_no_open_skips_editor_entirely` |
 | M19 | 에디터 미설정 이면 선오픈 없음 | ✅ | `test_make.py` | `TestRunPipelineCallOrder.test_no_editor_config_skips_early_open` |
 | M20 | PyPI 리소스 접근 | ✅ | `test_resources.py` | `TestResourceAccess.*`, `TestResourceAccessIsolated.*` |
+| M21 | Solution 주석 한글 + 문제 설명 요약 | ✅ | `test_make.py` | `TestSkeletonPromptContent.*` |
 
 ## 함수별 단위 테스트 현황
 

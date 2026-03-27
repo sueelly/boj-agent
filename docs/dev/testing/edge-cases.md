@@ -72,6 +72,7 @@
 | M18 | UX | `--no-open` + 선오픈 | `--no-open` 이면 선오픈도 하지 않는다 (open_editor 미호출) | N/A | 아니오 |
 | M19 | UX | 에디터 미설정 + 선오픈 | 에디터 미설정이면 선오픈도 하지 않는다 (open_editor 미호출) | N/A | 아니오 |
 | M20 | 패키징 | PyPI 설치 시 prompts/templates 리소스 접근 | `get_prompt_file()`, `get_languages_json()`, `get_template_lang_dir()` 등이 정상 Path 반환 | N/A | 아니오 |
+| M21 | skeleton | Solution 주석 한글 + 문제 설명 요약 | make-skeleton 프롬프트에 한글 주석 규칙과 문제 설명 요약 주석 포함 지시 | N/A | 아니오 |
 
 ---
 
