@@ -43,7 +43,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--open",
         action="store_true",
         dest="open_browser",
-        help="제출 페이지 브라우저 열기",
+        default=None,
+        help="제출 페이지 브라우저 열기 (기본값: config 참조)",
+    )
+    parser.add_argument(
+        "--no-open",
+        action="store_true",
+        dest="no_open_browser",
+        help="제출 페이지 브라우저 열지 않기",
     )
     parser.add_argument(
         "--force", "-f",
@@ -137,8 +144,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{BLUE}생성된 파일: {submit_path}{NC}")
         print()
 
-        # --open: 제출 페이지 브라우저 오픈
-        if args.open_browser:
+        # 브라우저 오픈: --no-open > --open > config > default(true)
+        should_open = not args.no_open_browser and (
+            args.open_browser or config_get("submit_open", "true").lower() == "true"
+        )
+        if should_open:
             url = f"https://www.acmicpc.net/submit/{args.problem_id}"
             print(f"{BLUE}제출 페이지 오픈: {url}{NC}")
             open_submit_page(args.problem_id)
