@@ -49,6 +49,17 @@ def _print_usage() -> None:
     print("  boj open 4949 --editor cursor")
 
 
+def _check_update() -> None:
+    """새 버전이 있으면 stderr로 안내. 실패 시 무시."""
+    try:
+        from src.core.update_checker import check_for_update
+        msg = check_for_update()
+        if msg:
+            print(f"\n💡 {msg}\n", file=sys.stderr)
+    except Exception:
+        pass
+
+
 def main() -> None:
     """CLI 메인 진입점. sys.argv 기반으로 서브커맨드를 라우팅한다."""
     argv = sys.argv[1:]
@@ -80,7 +91,9 @@ def main() -> None:
 
     try:
         module = import_module(module_path)
-        sys.exit(module.main(sub_argv))
+        exit_code = module.main(sub_argv)
+        _check_update()
+        sys.exit(exit_code)
     except ImportError as e:
         print(
             f"Error: '{command}' 모듈을 로드할 수 없습니다: {e}",
