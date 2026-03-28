@@ -827,6 +827,81 @@ class TestRunPipelineCallOrder:
         assert result == 0
         mock_editor.assert_not_called()
 
+    def test_make_auto_open_false_skips_editor(self, problem_fixture):
+        """M20: make_auto_open=false이면 open_editor가 호출되지 않는다."""
+        from src.cli.boj_make import _run_pipeline, parse_args
+
+        def config_auto_open_false(key, default=""):
+            return {
+                "agent": "echo mock",
+                "prog_lang": "java",
+                "solution_root": "",
+                "editor": "code",
+                "make_auto_open": "false",
+            }.get(key, default)
+
+        args = parse_args(["99999"])
+        with (
+            patch("src.cli.boj_make.config_get", side_effect=config_auto_open_false),
+            patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
+            patch("src.cli.boj_make.generate_readme"),
+            patch("src.cli.boj_make.open_editor") as mock_editor,
+            patch("src.cli.boj_make.generate_spec"),
+            patch("src.cli.boj_make.generate_skeleton"),
+            patch("src.cli.boj_make.cleanup_artifacts"),
+        ):
+            result = _run_pipeline(args)
+
+        assert result == 0
+        mock_editor.assert_not_called()
+
+    def test_make_auto_open_true_opens_editor(self, problem_fixture):
+        """M21: make_auto_open=true(기본값)이면 에디터가 열린다."""
+        from src.cli.boj_make import _run_pipeline, parse_args
+
+        def config_auto_open_true(key, default=""):
+            return {
+                "agent": "echo mock",
+                "prog_lang": "java",
+                "solution_root": "",
+                "editor": "code",
+                "make_auto_open": "true",
+            }.get(key, default)
+
+        args = parse_args(["99999"])
+        with (
+            patch("src.cli.boj_make.config_get", side_effect=config_auto_open_true),
+            patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
+            patch("src.cli.boj_make.generate_readme"),
+            patch("src.cli.boj_make.open_editor") as mock_editor,
+            patch("src.cli.boj_make.generate_spec"),
+            patch("src.cli.boj_make.generate_skeleton"),
+            patch("src.cli.boj_make.cleanup_artifacts"),
+        ):
+            result = _run_pipeline(args)
+
+        assert result == 0
+        mock_editor.assert_called_once()
+
+    def test_no_open_flag_overrides_auto_open_config(self, problem_fixture):
+        """M21a: --no-open 플래그는 make_auto_open=true여도 에디터를 열지 않는다."""
+        from src.cli.boj_make import _run_pipeline, parse_args
+
+        args = parse_args(["99999", "--no-open"])
+        with (
+            patch("src.cli.boj_make.config_get", side_effect=self._config_get),
+            patch("src.cli.boj_make.fetch_problem", return_value=problem_fixture),
+            patch("src.cli.boj_make.generate_readme"),
+            patch("src.cli.boj_make.open_editor") as mock_editor,
+            patch("src.cli.boj_make.generate_spec"),
+            patch("src.cli.boj_make.generate_skeleton"),
+            patch("src.cli.boj_make.cleanup_artifacts"),
+        ):
+            result = _run_pipeline(args)
+
+        assert result == 0
+        mock_editor.assert_not_called()
+
 
 # ──────────────────────────────────────────────
 # TestOpenEditor
