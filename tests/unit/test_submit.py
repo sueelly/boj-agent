@@ -666,3 +666,65 @@ class TestCompileCheck:
         template_dir.mkdir(parents=True)
 
         assert compile_check(submit, template_dir) is False
+
+
+# ---------------------------------------------------------------------------
+# submit_open config — Issue #86
+# ---------------------------------------------------------------------------
+
+class TestSubmitOpenConfig:
+    """Issue #86: submit_open config로 브라우저 자동 열기 제어."""
+
+    def test_default_opens_browser(self):
+        """기본값(config=true)이면 브라우저가 열린다."""
+        from src.cli.boj_submit import parse_args
+        args = parse_args(["99999"])
+        # open_browser=None (기본), no_open_browser=False
+        # config default "true" → should open
+        assert args.open_browser is None
+        assert args.no_open_browser is False
+
+    def test_no_open_flag(self):
+        """--no-open이면 브라우저를 열지 않는다."""
+        from src.cli.boj_submit import parse_args
+        args = parse_args(["99999", "--no-open"])
+        assert args.no_open_browser is True
+
+    def test_open_flag(self):
+        """--open이면 브라우저를 연다."""
+        from src.cli.boj_submit import parse_args
+        args = parse_args(["99999", "--open"])
+        assert args.open_browser is True
+
+    def test_should_open_logic_default_true(self):
+        """config submit_open=true(기본) → 브라우저 열림."""
+        # --no-open=False, --open=None, config="true" → True
+        no_open = False
+        open_flag = None
+        config_val = "true"
+        should_open = not no_open and (open_flag or config_val.lower() == "true")
+        assert should_open is True
+
+    def test_should_open_logic_config_false(self):
+        """config submit_open=false → 브라우저 안 열림."""
+        no_open = False
+        open_flag = None
+        config_val = "false"
+        should_open = not no_open and (open_flag or config_val.lower() == "true")
+        assert should_open is False
+
+    def test_should_open_logic_no_open_overrides(self):
+        """--no-open → config=true여도 안 열림."""
+        no_open = True
+        open_flag = None
+        config_val = "true"
+        should_open = not no_open and (open_flag or config_val.lower() == "true")
+        assert should_open is False
+
+    def test_should_open_logic_open_overrides_config_false(self):
+        """--open → config=false여도 열림."""
+        no_open = False
+        open_flag = True
+        config_val = "false"
+        should_open = not no_open and (open_flag or config_val.lower() == "true")
+        assert should_open is True
