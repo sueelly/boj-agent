@@ -23,6 +23,7 @@ COMMANDS = {
     "submit": "src.cli.boj_submit",
     "setup": "src.cli.boj_setup",
     "reset": "src.cli.boj_reset",
+    "add-test": "src.cli.boj_add_test",
 }
 
 
